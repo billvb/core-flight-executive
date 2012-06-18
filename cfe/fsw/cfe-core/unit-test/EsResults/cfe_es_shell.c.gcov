@@ -1,0 +1,470 @@
+        -:    0:Source:/home/jdagostino/CProj/CFS/MKS/cfs-mission/cfe/fsw/cfe-core/src/es/cfe_es_shell.c
+        -:    0:Graph:cfe_es_shell.gcno
+        -:    0:Data:cfe_es_shell.gcda
+        -:    0:Runs:1
+        -:    0:Programs:9
+        -:    1:/* File:
+        -:    2:** cfe_es_shell.c
+        -:    3:** $Id:
+        -:    4:**
+        -:    5:**
+        -:    6:**      Copyright (c) 2004-2006, United States government as represented by the
+        -:    7:**      administrator of the National Aeronautics Space Administration.
+        -:    8:**      All rights reserved. This software(cFE) was created at NASA's Goddard
+        -:    9:**      Space Flight Center pursuant to government contracts.
+        -:   10:**
+        -:   11:**      This software may be used only pursuant to a United States government
+        -:   12:**      sponsored project and the United States government may not be charged
+        -:   13:**      for use thereof.
+        -:   14:**
+        -:   15:**
+        -:   16:**  Purpose:
+        -:   17:**  cFE Executive Services (ES) Shell Commanding System
+        -:   18:**
+        -:   19:**  References:
+        -:   20:**     Flight Software Branch C Coding Standard Version 1.0a
+        -:   21:**     cFE Flight Software Application Developers Guide
+        -:   22:**
+        -:   23:**  $Log: cfe_es_shell.c.gcov  $
+        -:   23:**  Revision 1.3 2010/11/04 17:46:38EDT jmdagost 
+        -:   23:**  Updated unit test results.
+        -:   24:**  Revision 1.5 2010/11/04 14:05:40EDT acudmore 
+        -:   25:**  Added ram disk mount path configuration option.
+        -:   26:**  Revision 1.4 2010/10/26 16:27:42EDT jmdagost 
+        -:   27:**  Replaced unnecessary CFE_MAX_SHELL_CMD_SIZE with CFE_MAX_SHELL_CMD
+        -:   28:**  Revision 1.3 2010/10/04 16:24:32EDT jmdagost 
+        -:   29:**  Cleaned up copyright symbol.
+        -:   30:**  Revision 1.2 2009/06/10 09:09:00EDT acudmore 
+        -:   31:**  Converted OS_Mem* and OS_BSP* API to CFE_PSP_* API
+        -:   32:**  Revision 1.1 2008/04/17 08:05:08EDT ruperera 
+        -:   33:**  Initial revision
+        -:   34:**  Member added to project c:/MKSDATA/MKS-REPOSITORY/MKS-CFE-PROJECT/fsw/cfe-core/src/es/project.pj
+        -:   35:**  Revision 1.28 2007/09/25 13:08:29EDT apcudmore 
+        -:   36:**  Fixed Compile error with extra Paren.
+        -:   37:**  Revision 1.27 2007/09/25 12:47:31EDT apcudmore 
+        -:   38:**  Updated the way shell functions handle return code from OS_write
+        -:   39:**  Revision 1.26 2007/09/20 10:52:59EDT apcudmore 
+        -:   40:**  Added Query All Tasks command, file definition, events, error codes etc.
+        -:   41:**  Revision 1.25 2007/08/21 11:00:21EDT njyanchik 
+        -:   42:**  I added a delay in the telemetry sending of the output so the pipe doesn't get flooded on large 
+        -:   43:**  messages, I also fixed the file descriptor implementation on vxworks (it was not updated with 
+        -:   44:**  previous file system updates), so that the shell is now reading and writing the correct files.
+        -:   45:**  Revision 1.24 2007/07/02 13:24:13EDT njyanchik 
+        -:   46:**  cfe_es_shell.c and the three platform config files were changed
+        -:   47:**  Revision 1.23 2007/05/16 11:13:21EDT njyanchik 
+        -:   48:**  I found another error that if an if failed, we would seg fault. It has now been fixed.
+        -:   49:**  Revision 1.22 2007/05/15 11:16:06EDT apcudmore 
+        -:   50:**  Added modification log tags.
+        -:   51:*/
+        -:   52:
+        -:   53:/*
+        -:   54: ** Includes
+        -:   55: */
+        -:   56:#include "cfe.h"
+        -:   57:#include "cfe_platform_cfg.h"
+        -:   58:#include "cfe_es_global.h"
+        -:   59:#include "cfe_es_apps.h"
+        -:   60:#include "cfe_es_shell.h"
+        -:   61:#include "cfe_es_task.h"
+        -:   62:#include "cfe_psp.h"
+        -:   63:
+        -:   64:
+        -:   65:#include <string.h>
+        -:   66:
+        -:   67:extern CFE_ES_TaskData_t CFE_ES_TaskData;
+        -:   68:#define  CFE_ES_CHECKSIZE 3
+        -:   69:/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+        -:   70:/* CFE_ES_ShellOutputCommand() -- Pass thru string to O/S shell or to ES */
+        -:   71:/*                                                                       */
+        -:   72:/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+        -:   73:int32 CFE_ES_ShellOutputCommand(char * CmdString)
+       11:   74:{
+        -:   75:    
+        -:   76:    int32 Result;
+       11:   77:    int32 ReturnCode = CFE_SUCCESS;
+        -:   78:    int32 fd;
+        -:   79:    int32 FileSize;
+        -:   80:    int32 CurrFilePtr;
+        -:   81:    int32 i;
+        -:   82:    
+        -:   83:    /* the extra 1 added for the \0 char */
+        -:   84:    char CheckCmd [CFE_ES_CHECKSIZE + 1];
+        -:   85:    char Cmd [CFE_ES_MAX_SHELL_CMD];
+        -:   86:   
+        -:   87:    /* remove the file if it is still present */
+       11:   88:    OS_remove(CFE_ES_RAM_DISK_MOUNT_STRING"/CFE_ES_ShellCmd.out"); 
+        -:   89:
+       11:   90:    fd = OS_creat( CFE_ES_RAM_DISK_MOUNT_STRING"/CFE_ES_ShellCmd.out",OS_READ_WRITE);
+        -:   91:
+       11:   92:    if (fd < OS_FS_SUCCESS)
+        -:   93:    {
+        1:   94:        Result = OS_FS_ERROR;
+        -:   95:    }
+        -:   96:
+        -:   97:    else
+        -:   98:    {
+       10:   99:        strncpy(CheckCmd,CmdString,CFE_ES_CHECKSIZE);
+        -:  100:    
+       10:  101:        CheckCmd[CFE_ES_CHECKSIZE]  = '\0';
+        -:  102:    
+       10:  103:        strncpy(Cmd,CmdString, CFE_ES_MAX_SHELL_CMD);
+        -:  104:    
+        -:  105:        /* We need to check if this command is directed at ES, or at the 
+        -:  106:        operating system */
+        -:  107:    
+       10:  108:        if (strncmp(CheckCmd,"ES_",CFE_ES_CHECKSIZE) == 0)
+        -:  109:        {
+        -:  110:            /* This list can be expanded to include other ES functionality */
+        6:  111:            if ( strncmp(Cmd,CFE_ES_LIST_APPS_CMD,strlen(CFE_ES_LIST_APPS_CMD) )== 0)
+        -:  112:            {
+        2:  113:                Result = CFE_ES_ListApplications(fd);
+        -:  114:            }
+        4:  115:            else if ( strncmp(Cmd,CFE_ES_LIST_TASKS_CMD,strlen(CFE_ES_LIST_TASKS_CMD) )== 0)
+        -:  116:            {
+        1:  117:                Result = CFE_ES_ListTasks(fd);
+        -:  118:            }
+        3:  119:            else if ( strncmp(Cmd,CFE_ES_LIST_RESOURCES_CMD,strlen(CFE_ES_LIST_RESOURCES_CMD) )== 0)
+        -:  120:            {
+        1:  121:                Result = CFE_ES_ListResources(fd);
+        -:  122:            }
+        -:  123:
+        -:  124:            /* default if there is not an ES command that matches */
+        -:  125:            else
+        -:  126:            {
+        2:  127:                Result = CFE_ES_ERR_SHELL_CMD;
+        2:  128:                CFE_ES_WriteToSysLog("There is no ES Shell command that matches %s \n",Cmd);
+        -:  129:            }            
+        -:  130:
+        -:  131:        }
+        -:  132:        /* if the command is not directed at ES, pass it through to the 
+        -:  133:        * underlying OS */
+        -:  134:        else
+        -:  135:        {
+        4:  136:            Result = OS_ShellOutputToFile(Cmd,fd);
+        -:  137:        }
+        -:  138:
+        -:  139:        /* seek to the end of the file to get it's size */
+       10:  140:        FileSize = OS_lseek(fd,0,OS_SEEK_END);
+        -:  141:
+       10:  142:        if (FileSize == OS_FS_ERROR)
+        -:  143:        {
+        1:  144:            OS_close(fd);
+        1:  145:            CFE_ES_WriteToSysLog("OS_lseek call failed from CFE_ES_ShellOutputCmd 1\n");
+        1:  146:            Result =  OS_FS_ERROR;
+        -:  147:        }
+        -:  148:
+        -:  149:
+        -:  150:
+        -:  151:        /* We want to add 3 characters at the end of the telemetry,'\n','$','\0'.
+        -:  152:         * To do this we need to make sure there are at least 3 empty characters at
+        -:  153:         * the end of the last CFE_ES_MAX_SHELL_PKT so we don't over write any data. If 
+        -:  154:         * the current file has only 0,1, or 2 free spaces at the end, we want to 
+        -:  155:         * make the file longer to start a new tlm packet of size CFE_ES_MAX_SHELL_PKT.
+        -:  156:         * This way we will get a 'blank' packet with the correct 3 characters at the end.
+        -:  157:         */
+        -:  158:
+        -:  159:        else
+        -:  160:        {
+        -:  161:            /* if we are within 2 bytes of the end of the packet*/
+        9:  162:            if ( FileSize % CFE_ES_MAX_SHELL_PKT > (CFE_ES_MAX_SHELL_PKT - 3))
+        -:  163:            {
+        -:  164:                /* add enough bytes to start a new packet */
+        4:  165:                for (i = 0; i < CFE_ES_MAX_SHELL_PKT - (FileSize % CFE_ES_MAX_SHELL_PKT) + 1 ; i++)
+        -:  166:                {
+        3:  167:                    OS_write(fd," ",1);
+        -:  168:                }
+        -:  169:            }
+        -:  170:            else
+        -:  171:            {
+        -:  172:                /* we are exactly at the end */
+        8:  173:                if( FileSize % CFE_ES_MAX_SHELL_PKT == 0)
+        -:  174:                {
+        8:  175:                    OS_write(fd," ",1);
+        -:  176:                }
+        -:  177:            }
+        -:  178:
+        -:  179:            /* seek to the end of the file again to get it's new size */
+        9:  180:            FileSize = OS_lseek(fd,0,OS_SEEK_END);
+        -:  181:
+        9:  182:            if (FileSize == OS_FS_ERROR)
+        -:  183:            {
+        1:  184:                OS_close(fd);
+        1:  185:                CFE_ES_WriteToSysLog("OS_lseek call failed from CFE_ES_ShellOutputCmd 2\n");
+        1:  186:                Result =  OS_FS_ERROR;
+        -:  187:            }
+        -:  188:
+        -:  189:
+        -:  190:            else
+        -:  191:            {
+        -:  192:                /* set the file back to the beginning */
+        8:  193:                OS_lseek(fd,0,OS_SEEK_SET);
+        -:  194:
+        -:  195:
+        -:  196:                /* start processing the chunks. We want to have one packet left so we are sure this for loop
+        -:  197:                * won't run over */
+        -:  198:        
+       10:  199:                for (CurrFilePtr=0; CurrFilePtr < (FileSize - CFE_ES_MAX_SHELL_PKT); CurrFilePtr += CFE_ES_MAX_SHELL_PKT)
+        -:  200:                {
+        2:  201:                    OS_read(fd, CFE_ES_TaskData.ShellPacket.ShellOutput, CFE_ES_MAX_SHELL_PKT);
+        -:  202:
+        -:  203:                    /* Send the packet */
+        2:  204:                    CFE_SB_TimeStampMsg((CFE_SB_Msg_t *) &CFE_ES_TaskData.ShellPacket);
+        2:  205:                    CFE_SB_SendMsg((CFE_SB_Msg_t *) &CFE_ES_TaskData.ShellPacket);
+        -:  206:                    /* delay to not flood the pipe on large messages */
+        2:  207:                    OS_TaskDelay(200);
+        -:  208:                }
+        -:  209:
+        -:  210:                /* finish off the last portion of the file */
+        -:  211:                /* over write the last packet with spaces, then it will get filled
+        -:  212:               * in with the correct info below. This assures that the last non full
+        -:  213:               * part of the packet will be spaces */
+      520:  214:                for (i =0; i < CFE_ES_MAX_SHELL_PKT; i++)
+        -:  215:                {
+      512:  216:                    CFE_ES_TaskData.ShellPacket.ShellOutput[i] = ' ';
+        -:  217:                }
+        -:  218:  
+        8:  219:                OS_read(fd, CFE_ES_TaskData.ShellPacket.ShellOutput, ( FileSize - CurrFilePtr));
+        -:  220:
+        -:  221:                /* From our check above, we are assured that there are at least 3 free
+        -:  222:                 * characters to write our data into at the end of this last packet 
+        -:  223:                 * 
+        -:  224:                 * The \n assures we are on a new line, the $ gives us our prompt, and the 
+        -:  225:                 * \0 assures we are null terminalted.
+        -:  226:                 */
+        -:  227:
+        -:  228:        
+        8:  229:                CFE_ES_TaskData.ShellPacket.ShellOutput[ CFE_ES_MAX_SHELL_PKT - 3] = '\n';
+        8:  230:                CFE_ES_TaskData.ShellPacket.ShellOutput[ CFE_ES_MAX_SHELL_PKT - 2] = '$';
+        8:  231:                CFE_ES_TaskData.ShellPacket.ShellOutput[ CFE_ES_MAX_SHELL_PKT - 1] = '\0';
+        -:  232:
+        -:  233:                /* Send the last packet */
+        8:  234:                CFE_SB_TimeStampMsg((CFE_SB_Msg_t *) &CFE_ES_TaskData.ShellPacket);
+        8:  235:                CFE_SB_SendMsg((CFE_SB_Msg_t *) &CFE_ES_TaskData.ShellPacket);
+        -:  236:   
+        -:  237:                /* Close the file descriptor */
+        8:  238:                OS_close(fd);
+        -:  239:            } /* if FilseSize == OS_FS_ERROR */
+        -:  240:        } /* if FileSeize == OS_FS_ERROR */
+        -:  241:    }/* if fd < OS_FS_SUCCESS */
+        -:  242:
+        -:  243:
+       16:  244:    if (Result != OS_SUCCESS && Result != CFE_SUCCESS )
+        -:  245:    {
+        5:  246:        ReturnCode = CFE_ES_ERR_SHELL_CMD;
+        5:  247:        CFE_ES_WriteToSysLog("OS_ShellOutputToFile call failed from CFE_ES_ShellOutputCommand\n");
+        -:  248:    }
+        -:  249:    else
+        -:  250:    {
+        6:  251:        ReturnCode = CFE_SUCCESS;
+        -:  252:    }
+        -:  253:    
+       11:  254:    return ReturnCode;
+        -:  255:}  
+        -:  256:    
+        -:  257:    
+        -:  258:/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+        -:  259:/*                                                                 */
+        -:  260:/* CFE_ES_ListApplications() -- List All ES Applications,put in fd */
+        -:  261:/*                                                                 */
+        -:  262:/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+        -:  263:int32 CFE_ES_ListApplications(int32 fd)
+        2:  264:{
+        -:  265:    int32 i;
+        -:  266:    char Line [OS_MAX_API_NAME +2];
+        2:  267:    int32 Result = CFE_SUCCESS;
+        -:  268:    
+        -:  269:    /* Make sure we start at the beginning of the file */
+        2:  270:    OS_lseek(fd,0, OS_SEEK_SET);
+        -:  271:    
+       66:  272:    for ( i = 0; i < CFE_ES_MAX_APPLICATIONS; i++ )
+        -:  273:    {
+       64:  274:        if ( (CFE_ES_Global.AppTable[i].RecordUsed == TRUE) && (Result == CFE_SUCCESS) )
+        -:  275:        {
+        -:  276:            /* We found an in use app. Write it to the file */
+        4:  277:            strcpy(Line, (char*) CFE_ES_Global.AppTable[i].StartParams.Name);
+        4:  278:            strcat(Line,"\n");             
+        4:  279:            Result = OS_write(fd, Line, strlen(Line));
+        -:  280:            
+        4:  281:            if (Result == strlen(Line))
+        -:  282:            {
+        4:  283:                Result = CFE_SUCCESS;
+        -:  284:            }
+        -:  285:            /* if not success, returns whatever OS_write failire was */
+        -:  286:            
+        -:  287:        }
+        -:  288:    } /* end for */
+        -:  289:
+        2:  290:    return Result;
+        -:  291:} /* end ES_ListApplications */
+        -:  292:
+        -:  293:/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+        -:  294:/*                                                                 */
+        -:  295:/* CFE_ES_ListTasks() -- List All ES Tasks,put in fd               */
+        -:  296:/*                                                                 */
+        -:  297:/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+        -:  298:int32 CFE_ES_ListTasks(int32 fd)
+        1:  299:{
+        -:  300:    int32                i;
+        -:  301:    char                 Line [128];
+        1:  302:    int32                Result = CFE_SUCCESS;
+        -:  303:    CFE_ES_TaskInfo_t    TaskInfo;
+        -:  304:    
+        -:  305:    /* Make sure we start at the beginning of the file */
+        1:  306:    OS_lseek(fd,0, OS_SEEK_SET);
+        -:  307:
+        1:  308:    sprintf(Line,"---- ES Task List ----\n");
+        1:  309:    Result = OS_write(fd, Line, strlen(Line));
+        -:  310:    
+       65:  311:    for ( i = 0; i < OS_MAX_TASKS; i++ )
+        -:  312:    {
+       64:  313:        if ((CFE_ES_Global.TaskTable[i].RecordUsed == TRUE) && (Result == CFE_SUCCESS))
+        -:  314:        {      
+        -:  315:            /* 
+        -:  316:            ** zero out the local entry 
+        -:  317:            */
+        1:  318:            CFE_PSP_MemSet(&TaskInfo,0,sizeof(CFE_ES_TaskInfo_t));
+        -:  319:
+        -:  320:            /*
+        -:  321:            ** Populate the AppInfo entry 
+        -:  322:            */
+        1:  323:            CFE_ES_GetTaskInfo(&TaskInfo,i);
+        -:  324:
+        1:  325:            sprintf(Line,"Task ID: %08d, Task Name: %20s, Prnt App ID: %08d, Prnt App Name: %20s\n",
+        -:  326:                          (int) TaskInfo.TaskId, TaskInfo.TaskName, 
+        -:  327:                          (int)TaskInfo.AppId, TaskInfo.AppName);
+        1:  328:            Result = OS_write(fd, Line, strlen(Line));
+        -:  329:            
+        1:  330:            if (Result == strlen(Line))
+        -:  331:            {
+        1:  332:                Result = CFE_SUCCESS;
+        -:  333:            }
+        -:  334:            /* if not success, returns whatever OS_write failire was */
+        -:  335:        }
+        -:  336:    } /* end for */
+        -:  337:
+        1:  338:    return Result;
+        -:  339:} /* end ES_ListTasks */
+        -:  340:
+        -:  341:/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+        -:  342:/*                                                                 */
+        -:  343:/* CFE_ES_ListResources() -- List All OS Resources, put in fd      */
+        -:  344:/*                                                                 */
+        -:  345:/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+        -:  346:int32 CFE_ES_ListResources(int32 fd)
+        1:  347:{
+        -:  348:    OS_task_prop_t          TaskProp;
+        -:  349:    OS_queue_prop_t         QueueProp;
+        -:  350:    OS_bin_sem_prop_t       SemProp;
+        -:  351:    OS_count_sem_prop_t     CountSemProp;
+        -:  352:    OS_mut_sem_prop_t       MutProp;
+        -:  353:    OS_FDTableEntry         FileProp;
+        -:  354:    
+        1:  355:    int32 Result = CFE_SUCCESS;
+        1:  356:    int32 NumSemaphores = 0;
+        1:  357:    int32 NumCountSems =0;
+        1:  358:    int32 NumMutexes = 0;
+        1:  359:    int32 NumQueues = 0;
+        1:  360:    int32 NumTasks = 0;
+        1:  361:    int32 NumFiles = 0;
+        -:  362:    int32 i;
+        -:  363:    char Line[35];
+        -:  364:
+        -:  365:
+       65:  366:    for ( i= 0; i < OS_MAX_TASKS; i++)
+        -:  367:    {
+       64:  368:        if (OS_TaskGetInfo(i, &TaskProp) == OS_SUCCESS)
+        -:  369:        {
+       64:  370:            NumTasks++;
+        -:  371:        }
+        -:  372:    }
+        -:  373:
+       65:  374:    for ( i= 0; i < OS_MAX_QUEUES; i++)
+        -:  375:    {
+       64:  376:        if (OS_QueueGetInfo(i, &QueueProp) == OS_SUCCESS)
+        -:  377:        {
+       64:  378:            NumQueues++;
+        -:  379:        }
+        -:  380:    }
+        -:  381:
+        -:  382:
+       21:  383:    for ( i= 0; i < OS_MAX_COUNT_SEMAPHORES; i++)
+        -:  384:    {
+       20:  385:       if (OS_CountSemGetInfo(i, &CountSemProp) == OS_SUCCESS)
+        -:  386:        {
+       20:  387:            NumCountSems++;
+        -:  388:        }
+        -:  389:    }
+       21:  390:    for ( i= 0; i < OS_MAX_BIN_SEMAPHORES; i++)
+        -:  391:    {
+       20:  392:        if (OS_BinSemGetInfo(i, &SemProp) == OS_SUCCESS)
+        -:  393:        {
+       20:  394:            NumSemaphores++;
+        -:  395:        }
+        -:  396:    }
+        -:  397:
+        -:  398:
+       21:  399:    for ( i= 0; i < OS_MAX_MUTEXES; i++)
+        -:  400:    {
+       20:  401:        if (OS_MutSemGetInfo(i, &MutProp) == OS_SUCCESS)
+        -:  402:        {
+       20:  403:            NumMutexes++;
+        -:  404:        }
+        -:  405:    }
+        -:  406:
+       51:  407:    for ( i= 0; i < OS_MAX_NUM_OPEN_FILES; i++)
+        -:  408:    {
+       50:  409:        if (OS_FDGetInfo(i, &FileProp) == OS_FS_SUCCESS)
+        -:  410:        {
+       50:  411:            NumFiles++;
+        -:  412:        }
+        -:  413:    }
+        -:  414:
+        1:  415:    sprintf(Line,"OS Resources in Use:\n");
+        1:  416:    Result = OS_write(fd, Line, strlen(Line));
+        -:  417:    
+        1:  418:    if( Result == strlen(Line))
+        -:  419:    {   
+        1:  420:        sprintf(Line,"Number of Tasks: %d\n", (int) NumTasks);
+        1:  421:        Result = OS_write(fd, Line, strlen(Line));
+        -:  422:
+        1:  423:        if (Result == strlen(Line))
+        -:  424:        {
+        1:  425:            sprintf(Line,"Number of Queues: %d\n", (int) NumQueues);
+        1:  426:            Result = OS_write(fd, Line, strlen(Line));
+        -:  427:            
+        1:  428:            if (Result == strlen(Line))
+        -:  429:            {
+        1:  430:                sprintf(Line,"Number of Binary Semaphores: %d\n",(int) NumSemaphores);
+        1:  431:                Result = OS_write(fd, Line, strlen(Line));
+        1:  432:                if (Result == strlen(Line))
+        -:  433:                {
+        -:  434:                
+        -:  435:                   
+        1:  436:                    sprintf(Line,"Number of Counting Semaphores: %d\n",(int) NumCountSems);
+        1:  437:                    Result = OS_write(fd, Line, strlen(Line));
+        -:  438:                 
+        1:  439:                    if (Result == strlen(Line))
+        -:  440:                    {
+        1:  441:                        sprintf(Line,"Number of Mutexes: %d\n", (int) NumMutexes);
+        1:  442:                        Result = OS_write(fd, Line, strlen(Line));
+        1:  443:                        if (Result == strlen(Line))
+        -:  444:                        {
+        1:  445:                            sprintf(Line,"Number of Open Files: %d\n",(int) NumFiles);
+        1:  446:                            Result = OS_write(fd, Line, strlen(Line));
+        1:  447:                            if ( Result == strlen(Line))
+        -:  448:                            {
+        1:  449:                               Result = CFE_SUCCESS;
+        -:  450:                            }
+        -:  451:                        }
+        -:  452:                    }
+        -:  453:                }   
+        -:  454:            }
+        -:  455:        }
+        -:  456:    }
+        -:  457:            
+        -:  458:    /* 
+        -:  459:    ** If any of the writes failed, return the OS_write 
+        -:  460:    **  failure 
+        -:  461:    */
+        1:  462:    return Result;
+        -:  463:}

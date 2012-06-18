@@ -1,0 +1,147 @@
+        -:    0:Source:/home/jdagostino/CProj/CFS/MKS/cfs-mission/cfe/fsw/cfe-core/src/fs/cfe_fs_priv.c
+        -:    0:Graph:cfe_fs_priv.gcno
+        -:    0:Data:cfe_fs_priv.gcda
+        -:    0:Runs:1
+        -:    0:Programs:3
+        -:    1:/*
+        -:    2:** $Id: cfe_fs_priv.c.gcov 1.1 2010/11/03 16:19:30EDT jmdagost Exp  $
+        -:    3:**
+        -:    4:** Purpose:  cFE File Services (FS) library API Initialization 
+        -:    5:**
+        -:    6:** Author:  Alan Cudmore/NASA GSFC 
+        -:    7:**
+        -:    8:** Notes:
+        -:    9:**
+        -:   10:** $Log: cfe_fs_priv.c.gcov  $
+        -:   10:** Revision 1.1 2010/11/03 16:19:30EDT jmdagost 
+        -:   10:** Initial revision
+        -:   10:** Member added to project c:/MKSDATA/MKS-REPOSITORY/MKS-CFE-PROJECT/fsw/cfe-core/unit-test/FsResults/project.pj
+        -:   11:** Revision 1.4 2010/11/03 15:09:10EDT jmdagost 
+        -:   12:** Added cfe.h include file.
+        -:   13:** Revision 1.3 2009/06/10 09:13:52EDT acudmore 
+        -:   14:** Converted OS_Mem* and OS_BSP* calls to CFE_PSP_*
+        -:   15:** Revision 1.2 2008/07/08 15:40:40EDT apcudmore 
+        -:   16:** Added CFE_FS global data, lock/unlock functions, log messages for decompress API.
+        -:   17:** Revision 1.1 2008/07/08 13:37:12EDT apcudmore 
+        -:   18:** Initial revision
+        -:   19:** Member added to project c:/MKSDATA/MKS-REPOSITORY/MKS-CFE-PROJECT/fsw/cfe-core/src/fs/project.pj
+        -:   20:** Revision 1.2 2008/07/08 13:32:06EDT apcudmore 
+        -:   21:** Added Mutex Lock/Unlock functions
+        -:   22:** Revision 1.1 2008/07/08 12:50:15EDT apcudmore 
+        -:   23:** Initial revision
+        -:   24:** Member added to project c:/MKSDATA/MKS-REPOSITORY/MKS-CFE-PROJECT/fsw/cfe-core/src/fs/project.pj
+        -:   25:**
+        -:   26:*/
+        -:   27:
+        -:   28:
+        -:   29:/*
+        -:   30:** Required header files
+        -:   31:*/
+        -:   32:#include "osapi.h"
+        -:   33:#include "cfe.h"
+        -:   34:#include "cfe_es.h"
+        -:   35:#include "cfe_fs.h"
+        -:   36:#include "cfe_fs_priv.h"
+        -:   37:
+        -:   38:#include <string.h>
+        -:   39:
+        -:   40:/*
+        -:   41:** Global data
+        -:   42:** 
+        -:   43:*/
+        -:   44:CFE_FS_t CFE_FS;
+        -:   45:
+        -:   46:/******************************************************************************
+        -:   47:**  Function:  CFE_FS_EarlyInit()
+        -:   48:**
+        -:   49:**  Purpose:
+        -:   50:**    Initialize the FS data structures before the cFE runs.
+        -:   51:**
+        -:   52:**  Arguments:
+        -:   53:**
+        -:   54:**  Notes:
+        -:   55:**    This function MUST be called before any FS API's are called.
+        -:   56:**
+        -:   57:**  Return:
+        -:   58:**    CFE_SUCCESS
+        -:   59:*/
+        -:   60:int32 CFE_FS_EarlyInit (void) 
+        2:   61:{
+        2:   62:    int32 Stat = CFE_SUCCESS;
+        -:   63:
+        2:   64:    Stat = OS_MutSemCreate(&CFE_FS.SharedDataMutexId, "CFE_FS_SharedMutex", 0);
+        2:   65:    if( Stat != OS_SUCCESS )
+        -:   66:    {
+        1:   67:      CFE_ES_WriteToSysLog("FS Shared Data Mutex creation failed! RC=0x%08x",Stat);
+        1:   68:      return Stat;
+        -:   69:    }/* end if */
+        -:   70:
+        1:   71:    return Stat;
+        -:   72:
+        -:   73:}/* end CFE_FS_EarlyInit */
+        -:   74:
+        -:   75:/******************************************************************************
+        -:   76:**  Function:  CFE_FS_LockSharedData()
+        -:   77:**
+        -:   78:**  Purpose:
+        -:   79:**    FS internal function to handle a semaphore take failure for the FS 
+        -:   80:**    Data Mutex
+        -:   81:**
+        -:   82:**  Arguments:
+        -:   83:**    FunctionName   - the Function Name of the code that generated the error.
+        -:   84:**
+        -:   85:**  Return:
+        -:   86:**    None
+        -:   87:*/
+        -:   88:void CFE_FS_LockSharedData(const char *FunctionName)
+        6:   89:{
+        -:   90:    int32   Status;
+        6:   91:    uint32  AppId = 0;
+        -:   92:
+        6:   93:    Status = OS_MutSemTake(CFE_FS.SharedDataMutexId);
+        6:   94:    if (Status != OS_SUCCESS) 
+        -:   95:    {
+        1:   96:        CFE_ES_GetAppID(&AppId);
+        -:   97:
+        1:   98:        CFE_ES_WriteToSysLog("FS SharedData Mutex Take Err Stat=0x%x,App=%d,Function=%s",
+        -:   99:                 Status,AppId,FunctionName);
+        -:  100:
+        -:  101:    }/* end if */
+        -:  102:
+        -:  103:    return;
+        -:  104:
+        -:  105:}/* end CFE_FS_LockSharedData */
+        -:  106:
+        -:  107:/******************************************************************************
+        -:  108:**  Function:  CFE_FS_UnlockSharedData()
+        -:  109:**
+        -:  110:**  Purpose:
+        -:  111:**    FS internal function to handle a semaphore give failure for the Shared
+        -:  112:**    Data Mutex
+        -:  113:**
+        -:  114:**  Arguments:
+        -:  115:**    FunctionName - the Function containing the code that generated the error.
+        -:  116:**
+        -:  117:**  Return:
+        -:  118:**    None
+        -:  119:*/
+        -:  120:void CFE_FS_UnlockSharedData(const char *FunctionName)
+        6:  121:{
+        -:  122:   int32   Status;
+        6:  123:   uint32  AppId = 0;
+        -:  124:
+        6:  125:   Status = OS_MutSemGive(CFE_FS.SharedDataMutexId);
+        6:  126:   if (Status != OS_SUCCESS) 
+        -:  127:   {
+        1:  128:       CFE_ES_GetAppID(&AppId);
+        1:  129:       CFE_ES_WriteToSysLog("FS SharedData Mutex Give Err Stat=0x%x,App=%d,Function=%s",
+        -:  130:                                Status,AppId,FunctionName);
+        -:  131:
+        -:  132:   }/* end if */
+        -:  133:   return;
+        -:  134:
+        -:  135:}/* end CFE_FS_UnlockSharedData */
+        -:  136:
+        -:  137:/************************/
+        -:  138:/*  End of File Comment */
+        -:  139:/************************/

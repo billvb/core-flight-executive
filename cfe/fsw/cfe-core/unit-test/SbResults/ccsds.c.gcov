@@ -1,0 +1,176 @@
+        -:    0:Source:/Users/rjmcgraw/Projects/cFE/fsw/cfe-core/src/sb/ccsds.c
+        -:    0:Graph:ccsds.gcno
+        -:    0:Data:ccsds.gcda
+        -:    0:Runs:1
+        -:    0:Programs:7
+        -:    1:/******************************************************************************
+        -:    2:** File:  ccsds.c
+        -:    3:**
+        -:    4:**      Copyright © 2004-2006, United States government as represented by the
+        -:    5:**      administrator of the National Aeronautics Space Administration.
+        -:    6:**      All rights reserved. This software(cFE) was created at NASA’s Goddard
+        -:    7:**      Space Flight Center pursuant to government contracts.
+        -:    8:**
+        -:    9:**      This software may be used only pursuant to a United States government
+        -:   10:**      sponsored project and the United States government may not be charged
+        -:   11:**      for use thereof.
+        -:   12:**
+        -:   13:**
+        -:   14:** Purpose:
+        -:   15:**      Functions for working with CCSDS headers.
+        -:   16:**
+        -:   17:** $Log: ccsds.c.gcov  $
+        -:   17:** Revision 1.2 2008/08/28 14:33:25EDT rjmcgraw 
+        -:   17:** DCR4274:1 Checking in SB unit test results for cFE 5.2.0
+        -:   18:** Revision 1.1 2008/04/17 08:05:29EDT ruperera 
+        -:   19:** Initial revision
+        -:   20:** Member added to project c:/MKSDATA/MKS-REPOSITORY/MKS-CFE-PROJECT/fsw/cfe-core/src/sb/project.pj
+        -:   21:** Revision 1.3 2007/09/24 11:02:22EDT rjmcgraw 
+        -:   22:** Removed unused macros
+        -:   23:** Revision 1.2 2006/06/12 15:26:03EDT rjmcgraw 
+        -:   24:** Added legal statement
+        -:   25:**
+        -:   26:******************************************************************************/
+        -:   27:
+        -:   28:/*
+        -:   29:** Include Files
+        -:   30:*/
+        -:   31:
+        -:   32:#include "common_types.h"
+        -:   33:#include "ccsds.h"
+        -:   34:#include "osapi.h"
+        -:   35:
+        -:   36:
+        -:   37:/******************************************************************************
+        -:   38:**  Function:  CCSDS_InitPkt()
+        -:   39:**
+        -:   40:**  Purpose:
+        -:   41:**    Initialize a CCSDS packet.  The primary header is initialized with
+        -:   42:**    specified values, and if the Clear flag is set, the rest of the packet
+        -:   43:**    is filled with zeros.
+        -:   44:**
+        -:   45:**  Arguments:
+        -:   46:**    PktPtr   : Pointer to primary header of packet.
+        -:   47:**    StreamId : Stream ID to use for the packet.
+        -:   48:**    Length   : Length of the packet in bytes.
+        -:   49:**    Clear    : Indicates whether to clear the entire packet:
+        -:   50:**                TRUE = fill sequence count and packet data with zeros
+        -:   51:**                       (used after a cold restart)
+        -:   52:**                FALSE = leave sequence count and packet data unchanged
+        -:   53:**                       (used after a warm restart if data must be preserved)
+        -:   54:**
+        -:   55:**  Return:
+        -:   56:**    (none)
+        -:   57:*/
+        -:   58:
+        -:   59:void CCSDS_InitPkt (CCSDS_PriHdr_t  *PktPtr,
+        -:   60:                    uint16           StreamId,
+        -:   61:                    uint16           Length,
+        -:   62:                    boolean          Clear )
+       31:   63:{
+        -:   64:   uint16     SeqCount;
+        -:   65:
+        -:   66:   /* Save the sequence count in case it must be preserved. */
+       31:   67:   SeqCount = CCSDS_RD_SEQ(*PktPtr);
+        -:   68:
+        -:   69:   /* Zero the entire packet if needed. */
+       31:   70:   if (Clear)  OS_MemSet((void *)PktPtr, 0, Length);
+        -:   71:
+        -:   72:   /* Clear the primary header. */
+       31:   73:   CCSDS_CLR_PRI_HDR(*PktPtr);
+        -:   74:
+        -:   75:   /* Set the stream ID and length fields in the primary header. */
+       31:   76:   CCSDS_WR_SID(*PktPtr, StreamId);
+       31:   77:   CCSDS_WR_LEN(*PktPtr, Length);
+        -:   78:
+        -:   79:   /* Restore the sequence count if needed. */
+       31:   80:   if (!Clear)  CCSDS_WR_SEQ(*PktPtr, SeqCount);
+        -:   81:
+       31:   82:} /* END CCSDS_InitPkt() */
+        -:   83:
+        -:   84:
+        -:   85:/******************************************************************************
+        -:   86:**  Function:  CCSDS_LoadCheckSum()
+        -:   87:**
+        -:   88:**  Purpose:
+        -:   89:**    Compute and load a checksum for a CCSDS command packet that has a
+        -:   90:**    secondary header.
+        -:   91:**
+        -:   92:**  Arguments:
+        -:   93:**    PktPtr   : Pointer to header of command packet.  The packet must
+        -:   94:**               have a secondary header and the length in the primary
+        -:   95:**               header must be correct.  The checksum field in the packet
+        -:   96:**               will be modified.
+        -:   97:**
+        -:   98:**  Return:
+        -:   99:**    (none)
+        -:  100:*/
+        -:  101:
+        -:  102:void CCSDS_LoadCheckSum (CCSDS_CmdPkt_t *PktPtr)
+        1:  103:{
+        -:  104:   uint8    CheckSum;
+        -:  105:
+        -:  106:   /* Clear the checksum field so the new checksum is correct. */
+        1:  107:   CCSDS_WR_CHECKSUM(PktPtr->SecHdr, 0);
+        -:  108:
+        -:  109:   /* Compute and load new checksum. */
+        1:  110:   CheckSum = CCSDS_ComputeCheckSum(PktPtr);
+        1:  111:   CCSDS_WR_CHECKSUM(PktPtr->SecHdr, CheckSum);
+        -:  112:
+        -:  113:} /* END CCSDS_LoadCheckSum() */
+        -:  114:
+        -:  115:
+        -:  116:/******************************************************************************
+        -:  117:**  Function:  CCSDS_ValidCheckSum()
+        -:  118:**
+        -:  119:**  Purpose:
+        -:  120:**    Determine whether a checksum in a command packet is valid.
+        -:  121:**
+        -:  122:**  Arguments:
+        -:  123:**    PktPtr   : Pointer to header of command packet.  The packet must
+        -:  124:**               have a secondary header and the length in the primary
+        -:  125:**               header must be correct.
+        -:  126:**
+        -:  127:**  Return:
+        -:  128:**    TRUE if checksum of packet is valid; FALSE if not.
+        -:  129:**    A valid checksum is 0.
+        -:  130:*/
+        -:  131:
+        -:  132:boolean CCSDS_ValidCheckSum (CCSDS_CmdPkt_t *PktPtr)
+        3:  133:{
+        -:  134:
+        3:  135:   return (CCSDS_ComputeCheckSum(PktPtr) == 0);
+        -:  136:
+        3:  137:} /* END CCSDS_ValidCheckSum() */
+        -:  138:
+        -:  139:
+        -:  140:/******************************************************************************
+        -:  141:**  Function:  CCSDS_ComputeCheckSum()
+        -:  142:**
+        -:  143:**  Purpose:
+        -:  144:**    Compute the checksum for a command packet.  The checksum is the XOR of
+        -:  145:**    all bytes in the packet; a valid checksum is zero.
+        -:  146:**
+        -:  147:**  Arguments:
+        -:  148:**    PktPtr   : Pointer to header of command packet.  The packet must
+        -:  149:**               have a secondary header and the length in the primary
+        -:  150:**               header must be correct.
+        -:  151:**
+        -:  152:**  Return:
+        -:  153:**    TRUE if checksum of packet is valid; FALSE if not.
+        -:  154:*/
+        -:  155:
+        -:  156:uint8 CCSDS_ComputeCheckSum (CCSDS_CmdPkt_t *PktPtr)
+        4:  157:{
+        4:  158:   uint16   PktLen   = CCSDS_RD_LEN(PktPtr->PriHdr);
+        4:  159:   uint8   *BytePtr  = (uint8 *)PktPtr;
+        -:  160:   uint8    CheckSum;
+        -:  161:
+        4:  162:   CheckSum = 0xFF;
+        4:  163:   while (PktLen--)  CheckSum ^= *(BytePtr++);
+        -:  164:
+        4:  165:   return CheckSum;
+        -:  166:
+        4:  167:} /* END CCSDS_ComputeCheckSum() */
+        -:  168:
+        -:  169:/*****************************************************************************/

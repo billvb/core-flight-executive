@@ -1,0 +1,63 @@
+The TIME Services unit test results are expected to have the
+following results for each of the TIME services source files:
+
+==========================================================================
+
+cfe_time_task.c - 100.00 % coverage
+
+==========================================================================
+
+cfe_time_tone.c - 100.00% coverage
+
+==========================================================================
+
+cfe_time_utils.c - 100.00% coverage
+
+==========================================================================
+
+cfe_time_api.c - 98.03% coverage (4 lines not executed)
+
+The first code snippet shows 2 of the 4 lines not executed:
+
+        3:  689:    int32 ConvertFactor = CFE_TIME_FS_FACTOR;
+        -:  690:
+        -:  691:    /*
+        -:  692:    ** File system time = cFE time + conversion factor...
+        -:  693:    */
+        3:  694:    uint32 SecondsFS = SecondsCFE + (uint32) ConvertFactor;
+        -:  695:
+        -:  696:    /*
+        -:  697:    ** Prevent file system time from going below zero...
+        -:  698:    */
+        3:  699:    if (ConvertFactor < 0)
+        -:  700:    {
+    #####:  701:        if (-ConvertFactor > SecondsCFE)
+        -:  702:        {
+    #####:  703:            SecondsFS = 0;
+        -:  704:        }
+        -:  705:    }
+
+The reason these lines cannot be executued is because they are contingent on platform config
+#define, and it is only set one way for a unit test.
+
+
+The second two unexecuted lines are shown below:
+
+       10:  776:    NumberOfMinutes = (TimeToPrint.Seconds / 60) + CFE_TIME_EPOCH_MINUTE;
+       10:  777:    NumberOfSeconds = (TimeToPrint.Seconds % 60) + CFE_TIME_EPOCH_SECOND;
+        -:  778:
+        -:  779:    /*
+        -:  780:    ** Adding the epoch "seconds" after computing the minutes avoids
+        -:  781:    **    overflow problems when the input time value (seconds) is
+        -:  782:    **    at, or near, 0xFFFFFFFF...
+        -:  783:    */
+       20:  784:    while (NumberOfSeconds >= 60)
+        -:  785:    {
+    #####:  786:        NumberOfMinutes++;
+    #####:  787:        NumberOfSeconds -= 60;
+        -:  788:    }
+
+These lines are not executed either because of the 'while' being dependent on a platform config
+#define
+
+

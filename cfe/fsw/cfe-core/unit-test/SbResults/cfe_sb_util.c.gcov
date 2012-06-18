@@ -1,0 +1,572 @@
+        -:    0:Source:/Users/rmcgraw/Projects/cFE/fsw/cfe-core/src/sb/cfe_sb_util.c
+        -:    0:Graph:cfe_sb_util.gcno
+        -:    0:Data:cfe_sb_util.gcda
+        -:    0:Runs:1
+        -:    0:Programs:6
+        -:    1:/******************************************************************************
+        -:    2:** File: cfe_sb_util.c
+        -:    3:**
+        -:    4:**      Copyright © 2004-2006, United States government as represented by the
+        -:    5:**      administrator of the National Aeronautics Space Administration.
+        -:    6:**      All rights reserved. This software(cFE) was created at NASA’s Goddard
+        -:    7:**      Space Flight Center pursuant to government contracts.
+        -:    8:**
+        -:    9:**      This software may be used only pursuant to a United States government
+        -:   10:**      sponsored project and the United States government may not be charged
+        -:   11:**      for use thereof.
+        -:   12:**
+        -:   13:**
+        -:   14:** Purpose:
+        -:   15:**      This file contains 'access' macros and functions for reading and
+        -:   16:**      writing message header fields.
+        -:   17:**
+        -:   18:** Author:   R.McGraw/SSI
+        -:   19:**
+        -:   20:** $Log: cfe_sb_util.c.gcov  $
+        -:   20:** Revision 1.3 2009/05/07 15:22:44EDT rmcgraw 
+        -:   20:** DCR7366:1 Unit test results for post 5.2 build
+        -:   21:** Revision 1.1 2008/04/17 08:05:32EDT ruperera 
+        -:   22:** Initial revision
+        -:   23:** Member added to project c:/MKSDATA/MKS-REPOSITORY/MKS-CFE-PROJECT/fsw/cfe-core/src/sb/project.pj
+        -:   24:** Revision 1.10 2006/10/16 14:31:00EDT rjmcgraw 
+        -:   25:** Minor changes to comply with MISRA standard
+        -:   26:** Revision 1.9 2006/06/12 19:26:06GMT rjmcgraw 
+        -:   27:** Added legal statement
+        -:   28:** Revision 1.8 2006/06/05 15:43:50EDT rjmcgraw
+        -:   29:** Comment changes in reference to DCR398
+        -:   30:** Revision 1.7 2006/04/28 18:35:14GMT rjmcgraw
+        -:   31:** Corrected problems with checksum utils when no sec hdr present
+        -:   32:** Revision 1.6 2006/04/28 18:02:20GMT rjmcgraw
+        -:   33:** Corrected problems with Set/GetCmdCode for cmd pkts wo sec hdr
+        -:   34:** Revision 1.5 2006/04/27 18:45:10GMT rjmcgraw
+        -:   35:** Corrected problems with Set/GetMsgTime when no sec hdr is present in tlm pkts
+        -:   36:**
+        -:   37:******************************************************************************/
+        -:   38:
+        -:   39:
+        -:   40:/*
+        -:   41:** Include Files
+        -:   42:*/
+        -:   43:
+        -:   44:#include "cfe_sb.h"
+        -:   45:#include "ccsds.h"
+        -:   46:#include "osapi.h"
+        -:   47:#include "cfe_error.h"
+        -:   48:
+        -:   49:
+        -:   50:
+        -:   51:/******************************************************************************
+        -:   52:**  Function:  CFE_SB_InitMsg()
+        -:   53:**
+        -:   54:**  Purpose:
+        -:   55:**    Initialize the header fields of a message
+        -:   56:**
+        -:   57:**  Arguments:
+        -:   58:**    MsgPtr  - Pointer to the header of a message.
+        -:   59:**    MsgId   - MsgId to use for the message.
+        -:   60:**    Length  - Length of the message in bytes.
+        -:   61:**    Clear   - Indicates whether to clear the entire message:
+        -:   62:**                TRUE = fill sequence count and packet data with zeros
+        -:   63:**                FALSE = leave sequence count and packet data unchanged
+        -:   64:**  Return:
+        -:   65:**    (none)
+        -:   66:*/
+        -:   67:void CFE_SB_InitMsg(void           *MsgPtr,
+        -:   68:                    CFE_SB_MsgId_t MsgId,
+        -:   69:                    uint16         Length,
+        -:   70:                    boolean        Clear )
+      317:   71:{
+        -:   72:#ifdef MESSAGE_FORMAT_IS_CCSDS
+        -:   73:
+      317:   74:    CCSDS_InitPkt ((CCSDS_PriHdr_t *)MsgPtr,(uint16)MsgId,Length,Clear);
+        -:   75:
+        -:   76:#endif
+        -:   77:} /* end CFE_SB_InitMsg */
+        -:   78:
+        -:   79:
+        -:   80:
+        -:   81:/******************************************************************************
+        -:   82:**  Function:  CFE_SB_MsgHdrSize()
+        -:   83:**
+        -:   84:**  Purpose:
+        -:   85:**    Get the size of a message header.
+        -:   86:**
+        -:   87:**  Arguments:
+        -:   88:**    MsgPtr - Pointer to a CFE_SB_Msg_t
+        -:   89:**
+        -:   90:**  Return:
+        -:   91:**     Size of Message Header.
+        -:   92:*/
+        -:   93:uint16 CFE_SB_MsgHdrSize(CFE_SB_MsgId_t MsgId)
+   524296:   94:{
+        -:   95:#ifdef MESSAGE_FORMAT_IS_CCSDS
+        -:   96:
+        -:   97:    uint16 size;
+        -:   98:    CCSDS_PriHdr_t  CCSDSPriHdr;
+   524296:   99:    CCSDSPriHdr.StreamId = MsgId;
+        -:  100:
+        -:  101:	  /* if secondary hdr is not present... */
+   524296:  102:	  if(CCSDS_RD_SHDR(CCSDSPriHdr) == 0){
+        -:  103:
+   262148:  104:	    size = sizeof(CCSDS_PriHdr_t);
+        -:  105:
+   262148:  106:	  }else if(CCSDS_RD_TYPE(CCSDSPriHdr) == CCSDS_CMD){
+        -:  107:
+   131074:  108:        size = CFE_SB_CMD_HDR_SIZE;
+        -:  109:
+        -:  110:	  }else{
+        -:  111:
+   131074:  112:        size = CFE_SB_TLM_HDR_SIZE;
+        -:  113:	  }
+        -:  114:
+   524296:  115:    return size;
+        -:  116:
+        -:  117:#endif
+   524296:  118:}/* end CFE_SB_MsgHdrSize */
+        -:  119:
+        -:  120:
+        -:  121:/******************************************************************************
+        -:  122:**  Function:  CFE_SB_GetUserData()
+        -:  123:**
+        -:  124:**  Purpose:
+        -:  125:**    Get a pointer to the user data portion of a message.
+        -:  126:**
+        -:  127:**  Arguments:
+        -:  128:**    MsgPtr - Pointer to a CFE_SB_Msg_t
+        -:  129:**
+        -:  130:**  Return:
+        -:  131:**    Pointer to the first byte after the headers
+        -:  132:*/
+        -:  133:void *CFE_SB_GetUserData(CFE_SB_MsgPtr_t MsgPtr)
+        4:  134:{
+        -:  135:#ifdef MESSAGE_FORMAT_IS_CCSDS
+        -:  136:    uint8           *BytePtr;
+        -:  137:    CFE_SB_MsgId_t  MsgId;
+        -:  138:    uint16          HdrSize;
+        -:  139:
+        4:  140:    BytePtr = (uint8 *)MsgPtr;
+        4:  141:    MsgId   = MsgPtr->Hdr.StreamId;
+        4:  142:    HdrSize = CFE_SB_MsgHdrSize(MsgId);
+        -:  143:
+        4:  144:    return (BytePtr + HdrSize);
+        -:  145:#endif
+        4:  146:}/* end CFE_SB_GetUserData */
+        -:  147:
+        -:  148:
+        -:  149:/******************************************************************************
+        -:  150:**  Function:  CFE_SB_GetMsgId()
+        -:  151:**
+        -:  152:**  Purpose:
+        -:  153:**    Get the message ID of a message.
+        -:  154:**
+        -:  155:**  Arguments:
+        -:  156:**    MsgPtr - Pointer to a CFE_SB_Msg_t
+        -:  157:**
+        -:  158:**  Return:
+        -:  159:**    The Message Id in the message.
+        -:  160:*/
+        -:  161:CFE_SB_MsgId_t CFE_SB_GetMsgId(CFE_SB_MsgPtr_t MsgPtr)
+    65588:  162:{
+        -:  163:#ifdef MESSAGE_FORMAT_IS_CCSDS
+        -:  164:
+    65588:  165:    return CCSDS_RD_SID(MsgPtr->Hdr);
+        -:  166:
+        -:  167:#endif
+    65588:  168:}/* end CFE_SB_GetMsgId */
+        -:  169:
+        -:  170:
+        -:  171:/******************************************************************************
+        -:  172:**  Function:  CFE_SB_SetMsgId()
+        -:  173:**
+        -:  174:**  Purpose:
+        -:  175:**    Set the message Id of a message.
+        -:  176:**
+        -:  177:**  Arguments:
+        -:  178:**    MsgPtr - Pointer to a CFE_SB_Msg_t
+        -:  179:**    MsgId  - Message Id to be written
+        -:  180:**
+        -:  181:**  Return:
+        -:  182:**    (none)
+        -:  183:*/
+        -:  184:void CFE_SB_SetMsgId(CFE_SB_MsgPtr_t MsgPtr,
+        -:  185:                     CFE_SB_MsgId_t MsgId)
+    65562:  186:{
+        -:  187:#ifdef MESSAGE_FORMAT_IS_CCSDS
+        -:  188:
+    65562:  189:    CCSDS_WR_SID(MsgPtr->Hdr,MsgId);
+        -:  190:
+        -:  191:#endif
+        -:  192:}/* end CFE_SB_SetMsgId */
+        -:  193:
+        -:  194:
+        -:  195:/******************************************************************************
+        -:  196:**  Function:  CFE_SB_GetUserDataLength()
+        -:  197:**
+        -:  198:**  Purpose:
+        -:  199:**    Get the length of the user data of a message (total size - hdrs).
+        -:  200:**
+        -:  201:**  Arguments:
+        -:  202:**    MsgPtr - Pointer to a CFE_SB_Msg_t
+        -:  203:**
+        -:  204:**  Return:
+        -:  205:**    Size of the message minus the headers
+        -:  206:*/
+        -:  207:uint16 CFE_SB_GetUserDataLength(CFE_SB_MsgPtr_t MsgPtr)
+   262144:  208:{
+        -:  209:#ifdef MESSAGE_FORMAT_IS_CCSDS
+        -:  210:    uint16 TotalMsgSize;
+        -:  211:    uint16 HdrSize;
+        -:  212:
+        -:  213:    CFE_SB_MsgId_t MsgId;
+   262144:  214:    MsgId = MsgPtr->Hdr.StreamId;
+        -:  215:
+   262144:  216:    TotalMsgSize = CFE_SB_GetTotalMsgLength(MsgPtr);
+   262144:  217:    HdrSize = CFE_SB_MsgHdrSize(MsgId);
+        -:  218:
+   262144:  219:    return (TotalMsgSize - HdrSize);
+        -:  220:#endif
+   262144:  221:}/* end CFE_SB_GetUserDataLength */
+        -:  222:
+        -:  223:
+        -:  224:/******************************************************************************
+        -:  225:**  Function:  CFE_SB_SetUserDataLength()
+        -:  226:**
+        -:  227:**  Purpose:
+        -:  228:**    Set the length field in the hdr, given the user data length.
+        -:  229:**
+        -:  230:**  Arguments:
+        -:  231:**    MsgPtr     - Pointer to a CFE_SB_Msg_t
+        -:  232:**    DataLength - Length of the user data
+        -:  233:**
+        -:  234:**  Return:
+        -:  235:**    (none)
+        -:  236:*/
+        -:  237:void CFE_SB_SetUserDataLength(CFE_SB_MsgPtr_t MsgPtr,uint16 DataLength)
+   262144:  238:{
+        -:  239:#ifdef MESSAGE_FORMAT_IS_CCSDS
+        -:  240:
+        -:  241:		uint32 TotalMsgSize, HdrSize;
+        -:  242:    CFE_SB_MsgId_t MsgId;
+   262144:  243:    MsgId = MsgPtr->Hdr.StreamId;
+        -:  244:
+   262144:  245:    TotalMsgSize = CFE_SB_GetTotalMsgLength(MsgPtr);
+   262144:  246:    HdrSize = CFE_SB_MsgHdrSize(MsgId);
+        -:  247:
+   262144:  248:	  TotalMsgSize = HdrSize + DataLength;
+        -:  249:
+   262144:  250:    CCSDS_WR_LEN(MsgPtr->Hdr,TotalMsgSize);
+        -:  251:
+        -:  252:#endif
+        -:  253:}/* end CFE_SB_SetUserDataLength */
+        -:  254:
+        -:  255:
+        -:  256:/******************************************************************************
+        -:  257:**  Function:  CFE_SB_GetTotalMsgLength()
+        -:  258:**
+        -:  259:**  Purpose:
+        -:  260:**    Get the total length of the message.
+        -:  261:**
+        -:  262:**  Arguments:
+        -:  263:**    MsgPtr - Pointer to a CFE_SB_Msg_t
+        -:  264:**
+        -:  265:**  Return:
+        -:  266:**    Total Length of the message
+        -:  267:*/
+        -:  268:uint16 CFE_SB_GetTotalMsgLength(CFE_SB_MsgPtr_t MsgPtr)
+   786453:  269:{
+        -:  270:#ifdef MESSAGE_FORMAT_IS_CCSDS
+        -:  271:
+   786453:  272:    return CCSDS_RD_LEN(MsgPtr->Hdr);
+        -:  273:
+        -:  274:#endif
+   786453:  275:}/* end CFE_SB_GetTotalMsgLength */
+        -:  276:
+        -:  277:
+        -:  278:/******************************************************************************
+        -:  279:**  Function:  CFE_SB_SetTotalMsgLength()
+        -:  280:**
+        -:  281:**  Purpose:
+        -:  282:**    Set the length field, given the total length of the message.
+        -:  283:**
+        -:  284:**  Arguments:
+        -:  285:**    MsgPtr      - Pointer to a CFE_SB_Msg_t
+        -:  286:**    TotalLength - Total Length of the message
+        -:  287:**
+        -:  288:**  Return:
+        -:  289:**    (none)
+        -:  290:*/
+        -:  291:void CFE_SB_SetTotalMsgLength(CFE_SB_MsgPtr_t MsgPtr,uint16 TotalLength)
+   262144:  292:{
+        -:  293:#ifdef MESSAGE_FORMAT_IS_CCSDS
+        -:  294:
+   262144:  295:    CCSDS_WR_LEN(MsgPtr->Hdr,TotalLength);
+        -:  296:
+        -:  297:#endif
+        -:  298:}/* end CFE_SB_SetTotalMsgLength */
+        -:  299:
+        -:  300:
+        -:  301:/******************************************************************************
+        -:  302:**  Function:  CFE_SB_GetMsgTime()
+        -:  303:**
+        -:  304:**  Purpose:
+        -:  305:**    Get the time field from a message.
+        -:  306:**
+        -:  307:**  Arguments:
+        -:  308:**    MsgPtr - Pointer to a CFE_SB_Msg_t
+        -:  309:**
+        -:  310:**  Return:
+        -:  311:**    Time field from message or
+        -:  312:**    Time value of zero for msgs that do not have a Time field in header
+        -:  313:*/
+        -:  314:CFE_TIME_SysTime_t CFE_SB_GetMsgTime(CFE_SB_MsgPtr_t MsgPtr)
+        6:  315:{
+        -:  316:#ifdef MESSAGE_FORMAT_IS_CCSDS
+        -:  317:
+        -:  318:    CFE_TIME_SysTime_t  TimeFromMsg;
+        -:  319:    CFE_SB_TlmHdr_t     *TlmHdrPtr;
+        -:  320:
+        -:  321:    /* if msg type is a command or msg has no secondary hdr, return 0 */
+        9:  322:    if((CCSDS_RD_TYPE(MsgPtr->Hdr) == CCSDS_CMD)||(CCSDS_RD_SHDR(MsgPtr->Hdr) == 0)){
+        3:  323:        TimeFromMsg.Seconds    =  0;
+        3:  324:        TimeFromMsg.Subseconds =  0;
+        -:  325:    }else{
+        3:  326:        TlmHdrPtr = (CFE_SB_TlmHdr_t *)MsgPtr;
+        -:  327:
+        3:  328:        TimeFromMsg.Seconds    =  *((uint32 *)&TlmHdrPtr->Sec.Time[0]);
+        -:  329:
+        -:  330:        /* Get the 16 bit subsecond field from the header and place it in the    */
+        -:  331:        /* upper 16 bits of the 32 bit subsecond field of the CFE_TIME_SysTime_t */
+        3:  332:        TimeFromMsg.Subseconds =  *((uint16 *)&TlmHdrPtr->Sec.Time[4]) << 16;
+        -:  333:
+        -:  334:    }/* end if */
+        -:  335:
+        6:  336:    return TimeFromMsg;
+        -:  337:
+        -:  338:#endif
+        6:  339:}/* end CFE_SB_GetMsgTime */
+        -:  340:
+        -:  341:
+        -:  342:/******************************************************************************
+        -:  343:**  Function:  CFE_SB_SetMsgTime()
+        -:  344:**
+        -:  345:**  Purpose:
+        -:  346:**    Set the time field from a message.
+        -:  347:**
+        -:  348:**  Arguments:
+        -:  349:**    MsgPtr - Pointer to a CFE_SB_Msg_t
+        -:  350:**    Time   - Time to write in message
+        -:  351:**
+        -:  352:**  Return:
+        -:  353:**    CFE_SUCCESS for no errors
+        -:  354:**    CFE_SB_WRONG_MSG_TYPE if msg does not have a header field for time.
+        -:  355:*/
+        -:  356:int32 CFE_SB_SetMsgTime(CFE_SB_MsgPtr_t MsgPtr,
+        -:  357:                       CFE_TIME_SysTime_t Time)
+        7:  358:{
+        -:  359:#ifdef MESSAGE_FORMAT_IS_CCSDS
+        -:  360:
+        -:  361:    CFE_SB_TlmHdr_t *TlmHdrPtr;
+        -:  362:
+        -:  363:   /* if msg type is a command or secondary header is not present... */
+        7:  364:    if((CCSDS_RD_TYPE(MsgPtr->Hdr) == CCSDS_CMD)||(CCSDS_RD_SHDR(MsgPtr->Hdr) == 0)){ 
+        3:  365:        return CFE_SB_WRONG_MSG_TYPE;
+        -:  366:    }/* end if */
+        -:  367:
+        4:  368:    TlmHdrPtr = (CFE_SB_TlmHdr_t *)MsgPtr;
+        -:  369:
+        4:  370:    *((uint32 *)&TlmHdrPtr->Sec.Time[0]) = Time.Seconds;
+        4:  371:    *((uint16 *)&TlmHdrPtr->Sec.Time[4]) = Time.Subseconds >> 16;
+        -:  372:
+        4:  373:    return CFE_SUCCESS;
+        -:  374:
+        -:  375:#endif
+        7:  376:}/* end CFE_SB_SetMsgTime */
+        -:  377:
+        -:  378:
+        -:  379:/******************************************************************************
+        -:  380:**  Function:  CFE_SB_TimeStampMsg()
+        -:  381:**
+        -:  382:**  Purpose:
+        -:  383:**    Set the time field to the current time.
+        -:  384:**
+        -:  385:**  Arguments:
+        -:  386:**    MsgPtr - Pointer to a CFE_SB_Msg_t
+        -:  387:**
+        -:  388:**  Return:
+        -:  389:**    (none)
+        -:  390:*/
+        -:  391:void CFE_SB_TimeStampMsg(CFE_SB_MsgPtr_t MsgPtr)
+        3:  392:{
+        3:  393:    CFE_SB_SetMsgTime(MsgPtr,CFE_TIME_GetTime());
+        -:  394:
+        -:  395:}/* end CFE_SB_TimeStampMsg */
+        -:  396:
+        -:  397:
+        -:  398:/******************************************************************************
+        -:  399:**  Function:  CFE_SB_GetCmdCode()
+        -:  400:**
+        -:  401:**  Purpose:
+        -:  402:**    Get the opcode field of message.
+        -:  403:**
+        -:  404:**  Arguments:
+        -:  405:**    MsgPtr - Pointer to a CFE_SB_Msg_t
+        -:  406:**
+        -:  407:**  Return:
+        -:  408:**    CmdCode from the message (CCSDS Function Code)
+        -:  409:*/
+        -:  410:uint16 CFE_SB_GetCmdCode(CFE_SB_MsgPtr_t MsgPtr)
+     1049:  411:{
+        -:  412:#ifdef MESSAGE_FORMAT_IS_CCSDS
+        -:  413:
+        -:  414:    CFE_SB_CmdHdr_t     *CmdHdrPtr;
+        -:  415:
+        -:  416:    /* if msg type is telemetry or there is no secondary hdr, return 0 */
+     1049:  417:    if((CCSDS_RD_TYPE(MsgPtr->Hdr) == CCSDS_TLM)||(CCSDS_RD_SHDR(MsgPtr->Hdr) == 0)){
+      768:  418:        return 0;
+        -:  419:    }/* end if */
+        -:  420:
+        -:  421:    /* Cast the input pointer to a Cmd Msg pointer */
+      281:  422:    CmdHdrPtr = (CFE_SB_CmdHdr_t *)MsgPtr;
+        -:  423:
+      281:  424:    return CCSDS_RD_FC(CmdHdrPtr->Sec);
+        -:  425:
+        -:  426:#endif
+     1049:  427:}/* end CFE_SB_GetCmdCode */
+        -:  428:
+        -:  429:
+        -:  430:/******************************************************************************
+        -:  431:**  Function:  CFE_SB_SetCmdCode()
+        -:  432:**
+        -:  433:**  Purpose:
+        -:  434:**    Set the opcode field of message.
+        -:  435:**
+        -:  436:**  Arguments:
+        -:  437:**    MsgPtr - Pointer to a CFE_SB_Msg_t
+        -:  438:**    CmdCode - Command code for the message (CCSDS Function Code)
+        -:  439:**
+        -:  440:**  Return:
+        -:  441:**    (none)
+        -:  442:*/
+        -:  443:int32 CFE_SB_SetCmdCode(CFE_SB_MsgPtr_t MsgPtr,
+        -:  444:                      uint16 CmdCode)
+     1048:  445:{
+        -:  446:#ifdef MESSAGE_FORMAT_IS_CCSDS
+        -:  447:
+        -:  448:    CFE_SB_CmdHdr_t     *CmdHdrPtr;
+        -:  449:
+        -:  450:    /* if msg type is telemetry or there is no secondary hdr... */
+     1048:  451:    if((CCSDS_RD_TYPE(MsgPtr->Hdr) == CCSDS_TLM)||(CCSDS_RD_SHDR(MsgPtr->Hdr) == 0)){
+      768:  452:        return CFE_SB_WRONG_MSG_TYPE;
+        -:  453:    }/* end if */
+        -:  454:
+        -:  455:    /* Cast the input pointer to a Cmd Msg pointer */
+      280:  456:    CmdHdrPtr = (CFE_SB_CmdHdr_t *)MsgPtr;
+        -:  457:
+      280:  458:    CCSDS_WR_FC(CmdHdrPtr->Sec,CmdCode);
+        -:  459:
+      280:  460:    return CFE_SUCCESS;
+        -:  461:
+        -:  462:#endif
+        -:  463:
+     1048:  464:}/* end CFE_SB_SetCmdCode */
+        -:  465:
+        -:  466:
+        -:  467:/******************************************************************************
+        -:  468:**  Function:  CFE_SB_GetChecksum()
+        -:  469:**
+        -:  470:**  Purpose:
+        -:  471:**    Get the checksum field of message.
+        -:  472:**
+        -:  473:**  Arguments:
+        -:  474:**    MsgPtr - Pointer to a CFE_SB_Msg_t
+        -:  475:**
+        -:  476:**  Return:
+        -:  477:**
+        -:  478:*/
+        -:  479:uint16 CFE_SB_GetChecksum(CFE_SB_MsgPtr_t MsgPtr)
+        4:  480:{
+        -:  481:#ifdef MESSAGE_FORMAT_IS_CCSDS
+        -:  482:
+        -:  483:    CFE_SB_CmdHdr_t     *CmdHdrPtr;
+        -:  484:
+        -:  485:    /* if msg type is telemetry or there is no secondary hdr... */
+        4:  486:    if((CCSDS_RD_TYPE(MsgPtr->Hdr) == CCSDS_TLM)||(CCSDS_RD_SHDR(MsgPtr->Hdr) == 0)){
+        3:  487:        return 0;
+        -:  488:    }/* end if */
+        -:  489:
+        -:  490:    /* cast the input pointer to a Cmd Msg pointer */
+        1:  491:    CmdHdrPtr = (CFE_SB_CmdHdr_t *)MsgPtr;
+        -:  492:
+        1:  493:    return CCSDS_RD_CHECKSUM(CmdHdrPtr->Sec);
+        -:  494:
+        -:  495:#endif
+        4:  496:}/* end CFE_SB_GetChecksum */
+        -:  497:
+        -:  498:
+        -:  499:/******************************************************************************
+        -:  500:**  Function:  CFE_SB_GenerateChecksum()
+        -:  501:**
+        -:  502:**  Purpose:
+        -:  503:**    Calculate and Set the checksum field of message.
+        -:  504:**
+        -:  505:**  Arguments:
+        -:  506:**    MsgPtr - Pointer to a CFE_SB_Msg_t
+        -:  507:**
+        -:  508:**  Note: If any header fields are changed after this call, the checksum will
+        -:  509:**        no longer be valid.
+        -:  510:**        Also, the packet length field dictates the number of iterations
+        -:  511:**        used in the checksum algorithm and therefore must be properly set
+        -:  512:**        before calling this function.
+        -:  513:**
+        -:  514:**  Return:
+        -:  515:**    (none)
+        -:  516:*/
+        -:  517:void CFE_SB_GenerateChecksum(CFE_SB_MsgPtr_t MsgPtr)
+        4:  518:{
+        -:  519:#ifdef MESSAGE_FORMAT_IS_CCSDS
+        -:  520:
+        -:  521:    CCSDS_CmdPkt_t    *CmdPktPtr;
+        -:  522:
+        -:  523:    /* if msg type is telemetry or there is no secondary hdr... */
+        4:  524:    if((CCSDS_RD_TYPE(MsgPtr->Hdr) == CCSDS_TLM)||(CCSDS_RD_SHDR(MsgPtr->Hdr) == 0)){
+        -:  525:        return;
+        -:  526:    }/* end if */
+        -:  527:
+        1:  528:    CmdPktPtr = (CCSDS_CmdPkt_t *)MsgPtr;
+        -:  529:
+        1:  530:    CCSDS_LoadCheckSum(CmdPktPtr);
+        -:  531:
+        -:  532:#endif
+        4:  533:}/* end CFE_SB_GenerateChecksum */
+        -:  534:
+        -:  535:
+        -:  536:/******************************************************************************
+        -:  537:**  Function:  CFE_SB_ValidateChecksum()
+        -:  538:**
+        -:  539:**  Purpose:
+        -:  540:**    Validate the checksum field of message.
+        -:  541:**
+        -:  542:**  Arguments:
+        -:  543:**    MsgPtr - Pointer to a CFE_SB_Msg_t
+        -:  544:**
+        -:  545:**  Return:
+        -:  546:**    TRUE if checksum of packet is valid; FALSE if not.
+        -:  547:*/
+        -:  548:boolean CFE_SB_ValidateChecksum(CFE_SB_MsgPtr_t MsgPtr)
+        8:  549:{
+        -:  550:#ifdef MESSAGE_FORMAT_IS_CCSDS
+        -:  551:
+        -:  552:    CCSDS_CmdPkt_t    *CmdPktPtr;
+        -:  553:
+        -:  554:    /* if msg type is telemetry or there is no secondary hdr... */
+        8:  555:    if((CCSDS_RD_TYPE(MsgPtr->Hdr) == CCSDS_TLM)||(CCSDS_RD_SHDR(MsgPtr->Hdr) == 0)){
+        5:  556:        return FALSE;
+        -:  557:    }/* end if */
+        -:  558:
+        3:  559:    CmdPktPtr = (CCSDS_CmdPkt_t *)MsgPtr;
+        -:  560:
+        3:  561:    return CCSDS_ValidCheckSum (CmdPktPtr);
+        -:  562:
+        -:  563:#endif
+        8:  564:}/* end CFE_SB_ValidateChecksum */
+        -:  565:

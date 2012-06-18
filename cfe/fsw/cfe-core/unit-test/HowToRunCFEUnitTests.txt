@@ -1,0 +1,62 @@
+
+Running the CFE Unit tests
+
+The CFE Core unit tests are run from the fsw/build/cpuX directory, where cpuX is either cpu1, cpu2, or cpu3. The unit tests themselves are stored in  fsw/cfe-core/unit-test directory.
+
+1. Edit the fsw/build/cpuX/cfe-config.mak for your test platform
+2. Go to the fsw/build/cpuX/cfe/unit-test/ directory
+3. Build the unit test(s) by typing "make"
+4. Run the unit test(s) by typing "make gcov"
+5. View Results
+6. Reset gcov counters
+7. Check-in results (if applicable)
+
+------ Details ------------------------------------
+
+1. Edit the fsw/build/unit-test/cfe-config.mak for your test platform.
+In general, the desktop platforms are supported for unit tests:
+  x86/PC/linux/linux
+  x86/mac/osx/osx
+  x86/PC/linux/cygwin
+  ppc/mac/osx/osx
+
+2. Go to the fsw/build/cpuX/cfe/unit-test/ directory
+
+3. Build the unit test(s) by typing "make"
+   From the fsw/build/cpuX/cfe/unit-test/ directory
+   $ make
+   or 
+   $ make clean
+ 
+   You can build and run the test for an individual subsystem too:
+   $ cd fsw/build/cpu1/cfe/unit-test/sb
+   $ make
+   or 
+   $ make clean
+
+   
+4. Run the unit test:
+
+   From the same directory as step 3:
+
+   $ make gcov
+
+
+5. View results
+Coverage results will be displayed in the terminal where it has run.
+see  fsw/build/cpuX/cfe/unit-test/xx/ut_cfe_xx_log.txt for unit test output
+see  fsw/build/cpuX/cfe/unit-test/xx/cfe_xx_???.c.gcov for detailed coverage results.
+ ##### in file means the line has not been executed.
+
+6. Reset coverage counters
+To reset the counts in the *.gcov file, you must recompile the subsystem and copy it to the unit-test directory.
+
+7. To check-in results (if applicable)
+Each subsystem should have a ut_cfe_XX_log.txt file. 
+Before adding this to the repository or checking it in - append the "Coverage results:" to the end of the file. 
+The coverage results are printed to the console when the test is executed.
+
+Also, If any file is not covered 100%, we need to check in the corresponding *.gcov file to show exactly what lines have not been covered. 
+In most cases, at a minimum this should be the cfe_xx_task.c.gov file since the forever loop will not have coverage.
+
+All files specifying results should be checked into the corresponding subproject under the unit-test subproject. (i.e.SbResults subproject in fsw/cfe-core/unit-test/)
