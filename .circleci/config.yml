@@ -22,6 +22,7 @@ jobs:
             make
       - run:
          name: "Launch core-linux.bin"
+         comand: |
             cd /home/circleci/project 
             source setvars.sh
             cd ${CFS_MISSION}/build/cpu1/exe
