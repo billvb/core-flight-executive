@@ -26,7 +26,8 @@ jobs:
             cd /home/circleci/project 
             source setvars.sh
             cd ${CFS_MISSION}/build/cpu1/exe
-            sudo timeout 15s ./core-linux.bin PO 1 
+            # Run core-linux.bin for 15s, then kill it. This is not perfect
+            sudo timeout 15s ./core-linux.bin PO 1 || /bin/true
 
             
 
