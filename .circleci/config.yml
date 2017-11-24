@@ -10,7 +10,7 @@ jobs:
           name: "Update and install build tools"
           command: |
             sudo apt-get update
-            sudo apt-get install build-essential cmake clang libc6-dev-i386
+            sudo apt-get install coreutils build-essential cmake clang libc6-dev-i386
       - run:
           name: "Build"
           command: |
@@ -21,11 +21,13 @@ jobs:
             make config
             make
       - run:
-         name: "Launch core-linux.bin"
+         name: "Launch core-linux.bin for a few seconds"
          command: |
             cd /home/circleci/project 
             source setvars.sh
             cd ${CFS_MISSION}/build/cpu1/exe
-            sudo ./core-linux.bin PO 1
+            su
+            timeout 15s ./core-linux.bin PO 1 
 
+            
 
