@@ -1,5 +1,8 @@
-        -:    0:Source:/home/acudmore/Projects/cFE-6.4-development/cfe/fsw/cfe-core/src/es/cfe_es_cds.c
-        -:    0:Programs:10
+        -:    0:Source:/home/wmoleski/CFS/mission_2014/cfe/fsw/cfe-core/src/es/cfe_es_cds.c
+        -:    0:Graph:cfe_es_cds.gcno
+        -:    0:Data:cfe_es_cds.gcda
+        -:    0:Runs:1
+        -:    0:Programs:3
         -:    1:/*
         -:    2:**  File:  
         -:    3:**    cfe_es_cds.c
@@ -26,8 +29,8 @@
         -:   24:**  Modification History:
         -:   25:**
         -:   26:** $Log: cfe_es_cds.c.gcov  $
-        -:   26:** Revision 1.5 2014/09/23 15:04:40GMT-05:00 acudmore 
-        -:   26:** Updated ES unit test results for cFE build 6.4.0
+        -:   26:** Revision 1.6 2015/06/24 12:19:35EDT wmoleski 
+        -:   26:** Checking in the unit-test results for cFE 6.4.2.0
         -:   27:** Revision 1.7 2014/08/22 15:50:11GMT-05:00 lwalling 
         -:   28:** Changed signed loop counters to unsigned
         -:   29:** Revision 1.6 2014/05/05 13:21:40EDT acudmore 
@@ -189,8 +192,8 @@
         -:  185:** \return None
         -:  186:**
         -:  187:******************************************************************************/
-       15:  188:int32 CFE_ES_CDS_EarlyInit(void)
-        -:  189:{
+        -:  188:int32 CFE_ES_CDS_EarlyInit(void)
+       15:  189:{
        15:  190:    uint32  MinRequiredSize = 0;
        15:  191:    int32   Status = CFE_SUCCESS;
         -:  192:    
@@ -270,8 +273,8 @@
         -:  266:** NOTE: For complete prolog information, see 'cfe_es_cds.h'
         -:  267:********************************************************************/
         -:  268:
-        6:  269:int32 CFE_ES_RegisterCDSEx(CFE_ES_CDSHandle_t *HandlePtr, int32 BlockSize, const char *Name, boolean CriticalTbl)
-        -:  270:{
+        -:  269:int32 CFE_ES_RegisterCDSEx(CFE_ES_CDSHandle_t *HandlePtr, int32 BlockSize, const char *Name, boolean CriticalTbl)
+        6:  270:{
         6:  271:    int32   Status = CFE_SUCCESS;
         6:  272:    uint32  RegIndx = CFE_ES_CDS_NOT_FOUND;
         6:  273:    CFE_ES_CDS_RegRec_t *RegRecPtr = NULL;
@@ -368,8 +371,8 @@
         -:  364:** NOTE: For complete prolog information, see prototype above
         -:  365:********************************************************************/
         -:  366:
-       16:  367:int32 CFE_ES_ValidateCDS(void)
-        -:  368:{
+        -:  367:int32 CFE_ES_ValidateCDS(void)
+       16:  368:{
         -:  369:    /* Assume the CDS is invalid */
        16:  370:    int32 Status = CFE_ES_CDS_INVALID;
         -:  371:    
@@ -421,8 +424,8 @@
         -:  417:** NOTE: For complete prolog information, see prototype above
         -:  418:********************************************************************/
         -:  419:
-       15:  420:int32 CFE_ES_InitializeCDS(uint32 CDSSize)
-        -:  421:{
+        -:  420:int32 CFE_ES_InitializeCDS(uint32 CDSSize)
+       15:  421:{
        15:  422:    int32  Status = CFE_SUCCESS;
         -:  423:    uint32 MemBlock[32];
        15:  424:    uint32 NumWritten=0;
@@ -505,8 +508,8 @@
         -:  501:** NOTE: For complete prolog information, see prototype above
         -:  502:********************************************************************/
         -:  503:
-       13:  504:int32 CFE_ES_InitCDSRegistry(void)
-        -:  505:{
+        -:  504:int32 CFE_ES_InitCDSRegistry(void)
+       13:  505:{
        13:  506:    int32 Status = CFE_SUCCESS;
        13:  507:    uint32 i = 0;
         -:  508:    
@@ -545,8 +548,8 @@
         -:  541:** NOTE: For complete prolog information, see 'cfe_es_cds.h'
         -:  542:********************************************************************/
         -:  543:
-       18:  544:int32 CFE_ES_UpdateCDSRegistry(void)
-        -:  545:{
+        -:  544:int32 CFE_ES_UpdateCDSRegistry(void)
+       18:  545:{
        18:  546:    int32 Status = CFE_SUCCESS;
         -:  547:    
         -:  548:    /* Copy the contents of the local registry to the CDS */
@@ -569,8 +572,8 @@
         -:  565:** NOTE: For complete prolog information, see 'cfe_es_cds.h'
         -:  566:********************************************************************/
         -:  567:
-       11:  568:int32 CFE_ES_CDS_ValidateAppID(uint32 *AppIdPtr)
-        -:  569:{
+        -:  568:int32 CFE_ES_CDS_ValidateAppID(uint32 *AppIdPtr)
+       11:  569:{
        11:  570:    int32 Status = CFE_ES_GetAppID(AppIdPtr);
         -:  571:
        11:  572:    if (Status == CFE_SUCCESS)
@@ -599,8 +602,8 @@
         -:  595:** NOTE: For complete prolog information, see 'cfe_es_cds.h'
         -:  596:********************************************************************/
         -:  597:
-        7:  598:void CFE_ES_FormCDSName(char *FullCDSName, const char *CDSName, uint32 ThisAppId)
-        -:  599:{
+        -:  598:void CFE_ES_FormCDSName(char *FullCDSName, const char *CDSName, uint32 ThisAppId)
+        7:  599:{
         -:  600:    char AppName[OS_MAX_API_NAME];
         -:  601:
         7:  602:    CFE_ES_GetAppName(AppName, ThisAppId, OS_MAX_API_NAME);
@@ -611,7 +614,7 @@
         -:  607:    /* Complete formation of processor specific table name */
         7:  608:    sprintf(FullCDSName, "%s.%s", AppName, CDSName);
         -:  609:
-        7:  610:    return;
+        -:  610:    return;
         -:  611:}   /* End of CFE_ES_FormCDSName() */
         -:  612:
         -:  613:
@@ -622,15 +625,15 @@
         -:  618:** NOTE: For complete prolog information, see 'cfe_es_cds.h'
         -:  619:********************************************************************/
         -:  620:
-       13:  621:int32 CFE_ES_LockCDSRegistry(void)
-        -:  622:{
+        -:  621:int32 CFE_ES_LockCDSRegistry(void)
+       13:  622:{
         -:  623:    int32   Status;
         -:  624:
        13:  625:    Status = OS_MutSemTake(CFE_ES_Global.CDSVars.RegistryMutex);
         -:  626:
-       13:  627:    if (Status == OS_SUCCESS)
+        -:  627:    if (Status == OS_SUCCESS)
         -:  628:    {
-       13:  629:        Status = CFE_SUCCESS;
+        -:  629:        Status = CFE_SUCCESS;
         -:  630:    }
         -:  631:
        13:  632:    return Status;
@@ -645,15 +648,15 @@
         -:  641:** NOTE: For complete prolog information, see 'cfe_es_cds.h'
         -:  642:********************************************************************/
         -:  643:
-       13:  644:int32 CFE_ES_UnlockCDSRegistry(void)
-        -:  645:{
+        -:  644:int32 CFE_ES_UnlockCDSRegistry(void)
+       13:  645:{
         -:  646:    int32   Status;
         -:  647:
        13:  648:    Status = OS_MutSemGive(CFE_ES_Global.CDSVars.RegistryMutex);
         -:  649:
-       13:  650:    if (Status == OS_SUCCESS)
+        -:  650:    if (Status == OS_SUCCESS)
         -:  651:    {
-       13:  652:        Status = CFE_SUCCESS;
+        -:  652:        Status = CFE_SUCCESS;
         -:  653:    }
         -:  654:
        13:  655:    return Status;
@@ -668,8 +671,8 @@
         -:  664:** NOTE: For complete prolog information, see 'cfe_es_cds.h'
         -:  665:********************************************************************/
         -:  666:
-       13:  667:int32 CFE_ES_FindCDSInRegistry(const char *CDSName)
-        -:  668:{
+        -:  667:int32 CFE_ES_FindCDSInRegistry(const char *CDSName)
+       13:  668:{
        13:  669:    int32 RegIndx = CFE_ES_CDS_NOT_FOUND;
        13:  670:    int32 i = -1;
         -:  671:
@@ -701,8 +704,8 @@
         -:  697:** NOTE: For complete prolog information, see 'cfe_es_cds.h'
         -:  698:********************************************************************/
         -:  699:
-        4:  700:int32 CFE_ES_FindFreeCDSRegistryEntry(void)
-        -:  701:{
+        -:  700:int32 CFE_ES_FindFreeCDSRegistryEntry(void)
+        4:  701:{
         4:  702:    int32 RegIndx = CFE_ES_CDS_NOT_FOUND;
         4:  703:    int32 i = 0;
         -:  704:
@@ -729,8 +732,8 @@
         -:  725:** NOTE: For complete prolog information, see above
         -:  726:********************************************************************/
         -:  727:
-        5:  728:int32 CFE_ES_RebuildCDS(void)
-        -:  729:{
+        -:  728:int32 CFE_ES_RebuildCDS(void)
+        5:  729:{
         5:  730:    int32 Status = CFE_SUCCESS;
         -:  731:    int32 PoolOffset;
         -:  732:    
@@ -741,8 +744,8 @@
         -:  737:                               CDS_REG_SIZE_OFFSET, 
         -:  738:                               sizeof(CFE_ES_Global.CDSVars.MaxNumRegEntries));
         -:  739:                               
-       11:  740:    if ((Status == OS_SUCCESS)  &&
-        4:  741:        (CFE_ES_Global.CDSVars.MaxNumRegEntries <= CFE_ES_CDS_MAX_NUM_ENTRIES))
+        7:  740:    if ((Status == OS_SUCCESS)  &&
+        -:  741:        (CFE_ES_Global.CDSVars.MaxNumRegEntries <= CFE_ES_CDS_MAX_NUM_ENTRIES))
         -:  742:    {
         2:  743:        Status = CFE_PSP_ReadFromCDS(&CFE_ES_Global.CDSVars.Registry,
         -:  744:                                   CDS_REG_OFFSET,
@@ -784,8 +787,8 @@
         -:  780:** NOTE: For complete prolog information, see 'cfe_es_cds.h'
         -:  781:********************************************************************/
         -:  782:
-        7:  783:int32 CFE_ES_DeleteCDS(const char *CDSName, boolean CalledByTblServices)
-        -:  784:{
+        -:  783:int32 CFE_ES_DeleteCDS(const char *CDSName, boolean CalledByTblServices)
+        7:  784:{
         -:  785:    int32                Status;
         -:  786:    int32                RegIndx;
         7:  787:    CFE_ES_CDS_RegRec_t *RegRecPtr = NULL;

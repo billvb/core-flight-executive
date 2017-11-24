@@ -94,14 +94,30 @@
 #define CFE_CLR(i,x) ((i) &= ~CFE_BIT(x))     /**< \brief Clears bit x of i */
 #define CFE_TST(i,x) (((i) & CFE_BIT(x)) != 0)/**< \brief TRUE(non zero) if bit x of i is set */
 
+/**
+ * Macro that should be used to set memory addresses within software bus messages.
+ * For now this does a straight copy, but in a future revision this may translate the
+ * raw memory address into a "safe" integer value.  This is particularly important if
+ * the message is to be sent off this CPU.
+ */
+#define CFE_SB_SET_MEMADDR(msgdst,src)       msgdst = (cpuaddr)src
+
+/**
+ * Macro that should be used to get memory addresses from software bus messages.
+ * This is the inverse operation of CFE_SB_SET_MEMADDR.
+ */
+#define CFE_SB_GET_MEMADDR(msgsrc)           (cpuaddr)msgsrc
+
 /*
 ** Type Definitions
 */
 #ifdef MESSAGE_FORMAT_IS_CCSDS
 
     /**< \brief Generic Software Bus Message Type Definition */
-    typedef struct{
-        CCSDS_PriHdr_t      Hdr;/**< \brief CCSDS Primary Header #CCSDS_PriHdr_t */
+    typedef union {
+        CCSDS_PriHdr_t      Hdr;   /**< \brief CCSDS Primary Header #CCSDS_PriHdr_t */
+        uint32              Dword; /**< \brief Forces minimum of 32-bit alignment for this object */
+        uint8               Byte[sizeof(CCSDS_PriHdr_t)];   /**< \brief Allows byte-level access */
     }CFE_SB_Msg_t;
 
     /**< \brief Generic Software Bus Command Header Type Definition */
@@ -144,11 +160,14 @@ typedef uint16 CFE_SB_MsgId_t;
 /**< \brief  CFE_SB_MsgPtr_t defined as a pointer to an SB Message */
 typedef CFE_SB_Msg_t *CFE_SB_MsgPtr_t;
 
+/**< \brief  CFE_SB_MsgPayloadPtr_t defined as an opaque pointer to a message Payload portion */
+typedef uint8 *CFE_SB_MsgPayloadPtr_t;
+
 /**< \brief  CFE_SB_ZeroCopyId_t to primitive type definition 
 ** 
 ** Software Zero Copy handle used in many SB APIs
 */
-typedef uint32 CFE_SB_ZeroCopyHandle_t;
+typedef cpuaddr CFE_SB_ZeroCopyHandle_t;
 
 /**< \brief Quality Of Service Type Definition
 **
@@ -215,7 +234,7 @@ typedef struct {
 **/
 int32  CFE_SB_CreatePipe(CFE_SB_PipeId_t *PipeIdPtr,
                          uint16  Depth,
-                         char *PipeName);
+                         const char *PipeName);
 
 /*****************************************************************************/
 /** 
@@ -1160,6 +1179,89 @@ void CFE_SB_GenerateChecksum(CFE_SB_MsgPtr_t MsgPtr);
 ** \sa #CFE_SB_GenerateChecksum, #CFE_SB_GetChecksum
 **/
 boolean CFE_SB_ValidateChecksum(CFE_SB_MsgPtr_t MsgPtr);
+
+/******************************************************************************
+**  Function:  CFE_SB_MessageStringGet()
+**
+**  Purpose:
+**    Copies a string out of a software bus message
+**
+**    Strings within software bus messages have a defined/fixed maximum length, and
+**    may not necessarily be null terminated within the message.  This presents a possible
+**    issue when using the C library functions to copy strings out of a message.
+**
+**    This function should replace use of C library functions such as strcpy/strncpy
+**    when copying strings out of software bus messages to local storage buffers.
+**
+**    Up to [SourceMaxSize] or [DestMaxSize-1] (whichever is smaller) characters will be
+**    coped from the source buffer to the destination buffer, and a NUL termination
+**    character will be written to the destination buffer as the last character.
+**
+**    If the DefaultString pointer is non-NULL, it will be used in place of the source
+**    string if the source is an empty string.  This is typically a string constant that
+**    comes from the platform configuration, allowing default values to be assumed for
+**    fields that are unspecified.
+**
+**    IMPORTANT - the default string, if specified, must be null terminated.  This will
+**    be the case if a string literal is passed in (the typical/expected use case).
+**
+**    If the default is NULL, then only the source string will be copied, and the result
+**    will be an empty string if the source was empty.
+**
+**    If the destination buffer is too small to store the entire string, it will be
+**    truncated, but it will still be null terminated.
+**
+**  Arguments:
+**    DestStringPtr - pointer to destination buffer
+**    SourceStringPtr - pointer to source buffer (component of SB message definition)
+**    DefaultString - alternative string to use if the source is an empty string
+**    DestMaxSize - size of the destination storage buffer (must be at least 2)
+**    SourceMaxSize - size of the source buffer as defined by the message definition
+**
+**  Returns:
+**    Length of result - number of characters copied, not including the terminating NUL.
+**       This should match the value that would be returned by "strlen(DestStringPtr)"
+**
+*/
+int32 CFE_SB_MessageStringGet(char *DestStringPtr, const char *SourceStringPtr, const char *DefaultString, uint32 DestMaxSize, uint32 SourceMaxSize);
+
+/******************************************************************************
+**  Function:  CFE_SB_MessageStringSet()
+**
+**  Purpose:
+**    Copies a string into a software bus message
+**
+**    Strings within software bus messages have a defined/fixed maximum length, and
+**    may not necessarily be null terminated within the message.  This presents a possible
+**    issue when using the C library functions to copy strings out of a message.
+**
+**    This performs a very similar function to "strncpy()" except that the sizes
+**    of _both_ buffers are passed in.  Neither buffer is required to be null-terminated,
+**    but copying will stop after the first termination character is encountered.
+**
+**    If the destination buffer is not completely filled by the source data (such as if
+**    the supplied string was shorter than the allotted length) the destination buffer
+**    will be padded with NUL characters up to the size of the buffer, similar to what
+**    strncpy() does.  This ensures that the entire destination buffer is set.
+**
+**    NOTE - if the source string buffer is already guaranteed to be null terminated,
+**    then there is no difference between the C library "strncpy()" function and this
+**    implementation.  It is only necessary to use this when termination of the source
+**    buffer is not guaranteed.
+**
+**  Arguments:
+**    DestStringPtr - pointer to destination buffer
+**    SourceStringPtr - pointer to source buffer (component of SB message definition)
+**    DestMaxSize - size of the destination storage buffer (must be at least 2)
+**    SourceMaxSize - size of the source buffer as defined by the message definition
+**
+**  Returns:
+**    Length of result - number of actual data characters copied
+**       This should match the value that would be returned by "strlen(DestStringPtr)"
+**
+*/
+int32 CFE_SB_MessageStringSet(char *DestStringPtr, const char *SourceStringPtr, uint32 DestMaxSize, uint32 SourceMaxSize);
+
 
 #endif  /* _cfesb_ */
 /*****************************************************************************/

@@ -132,7 +132,7 @@
 /*
 ** Includes
 */
-#include "cfe.h"
+#include "private/cfe_private.h"
 #include "cfe_platform_cfg.h"
 #include "cfe_version.h"
 #include "cfe_es_global.h"
@@ -151,6 +151,10 @@
 /*
 ** Defines
 */
+#define CFE_ES_PERF_TRIGGERMASK_INT_SIZE    (sizeof(CFE_ES_ResetDataPtr->Perf.MetaData.TriggerMask) / sizeof(uint32))
+#define CFE_ES_PERF_TRIGGERMASK_EXT_SIZE    (sizeof(CFE_ES_TaskData.HkPacket.Payload.PerfTriggerMask) / sizeof(uint32))
+#define CFE_ES_PERF_FILTERMASK_INT_SIZE     (sizeof(CFE_ES_ResetDataPtr->Perf.MetaData.FilterMask) / sizeof(uint32))
+#define CFE_ES_PERF_FILTERMASK_EXT_SIZE     (sizeof(CFE_ES_TaskData.HkPacket.Payload.PerfFilterMask) / sizeof(uint32))
 
 /* 
 ** This define should be put in the OS API headers -- Right now it matches what the OS API uses 
@@ -161,7 +165,6 @@
 ** Executive Services (ES) task global data.
 */
 CFE_ES_TaskData_t CFE_ES_TaskData;
-extern CFE_ES_PerfLogDump_t    CFE_ES_PerfLogDumpStatus;
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /*                                                                 */
@@ -173,7 +176,7 @@ void CFE_ES_TaskMain(void)
 {
     int32   Status;
     uint32  TimeOut = CFE_ES_APP_SCAN_RATE;
-    uint32  AppRunStatus = CFE_ES_APP_RUN;
+    uint32  AppRunStatus = CFE_ES_RUNSTATUS_APP_RUN;
 
     
     /*
@@ -190,20 +193,28 @@ void CFE_ES_TaskMain(void)
        /*
        ** Create a syslog entry
        */
-       CFE_ES_WriteToSysLog("ES:Application Init Failed,RC=0x%08X\n", Status);
+       CFE_ES_WriteToSysLog("ES:Application Init Failed,RC=0x%08X\n", (unsigned int)Status);
       
 
        /*
        ** Allow Core App to Exit 
        */
-       AppRunStatus = CFE_ES_CORE_APP_INIT_ERROR;
+       AppRunStatus = CFE_ES_RUNSTATUS_CORE_APP_INIT_ERROR;
        
     } /* end if */
 
     /*
+     * Wait for other apps to start.
+     * It is important that the core apps are present before this starts receiving
+     * messages from the command pipe, as some of those handlers might depend on
+     * the other core apps.
+     */
+    CFE_ES_WaitForStartupSync(CFE_CORE_MAX_STARTUP_MSEC);
+
+    /*
     ** Main process loop
     */
-    while (AppRunStatus == CFE_ES_APP_RUN)
+    while (AppRunStatus == CFE_ES_RUNSTATUS_APP_RUN)
     {
         /*
         ** Increment the main task execution counter
@@ -254,12 +265,12 @@ void CFE_ES_TaskMain(void)
             /*
             ** SB Error: Write a SysLog Message 
             */
-            CFE_ES_WriteToSysLog("ES:Error reading cmd pipe,RC=0x%08X\n",Status);
+            CFE_ES_WriteToSysLog("ES:Error reading cmd pipe,RC=0x%08X\n",(unsigned int)Status);
 
             /*
             ** Allow Core App to Exit 
             */
-            AppRunStatus = CFE_ES_CORE_APP_RUNTIME_ERROR;
+            AppRunStatus = CFE_ES_RUNSTATUS_CORE_APP_RUNTIME_ERROR;
 
         }  /* end if */
         
@@ -288,7 +299,7 @@ int32 CFE_ES_TaskInit(void)
 {
     int32   Status;
     uint32  SizeofCfeSegment;
-    uint32 *PtrToCfeSegment;
+    cpuaddr CfeSegmentAddr;
 
     /*
     ** Register the Application
@@ -296,7 +307,7 @@ int32 CFE_ES_TaskInit(void)
     Status = CFE_ES_RegisterApp();
     if ( Status != CFE_SUCCESS )
     {
-        CFE_ES_WriteToSysLog("ES:Call to CFE_ES_RegisterApp Failed, RC = 0x%08X\n", Status);
+        CFE_ES_WriteToSysLog("ES:Call to CFE_ES_RegisterApp Failed, RC = 0x%08X\n", (unsigned int)Status);
         return(Status);
     }    
 
@@ -326,7 +337,7 @@ int32 CFE_ES_TaskInit(void)
     Status = CFE_EVS_Register(NULL,0,CFE_EVS_BINARY_FILTER);
     if ( Status != CFE_SUCCESS )
     {
-        CFE_ES_WriteToSysLog("ES:Call to CFE_EVS_Register Failed, RC = 0x%08X\n", Status);
+        CFE_ES_WriteToSysLog("ES:Call to CFE_EVS_Register Failed, RC = 0x%08X\n", (unsigned int)Status);
         return(Status);
     }
 
@@ -357,7 +368,7 @@ int32 CFE_ES_TaskInit(void)
     Status = CFE_SB_CreatePipe(&CFE_ES_TaskData.CmdPipe, CFE_ES_TaskData.PipeDepth, CFE_ES_TaskData.PipeName);
     if ( Status != CFE_SUCCESS )
     {
-        CFE_ES_WriteToSysLog("ES:Cannot Create SB Pipe, RC = 0x%08X\n", Status);
+        CFE_ES_WriteToSysLog("ES:Cannot Create SB Pipe, RC = 0x%08X\n", (unsigned int)Status);
         return(Status);
     }
     
@@ -368,7 +379,7 @@ int32 CFE_ES_TaskInit(void)
                                 CFE_SB_Default_Qos, CFE_ES_TaskData.LimitHK);
     if ( Status != CFE_SUCCESS )
     {
-        CFE_ES_WriteToSysLog("ES:Cannot Subscribe to HK packet, RC = 0x%08X\n", Status);
+        CFE_ES_WriteToSysLog("ES:Cannot Subscribe to HK packet, RC = 0x%08X\n", (unsigned int)Status);
         return(Status);
     }
 
@@ -379,7 +390,7 @@ int32 CFE_ES_TaskInit(void)
                        CFE_SB_Default_Qos, CFE_ES_TaskData.LimitCmd);
     if ( Status != CFE_SUCCESS )
     {
-        CFE_ES_WriteToSysLog("ES:Cannot Subscribe to ES ground commands, RC = 0x%08X\n", Status);
+        CFE_ES_WriteToSysLog("ES:Cannot Subscribe to ES ground commands, RC = 0x%08X\n", (unsigned int)Status);
         return(Status);
     }
 
@@ -387,29 +398,29 @@ int32 CFE_ES_TaskInit(void)
     ** Compute the CRC for the cfe core code segment and place
     ** in ES Housekeeping pkt.   
     */
-    Status = CFE_PSP_GetCFETextSegmentInfo( &(PtrToCfeSegment), &SizeofCfeSegment);
+    Status = CFE_PSP_GetCFETextSegmentInfo( &CfeSegmentAddr, &SizeofCfeSegment);
    
-    if ( Status == OS_SUCCESS ) 
+    if ( Status == CFE_PSP_SUCCESS )
     { 
-       CFE_ES_TaskData.HkPacket.CFECoreChecksum = CFE_ES_CalculateCRC(
-                                  (void *)(PtrToCfeSegment), SizeofCfeSegment, 0, CFE_ES_DEFAULT_CRC);
+       CFE_ES_TaskData.HkPacket.Payload.CFECoreChecksum = CFE_ES_CalculateCRC(
+                                  (void *)(CfeSegmentAddr), SizeofCfeSegment, 0, CFE_ES_DEFAULT_CRC);
     }
     else
     {
-       CFE_ES_TaskData.HkPacket.CFECoreChecksum = 0xFFFF;
+       CFE_ES_TaskData.HkPacket.Payload.CFECoreChecksum = 0xFFFF;
     }
 
     /*
     ** Initialize the version numbers in the ES Housekeeping pkt
     */
-    CFE_ES_TaskData.HkPacket.CFEMajorVersion     = CFE_MAJOR_VERSION;
-    CFE_ES_TaskData.HkPacket.CFEMinorVersion     = CFE_MINOR_VERSION;
-    CFE_ES_TaskData.HkPacket.CFERevision         = CFE_REVISION;
-    CFE_ES_TaskData.HkPacket.CFEMissionRevision  = CFE_MISSION_REV;
-    CFE_ES_TaskData.HkPacket.OSALMajorVersion    = OS_MAJOR_VERSION;
-    CFE_ES_TaskData.HkPacket.OSALMinorVersion    = OS_MINOR_VERSION;
-    CFE_ES_TaskData.HkPacket.OSALRevision        = OS_REVISION;
-    CFE_ES_TaskData.HkPacket.OSALMissionRevision = OS_MISSION_REV;
+    CFE_ES_TaskData.HkPacket.Payload.CFEMajorVersion     = CFE_MAJOR_VERSION;
+    CFE_ES_TaskData.HkPacket.Payload.CFEMinorVersion     = CFE_MINOR_VERSION;
+    CFE_ES_TaskData.HkPacket.Payload.CFERevision         = CFE_REVISION;
+    CFE_ES_TaskData.HkPacket.Payload.CFEMissionRevision  = CFE_MISSION_REV;
+    CFE_ES_TaskData.HkPacket.Payload.OSALMajorVersion    = OS_MAJOR_VERSION;
+    CFE_ES_TaskData.HkPacket.Payload.OSALMinorVersion    = OS_MINOR_VERSION;
+    CFE_ES_TaskData.HkPacket.Payload.OSALRevision        = OS_REVISION;
+    CFE_ES_TaskData.HkPacket.Payload.OSALMissionRevision = OS_MISSION_REV;
 
     /*
     ** Task startup event message.
@@ -419,7 +430,7 @@ int32 CFE_ES_TaskInit(void)
                       "cFE ES Initialized");
     if ( Status != CFE_SUCCESS )
     {
-        CFE_ES_WriteToSysLog("ES:Error sending init event:RC=0x%08X\n", Status);
+        CFE_ES_WriteToSysLog("ES:Error sending init event:RC=0x%08X\n", (unsigned int)Status);
         return(Status);
     }                      
 
@@ -429,12 +440,39 @@ int32 CFE_ES_TaskInit(void)
                       CFE_MAJOR_VERSION,CFE_MINOR_VERSION,CFE_REVISION,CFE_MISSION_REV,                      
                       OS_MAJOR_VERSION,OS_MINOR_VERSION,OS_REVISION,OS_MISSION_REV,
                       CFE_PSP_MAJOR_VERSION,CFE_PSP_MINOR_VERSION,CFE_PSP_REVISION,CFE_PSP_MISSION_REV,
-                      CFE_ES_TaskData.HkPacket.CFECoreChecksum);
+                      (int)CFE_ES_TaskData.HkPacket.Payload.CFECoreChecksum);
     if ( Status != CFE_SUCCESS )
     {
-        CFE_ES_WriteToSysLog("ES:Error sending version event:RC=0x%08X\n", Status);
+        CFE_ES_WriteToSysLog("ES:Error sending version event:RC=0x%08X\n", (unsigned int)Status);
         return(Status);
     }
+
+#ifdef _ENHANCED_BUILD_
+    /*
+     ** Advertise the build and version information at start up
+     */
+    Status = CFE_EVS_SendEvent(CFE_ES_VERSION_INF_EID,
+          CFE_EVS_INFORMATION,
+          "Mission %s.%s, %s, %s",
+          GLOBAL_CONFIGDATA.MissionVersion, GLOBAL_CONFIGDATA.Config,
+          GLOBAL_CONFIGDATA.CfeVersion, GLOBAL_CONFIGDATA.OsalVersion);
+    if ( Status != CFE_SUCCESS )
+    {
+       CFE_ES_WriteToSysLog("ES:Error sending version event:RC=0x%08X\n", (unsigned int)Status);
+       return(Status);
+    }
+
+    Status = CFE_EVS_SendEvent(CFE_ES_BUILD_INF_EID,
+          CFE_EVS_INFORMATION,
+          "Build %s %s",
+          GLOBAL_CONFIGDATA.Date, GLOBAL_CONFIGDATA.User);
+    if ( Status != CFE_SUCCESS )
+    {
+       CFE_ES_WriteToSysLog("ES:Error sending build info event:RC=0x%08X\n", (unsigned int)Status);
+       return(Status);
+    }
+#endif
+
 
    return(CFE_SUCCESS);
    
@@ -601,59 +639,90 @@ void CFE_ES_HousekeepingCmd(CFE_SB_MsgPtr_t Msg)
 {
     OS_heap_prop_t HeapProp;
     int32          stat;
+    uint32         PerfIdx;
 
     /*
     ** Get command execution counters, system log entry count & bytes used.
     */
-    CFE_ES_TaskData.HkPacket.CmdCounter = CFE_ES_TaskData.CmdCounter;
-    CFE_ES_TaskData.HkPacket.ErrCounter = CFE_ES_TaskData.ErrCounter;
+    CFE_ES_TaskData.HkPacket.Payload.CmdCounter = CFE_ES_TaskData.CmdCounter;
+    CFE_ES_TaskData.HkPacket.Payload.ErrCounter = CFE_ES_TaskData.ErrCounter;
 
-    CFE_ES_TaskData.HkPacket.SysLogBytesUsed = CFE_ES_ResetDataPtr->SystemLogIndex;
-    CFE_ES_TaskData.HkPacket.SysLogSize = CFE_ES_SYSTEM_LOG_SIZE;
-    CFE_ES_TaskData.HkPacket.SysLogEntries   = CFE_ES_ResetDataPtr->SystemLogEntryNum;
-    CFE_ES_TaskData.HkPacket.SysLogMode = CFE_ES_ResetDataPtr->SystemLogMode;
+    CFE_ES_TaskData.HkPacket.Payload.SysLogBytesUsed = CFE_ES_ResetDataPtr->SystemLogIndex;
+    CFE_ES_TaskData.HkPacket.Payload.SysLogSize = CFE_ES_SYSTEM_LOG_SIZE;
+    CFE_ES_TaskData.HkPacket.Payload.SysLogEntries   = CFE_ES_ResetDataPtr->SystemLogEntryNum;
+    CFE_ES_TaskData.HkPacket.Payload.SysLogMode = CFE_ES_ResetDataPtr->SystemLogMode;
 
-    CFE_ES_TaskData.HkPacket.ERLogIndex      = CFE_ES_ResetDataPtr->ERLogIndex;
-    CFE_ES_TaskData.HkPacket.ERLogEntries    = CFE_ES_ResetDataPtr->ERLogEntries;
+    CFE_ES_TaskData.HkPacket.Payload.ERLogIndex      = CFE_ES_ResetDataPtr->ERLogIndex;
+    CFE_ES_TaskData.HkPacket.Payload.ERLogEntries    = CFE_ES_ResetDataPtr->ERLogEntries;
     
-    CFE_ES_TaskData.HkPacket.RegisteredCoreApps      = CFE_ES_Global.RegisteredCoreApps;
-    CFE_ES_TaskData.HkPacket.RegisteredExternalApps  = CFE_ES_Global.RegisteredExternalApps;
-    CFE_ES_TaskData.HkPacket.RegisteredTasks         = CFE_ES_Global.RegisteredTasks;
-    CFE_ES_TaskData.HkPacket.RegisteredLibs          = CFE_ES_Global.RegisteredLibs;
+    CFE_ES_TaskData.HkPacket.Payload.RegisteredCoreApps      = CFE_ES_Global.RegisteredCoreApps;
+    CFE_ES_TaskData.HkPacket.Payload.RegisteredExternalApps  = CFE_ES_Global.RegisteredExternalApps;
+    CFE_ES_TaskData.HkPacket.Payload.RegisteredTasks         = CFE_ES_Global.RegisteredTasks;
+    CFE_ES_TaskData.HkPacket.Payload.RegisteredLibs          = CFE_ES_Global.RegisteredLibs;
 
-    CFE_ES_TaskData.HkPacket.ResetType = CFE_ES_ResetDataPtr->ResetVars.ResetType;
-    CFE_ES_TaskData.HkPacket.ResetSubtype = CFE_ES_ResetDataPtr->ResetVars.ResetSubtype;
-    CFE_ES_TaskData.HkPacket.ProcessorResets = CFE_ES_ResetDataPtr->ResetVars.ProcessorResetCount;
-    CFE_ES_TaskData.HkPacket.MaxProcessorResets = CFE_ES_ResetDataPtr->ResetVars.MaxProcessorResetCount;
-    CFE_ES_TaskData.HkPacket.BootSource = CFE_ES_ResetDataPtr->ResetVars.BootSource;
+    CFE_ES_TaskData.HkPacket.Payload.ResetType = CFE_ES_ResetDataPtr->ResetVars.ResetType;
+    CFE_ES_TaskData.HkPacket.Payload.ResetSubtype = CFE_ES_ResetDataPtr->ResetVars.ResetSubtype;
+    CFE_ES_TaskData.HkPacket.Payload.ProcessorResets = CFE_ES_ResetDataPtr->ResetVars.ProcessorResetCount;
+    CFE_ES_TaskData.HkPacket.Payload.MaxProcessorResets = CFE_ES_ResetDataPtr->ResetVars.MaxProcessorResetCount;
+    CFE_ES_TaskData.HkPacket.Payload.BootSource = CFE_ES_ResetDataPtr->ResetVars.BootSource;
 
-    CFE_ES_TaskData.HkPacket.PerfState = CFE_ES_ResetDataPtr->Perf.MetaData.State;
-    CFE_ES_TaskData.HkPacket.PerfMode = CFE_ES_ResetDataPtr->Perf.MetaData.Mode;
-    CFE_ES_TaskData.HkPacket.PerfTriggerCount = CFE_ES_ResetDataPtr->Perf.MetaData.TriggerCount;
-    CFE_ES_TaskData.HkPacket.PerfDataStart = CFE_ES_ResetDataPtr->Perf.MetaData.DataStart;
-    CFE_ES_TaskData.HkPacket.PerfDataEnd = CFE_ES_ResetDataPtr->Perf.MetaData.DataEnd;
-    CFE_ES_TaskData.HkPacket.PerfDataCount = CFE_ES_ResetDataPtr->Perf.MetaData.DataCount;
-    CFE_ES_TaskData.HkPacket.PerfDataToWrite = CFE_ES_PerfLogDumpStatus.DataToWrite;
-    CFE_PSP_MemCpy ( (void *)CFE_ES_TaskData.HkPacket.PerfTriggerMask, 
-                (void *)CFE_ES_ResetDataPtr->Perf.MetaData.TriggerMask,
-                ((CFE_ES_PERF_MAX_IDS / 32) * 4 ));
-    CFE_PSP_MemCpy ( (void *)CFE_ES_TaskData.HkPacket.PerfFilterMask, 
-                (void *)CFE_ES_ResetDataPtr->Perf.MetaData.FilterMask,
-                ((CFE_ES_PERF_MAX_IDS / 32) * 4 ));
+    CFE_ES_TaskData.HkPacket.Payload.PerfState = CFE_ES_ResetDataPtr->Perf.MetaData.State;
+    CFE_ES_TaskData.HkPacket.Payload.PerfMode = CFE_ES_ResetDataPtr->Perf.MetaData.Mode;
+    CFE_ES_TaskData.HkPacket.Payload.PerfTriggerCount = CFE_ES_ResetDataPtr->Perf.MetaData.TriggerCount;
+    CFE_ES_TaskData.HkPacket.Payload.PerfDataStart = CFE_ES_ResetDataPtr->Perf.MetaData.DataStart;
+    CFE_ES_TaskData.HkPacket.Payload.PerfDataEnd = CFE_ES_ResetDataPtr->Perf.MetaData.DataEnd;
+    CFE_ES_TaskData.HkPacket.Payload.PerfDataCount = CFE_ES_ResetDataPtr->Perf.MetaData.DataCount;
+    CFE_ES_TaskData.HkPacket.Payload.PerfDataToWrite = CFE_ES_PerfLogDumpStatus.DataToWrite;
+
+    /*
+     * Fill out the perf trigger/filter mask objects
+     * The entire array in the HK payload object (external size) must be filled,
+     * to avoid sending garbage data.
+     *
+     * If it is larger than what the platform supports (internal size), it will
+     * be padded with 0's
+     *
+     * If it is smaller than what the platform supports, then truncate.
+     */
+    for (PerfIdx = 0; PerfIdx < CFE_ES_PERF_TRIGGERMASK_EXT_SIZE; ++PerfIdx)
+    {
+        if (PerfIdx < CFE_ES_PERF_TRIGGERMASK_INT_SIZE)
+        {
+            CFE_ES_TaskData.HkPacket.Payload.PerfTriggerMask[PerfIdx] =
+                    CFE_ES_ResetDataPtr->Perf.MetaData.TriggerMask[PerfIdx];
+        }
+        else
+        {
+            CFE_ES_TaskData.HkPacket.Payload.PerfTriggerMask[PerfIdx] = 0;
+        }
+    }
+
+    for (PerfIdx = 0; PerfIdx < CFE_ES_PERF_FILTERMASK_EXT_SIZE; ++PerfIdx)
+    {
+        if (PerfIdx < CFE_ES_PERF_FILTERMASK_INT_SIZE)
+        {
+            CFE_ES_TaskData.HkPacket.Payload.PerfFilterMask[PerfIdx] =
+                    CFE_ES_ResetDataPtr->Perf.MetaData.FilterMask[PerfIdx];
+        }
+        else
+        {
+            CFE_ES_TaskData.HkPacket.Payload.PerfFilterMask[PerfIdx] = 0;
+        }
+    }
 
     stat = OS_HeapGetInfo(&HeapProp);
 
     if(stat == OS_SUCCESS)
     {
-        CFE_ES_TaskData.HkPacket.HeapBytesFree = HeapProp.free_bytes;
-        CFE_ES_TaskData.HkPacket.HeapBlocksFree = HeapProp.free_blocks;
-        CFE_ES_TaskData.HkPacket.HeapMaxBlockSize = HeapProp.largest_free_block;
+        CFE_ES_TaskData.HkPacket.Payload.HeapBytesFree = HeapProp.free_bytes;
+        CFE_ES_TaskData.HkPacket.Payload.HeapBlocksFree = HeapProp.free_blocks;
+        CFE_ES_TaskData.HkPacket.Payload.HeapMaxBlockSize = HeapProp.largest_free_block;
     }
     else
     {
-        CFE_ES_TaskData.HkPacket.HeapBytesFree = 0;
-        CFE_ES_TaskData.HkPacket.HeapBlocksFree = 0;
-        CFE_ES_TaskData.HkPacket.HeapMaxBlockSize = 0;
+        CFE_ES_TaskData.HkPacket.Payload.HeapBytesFree = 0;
+        CFE_ES_TaskData.HkPacket.Payload.HeapBlocksFree = 0;
+        CFE_ES_TaskData.HkPacket.Payload.HeapMaxBlockSize = 0;
     }
 
     /*
@@ -685,6 +754,18 @@ void CFE_ES_NoopCmd(CFE_SB_MsgPtr_t Msg)
     if (CFE_ES_VerifyCmdLength(Msg, ExpectedLength))
     {
         /*
+         ** Advertise the build and version information with the no-op command
+         ** For unit testing purposes, it helps to put this first - the UT
+         ** is checking for the last event sent to be NOOP_INF_EID.
+         */
+#ifdef _ENHANCED_BUILD_
+        CFE_EVS_SendEvent(CFE_ES_BUILD_INF_EID,
+              CFE_EVS_INFORMATION,
+              "Build %s %s",
+              GLOBAL_CONFIGDATA.Date, GLOBAL_CONFIGDATA.User);
+#endif
+
+        /*
         ** This command will always succeed.
         */
         CFE_ES_TaskData.CmdCounter++;
@@ -693,7 +774,9 @@ void CFE_ES_NoopCmd(CFE_SB_MsgPtr_t Msg)
                          CFE_MAJOR_VERSION,CFE_MINOR_VERSION,CFE_REVISION,CFE_MISSION_REV,                      
                          OS_MAJOR_VERSION,OS_MINOR_VERSION,OS_REVISION,OS_MISSION_REV,
                          CFE_PSP_MAJOR_VERSION,CFE_PSP_MINOR_VERSION,CFE_PSP_REVISION,CFE_PSP_MISSION_REV);
-    };
+
+    }
+
         
 } /* End of CFE_ES_NoopCmd() */
 
@@ -734,6 +817,7 @@ void CFE_ES_ResetCmd(CFE_SB_MsgPtr_t Msg)
 
 void CFE_ES_RestartCmd(CFE_SB_MsgPtr_t Msg)
 {
+    CFE_ES_RestartCmd_Payload_t *cmd = (CFE_ES_RestartCmd_Payload_t *)&Msg->Byte[CFE_SB_CMD_HDR_SIZE];
     uint16 ExpectedLength = sizeof(CFE_ES_RestartCmd_t);
 
     /*
@@ -741,15 +825,14 @@ void CFE_ES_RestartCmd(CFE_SB_MsgPtr_t Msg)
     */
     if (CFE_ES_VerifyCmdLength(Msg, ExpectedLength))
     {
-        CFE_ES_RestartCmd_t *cmd = (CFE_ES_RestartCmd_t *) Msg;
 
-        if ((cmd->RestartType != CFE_ES_PROCESSOR_RESET) &&
-            (cmd->RestartType != CFE_ES_POWERON_RESET))
+        if ((cmd->RestartType != CFE_PSP_RST_TYPE_PROCESSOR) &&
+            (cmd->RestartType != CFE_PSP_RST_TYPE_POWERON))
         {
             CFE_ES_TaskData.ErrCounter++;
             CFE_EVS_SendEvent(CFE_ES_BOOT_ERR_EID, CFE_EVS_ERROR,
                              "Invalid cFE restart type: %d",
-                              cmd->RestartType);
+                              (int)cmd->RestartType);
         }
         else
         {
@@ -773,19 +856,26 @@ void CFE_ES_ShellCmd(CFE_SB_MsgPtr_t Msg)
 {
     uint16 ExpectedLength = sizeof(CFE_ES_ShellCmd_t);
     int32 Result;
+    CFE_ES_ShellCmd_Payload_t *cmd = (CFE_ES_ShellCmd_Payload_t *)&Msg->Byte[CFE_SB_CMD_HDR_SIZE];
+    char LocalCmd[CFE_ES_MAX_SHELL_CMD];
+    char LocalFile[OS_MAX_PATH_LEN];
 
     /*
     ** Verify command packet length.
     */
     if (CFE_ES_VerifyCmdLength(Msg, ExpectedLength))
     {
-        CFE_ES_ShellCmd_t *cmd = (CFE_ES_ShellCmd_t *) Msg;
+        /* Create local copies of both input strings and ensure null termination */
+        CFE_SB_MessageStringGet(LocalCmd, (char *)cmd->CmdString, NULL,
+                CFE_ES_MAX_SHELL_CMD, sizeof(cmd->CmdString));
+
+        CFE_SB_MessageStringGet(LocalFile, (char *)cmd->OutputFilename, NULL,
+                OS_MAX_PATH_LEN, sizeof(cmd->OutputFilename));
 
         /*
         ** Call the Shell command API
         */
-        Result = CFE_ES_ShellOutputCommand((char *) cmd->CmdString,
-                                           (char *) cmd->OutputFilename);
+        Result = CFE_ES_ShellOutputCommand(LocalCmd, LocalFile);
         /*
         ** Send appropriate event message.
         */
@@ -794,14 +884,14 @@ void CFE_ES_ShellCmd(CFE_SB_MsgPtr_t Msg)
             CFE_ES_TaskData.CmdCounter++;
             CFE_EVS_SendEvent(CFE_ES_SHELL_INF_EID, CFE_EVS_INFORMATION,
                              "Invoked shell command: '%s'",
-                              cmd->CmdString);
+                              LocalCmd);
         }
         else
         {
             CFE_ES_TaskData.ErrCounter++;
             CFE_EVS_SendEvent(CFE_ES_SHELL_ERR_EID, CFE_EVS_ERROR,
-                       "Failed to invoke shell command: '%s', RC = 0x%08X",
-                              cmd->CmdString, Result);
+                    "Failed to invoke shell command: '%s', RC = 0x%08X",
+                    LocalCmd, (unsigned int)Result);
         }
     }
 
@@ -817,34 +907,48 @@ void CFE_ES_ShellCmd(CFE_SB_MsgPtr_t Msg)
 void CFE_ES_StartAppCmd(CFE_SB_MsgPtr_t Msg)
 {
     uint16                ExpectedLength = sizeof(CFE_ES_StartAppCmd_t);
-    CFE_ES_StartAppCmd_t *cmd            = (CFE_ES_StartAppCmd_t *) Msg;
+    CFE_ES_StartAppCmd_Payload_t *cmd = (CFE_ES_StartAppCmd_Payload_t *)&Msg->Byte[CFE_SB_CMD_HDR_SIZE];
     uint32                AppID          = 0;
     int32                 Result;
+    int32                 FilenameLen;
+    int32                 AppEntryLen;
+    int32                 AppNameLen;
+    char                  LocalFile[OS_MAX_PATH_LEN];
+    char                  LocalEntryPt[OS_MAX_API_NAME];
+    char                  LocalAppName[OS_MAX_API_NAME];
 
     /*
     ** Verify command packet length.
     */
     if (CFE_ES_VerifyCmdLength(Msg, ExpectedLength))
     {
-    
-       /*
-       ** Verify command parameters
-       */
+        /* Create local copies of all input strings and ensure null termination */
+        FilenameLen = CFE_SB_MessageStringGet(LocalFile, (char *)cmd->AppFileName, NULL,
+                OS_MAX_PATH_LEN, sizeof(cmd->AppFileName));
 
-       if ((cmd->AppFileName == NULL) || (strlen((char *)cmd->AppFileName) < 4 ))
+        AppEntryLen = CFE_SB_MessageStringGet(LocalEntryPt, (char *)cmd->AppEntryPoint, NULL,
+                OS_MAX_API_NAME, sizeof(cmd->AppEntryPoint));
+
+        AppNameLen = CFE_SB_MessageStringGet(LocalAppName, (char *)cmd->Application, NULL,
+                OS_MAX_API_NAME, sizeof(cmd->Application));
+
+        /*
+        ** Verify command parameters
+        */
+        if (FilenameLen < 4)
        {
           CFE_ES_TaskData.ErrCounter++;
           CFE_EVS_SendEvent(CFE_ES_START_INVALID_FILENAME_ERR_EID, CFE_EVS_ERROR,
                            "CFE_ES_StartAppCmd: invalid filename: %s",
-                            cmd->AppFileName);
+                           LocalFile);
        }
-       else if (cmd->AppEntryPoint == NULL)
+       else if (AppEntryLen <= 0)
        {
           CFE_ES_TaskData.ErrCounter++;
           CFE_EVS_SendEvent(CFE_ES_START_INVALID_ENTRY_POINT_ERR_EID, CFE_EVS_ERROR,
                            "CFE_ES_StartAppCmd: App Entry Point is NULL.");
        }
-       else if (cmd->Application == NULL)
+       else if (AppNameLen <= 0)
        {
           CFE_ES_TaskData.ErrCounter++;
           CFE_EVS_SendEvent(CFE_ES_START_NULL_APP_NAME_ERR_EID, CFE_EVS_ERROR,
@@ -877,9 +981,9 @@ void CFE_ES_StartAppCmd(CFE_SB_MsgPtr_t Msg)
           /*
           ** Invoke application loader/startup function.
           */
-          Result = CFE_ES_AppCreate(&AppID, (char *)cmd->AppFileName,
-                      (char *)cmd->AppEntryPoint,
-                      (char *)cmd->Application,
+          Result = CFE_ES_AppCreate(&AppID, LocalFile,
+                      LocalEntryPt,
+                      LocalAppName,
                       (uint32) cmd->Priority, 
                       (uint32) cmd->StackSize,
                       (uint32) cmd->ExceptionAction);
@@ -892,14 +996,14 @@ void CFE_ES_StartAppCmd(CFE_SB_MsgPtr_t Msg)
              CFE_ES_TaskData.CmdCounter++;
              CFE_EVS_SendEvent(CFE_ES_START_INF_EID, CFE_EVS_INFORMATION,
                                 "Started %s from %s, AppID = %d",
-                                 cmd->Application, cmd->AppFileName, AppID);
+                                LocalAppName, LocalFile, (int)AppID);
            }
            else
            {
                CFE_ES_TaskData.ErrCounter++;
                CFE_EVS_SendEvent(CFE_ES_START_ERR_EID, CFE_EVS_ERROR,
                              "Failed to start %s from %s, RC = 0x%08X",
-                              cmd->Application, cmd->AppFileName, Result);
+                             LocalAppName, LocalFile, (unsigned int)Result);
            }
            
        } /* End if -- command parameter validation */
@@ -917,18 +1021,22 @@ void CFE_ES_StartAppCmd(CFE_SB_MsgPtr_t Msg)
 
 void CFE_ES_StopAppCmd(CFE_SB_MsgPtr_t Msg)
 {
+    CFE_ES_AppNameCmd_Payload_t *cmd = (CFE_ES_AppNameCmd_Payload_t *)&Msg->Byte[CFE_SB_CMD_HDR_SIZE];
     uint16 ExpectedLength = sizeof(CFE_ES_AppNameCmd_t);
+    char LocalApp[OS_MAX_API_NAME];
+
 
     /*
     ** Verify command packet length.
     */
     if (CFE_ES_VerifyCmdLength(Msg, ExpectedLength))
     {
-        CFE_ES_AppNameCmd_t *cmd = (CFE_ES_AppNameCmd_t *) Msg;
         uint32 AppID;
         int32 Result;
         
-        Result = CFE_ES_GetAppIDByName(&AppID, (char *)cmd->Application);
+        CFE_SB_MessageStringGet(LocalApp, (char *)cmd->Application, NULL, OS_MAX_API_NAME, sizeof(cmd->Application));
+
+        Result = CFE_ES_GetAppIDByName(&AppID, LocalApp);
 
         if (Result == CFE_SUCCESS)
         {            
@@ -944,14 +1052,14 @@ void CFE_ES_StopAppCmd(CFE_SB_MsgPtr_t Msg)
             {
                 CFE_ES_TaskData.CmdCounter++;
                 CFE_EVS_SendEvent(CFE_ES_STOP_DBG_EID, CFE_EVS_DEBUG,
-                             "Stop Application %s Initiated.", cmd->Application);
+                             "Stop Application %s Initiated.", LocalApp);
             }
             else
             {
                 CFE_ES_TaskData.ErrCounter++;
                 CFE_EVS_SendEvent(CFE_ES_STOP_ERR1_EID, CFE_EVS_ERROR,
                              "Stop Application %s Failed, RC = 0x%08X",
-                              cmd->Application, Result);
+                             LocalApp, (unsigned int)Result);
             }
         }
         else
@@ -959,7 +1067,7 @@ void CFE_ES_StopAppCmd(CFE_SB_MsgPtr_t Msg)
             CFE_ES_TaskData.ErrCounter++;
             CFE_EVS_SendEvent(CFE_ES_STOP_ERR2_EID, CFE_EVS_ERROR,
                               "Stop Application %s, GetAppIDByName failed. RC = 0x%08X.",
-                               cmd->Application, Result);            
+                              LocalApp, (unsigned int)Result);
         }
 
     }
@@ -975,17 +1083,21 @@ void CFE_ES_StopAppCmd(CFE_SB_MsgPtr_t Msg)
 
 void CFE_ES_RestartAppCmd(CFE_SB_MsgPtr_t Msg)
 {
+    CFE_ES_AppNameCmd_Payload_t *cmd = (CFE_ES_AppNameCmd_Payload_t *)&Msg->Byte[CFE_SB_CMD_HDR_SIZE];
     uint16 ExpectedLength = sizeof(CFE_ES_AppNameCmd_t);
+    char LocalApp[OS_MAX_API_NAME];
 
     /*
     ** Verify command packet length.
     */
     if (CFE_ES_VerifyCmdLength(Msg, ExpectedLength))
     {
-        CFE_ES_AppNameCmd_t *cmd = (CFE_ES_AppNameCmd_t *) Msg;
-
         uint32 AppID;
-        int32 Result = CFE_ES_GetAppIDByName(&AppID, (char *)cmd->Application);
+        int32 Result;
+
+        CFE_SB_MessageStringGet(LocalApp, (char *)cmd->Application, NULL, OS_MAX_API_NAME, sizeof(cmd->Application));
+
+        Result = CFE_ES_GetAppIDByName(&AppID, LocalApp);
 
         if (Result == CFE_SUCCESS)
         {
@@ -998,14 +1110,14 @@ void CFE_ES_RestartAppCmd(CFE_SB_MsgPtr_t Msg)
             {
                 CFE_ES_TaskData.CmdCounter++;
                 CFE_EVS_SendEvent(CFE_ES_RESTART_APP_DBG_EID, CFE_EVS_DEBUG,
-                             "Restart Application %s Initiated.", cmd->Application);
+                             "Restart Application %s Initiated.", LocalApp);
             }
             else
             {
                 CFE_ES_TaskData.ErrCounter++;
                 CFE_EVS_SendEvent(CFE_ES_RESTART_APP_ERR1_EID, CFE_EVS_ERROR,
                              "Restart Application %s Failed, RC = 0x%08X",
-                              cmd->Application, Result);
+                             LocalApp, (unsigned int)Result);
             }
         }
         else
@@ -1013,7 +1125,7 @@ void CFE_ES_RestartAppCmd(CFE_SB_MsgPtr_t Msg)
             CFE_ES_TaskData.ErrCounter++;
             CFE_EVS_SendEvent(CFE_ES_RESTART_APP_ERR2_EID, CFE_EVS_ERROR,
                               "Restart Application %s, GetAppIDByName failed. RC = 0x%08X.",
-                               cmd->Application, Result);            
+                              LocalApp, (unsigned int)Result);
         }
     }
 
@@ -1027,20 +1139,27 @@ void CFE_ES_RestartAppCmd(CFE_SB_MsgPtr_t Msg)
 
 void CFE_ES_ReloadAppCmd(CFE_SB_MsgPtr_t Msg)
 {
+    CFE_ES_AppReloadCmd_Payload_t *cmd = (CFE_ES_AppReloadCmd_Payload_t *)&Msg->Byte[CFE_SB_CMD_HDR_SIZE];
     uint16 ExpectedLength = sizeof(CFE_ES_AppReloadCmd_t);
+    char LocalApp[OS_MAX_API_NAME];
+    char LocalFileName[OS_MAX_PATH_LEN];
 
     /*
     ** Verify command packet length.
     */
     if (CFE_ES_VerifyCmdLength(Msg, ExpectedLength))
     {
-        CFE_ES_AppReloadCmd_t *cmd = (CFE_ES_AppReloadCmd_t *) Msg;
         uint32  AppID;
-        int32   Result = CFE_ES_GetAppIDByName(&AppID, (char *)cmd->Application);
+        int32   Result;
+
+        CFE_SB_MessageStringGet(LocalFileName, (char *)cmd->AppFileName, NULL, sizeof(LocalFileName), sizeof(cmd->AppFileName));
+        CFE_SB_MessageStringGet(LocalApp, (char *)cmd->Application, NULL, sizeof(LocalApp), sizeof(cmd->Application));
+
+        Result = CFE_ES_GetAppIDByName(&AppID, LocalApp);
 
         if (Result == CFE_SUCCESS)
         {
-           Result = CFE_ES_ReloadApp(AppID, (const char *)cmd->AppFileName);
+           Result = CFE_ES_ReloadApp(AppID, LocalFileName);
 
             /*
             ** Send appropriate event message.
@@ -1049,14 +1168,14 @@ void CFE_ES_ReloadAppCmd(CFE_SB_MsgPtr_t Msg)
             {
                 CFE_ES_TaskData.CmdCounter++;
                 CFE_EVS_SendEvent(CFE_ES_RELOAD_APP_DBG_EID, CFE_EVS_DEBUG,
-                             "Reload Application %s Initiated.", cmd->Application);
+                             "Reload Application %s Initiated.", LocalApp);
             }
             else
             {
                 CFE_ES_TaskData.ErrCounter++;
                 CFE_EVS_SendEvent(CFE_ES_RELOAD_APP_ERR1_EID, CFE_EVS_ERROR,
                              "Reload Application %s Failed, RC = 0x%08X",
-                              cmd->Application, Result);
+                             LocalApp, (unsigned int)Result);
             }
         }
         else
@@ -1064,7 +1183,7 @@ void CFE_ES_ReloadAppCmd(CFE_SB_MsgPtr_t Msg)
             CFE_ES_TaskData.ErrCounter++;
             CFE_EVS_SendEvent(CFE_ES_RELOAD_APP_ERR2_EID, CFE_EVS_ERROR,
                               "Reload Application %s, GetAppIDByName failed. RC = 0x%08X.",
-                               cmd->Application, Result);            
+                              LocalApp, (unsigned int)Result);
         }
     }
 
@@ -1079,17 +1198,21 @@ void CFE_ES_ReloadAppCmd(CFE_SB_MsgPtr_t Msg)
 
 void CFE_ES_QueryOneCmd(CFE_SB_MsgPtr_t Msg)
 {
+    CFE_ES_AppNameCmd_Payload_t *cmd = (CFE_ES_AppNameCmd_Payload_t *)&Msg->Byte[CFE_SB_CMD_HDR_SIZE];
     uint16 ExpectedLength = sizeof(CFE_ES_AppNameCmd_t);
+    char LocalApp[OS_MAX_API_NAME];
 
     /*
     ** Verify command packet length
     */
     if (CFE_ES_VerifyCmdLength(Msg, ExpectedLength))
     {
-        CFE_ES_AppNameCmd_t *cmd = (CFE_ES_AppNameCmd_t *) Msg;
-
         uint32 AppID;
-        int32 Result = CFE_ES_GetAppIDByName(&AppID, (char *)cmd->Application);
+        int32 Result;
+
+        CFE_SB_MessageStringGet(LocalApp, (char *)cmd->Application, NULL, OS_MAX_API_NAME, sizeof(cmd->Application));
+
+        Result = CFE_ES_GetAppIDByName(&AppID, LocalApp);
 
         /*
         ** Send appropriate event message...
@@ -1097,7 +1220,7 @@ void CFE_ES_QueryOneCmd(CFE_SB_MsgPtr_t Msg)
         if (Result == CFE_SUCCESS)
         {
         
-           CFE_ES_GetAppInfoInternal(AppID, &(CFE_ES_TaskData.OneAppPacket.AppInfo));
+           CFE_ES_GetAppInfoInternal(AppID, &(CFE_ES_TaskData.OneAppPacket.Payload.AppInfo));
            /*
            ** Send application status telemetry packet.
            */
@@ -1107,14 +1230,14 @@ void CFE_ES_QueryOneCmd(CFE_SB_MsgPtr_t Msg)
            {
                CFE_ES_TaskData.CmdCounter++;
                CFE_EVS_SendEvent(CFE_ES_ONE_APP_EID, CFE_EVS_DEBUG,
-                       "Sent %s application data", cmd->Application);
+                       "Sent %s application data", LocalApp);
            }
            else
            {
                CFE_ES_TaskData.ErrCounter++;
                CFE_EVS_SendEvent(CFE_ES_ONE_ERR_EID, CFE_EVS_ERROR,
                           "Failed to send %s application data, RC = 0x%08X",
-                           cmd->Application, Result);
+                          LocalApp, (unsigned int)Result);
            }
         }
         else
@@ -1122,7 +1245,7 @@ void CFE_ES_QueryOneCmd(CFE_SB_MsgPtr_t Msg)
             CFE_ES_TaskData.ErrCounter++;
             CFE_EVS_SendEvent(CFE_ES_ONE_APPID_ERR_EID, CFE_EVS_ERROR,
                        "Failed to send %s application data: GetAppIDByName Failed, RC = 0x%08X",
-                              cmd->Application, Result);
+                       LocalApp, (unsigned int)Result);
         }
     }
 
@@ -1145,7 +1268,7 @@ void CFE_ES_QueryAllCmd(CFE_SB_MsgPtr_t Msg)
     uint32                FileSize = 0;
     int32                 Result;
     CFE_ES_AppInfo_t      AppInfo;
-    CFE_ES_QueryAllCmd_t  *CmdPtr = (CFE_ES_QueryAllCmd_t *)Msg;
+    CFE_ES_QueryAllCmd_Payload_t *CmdPtr = (CFE_ES_QueryAllCmd_Payload_t *)&Msg->Byte[CFE_SB_CMD_HDR_SIZE];
     char                  QueryAllFilename[OS_MAX_PATH_LEN];
 
     /*
@@ -1156,20 +1279,8 @@ void CFE_ES_QueryAllCmd(CFE_SB_MsgPtr_t Msg)
        /* 
        ** Copy the commanded filename into local buffer to ensure size limitation and to allow for modification 
        */
-       CFE_PSP_MemCpy(QueryAllFilename, (void *)CmdPtr->QueryAllFileName, OS_MAX_PATH_LEN);
-
-       /* 
-       ** Check to see if a default filename should be used 
-       */
-       if (QueryAllFilename[0] == '\0')
-       {
-           strncpy(QueryAllFilename, CFE_ES_DEFAULT_APP_LOG_FILE, OS_MAX_PATH_LEN);
-       }
-
-       /* 
-       ** Make sure all strings are null terminated before attempting to process them 
-       */
-       QueryAllFilename[OS_MAX_PATH_LEN-1] = '\0';
+       CFE_SB_MessageStringGet(QueryAllFilename, (char *)CmdPtr->QueryAllFileName,
+                CFE_ES_DEFAULT_APP_LOG_FILE, OS_MAX_PATH_LEN, sizeof(CmdPtr->QueryAllFileName));
 
        /* 
        ** Check to see if the file already exists 
@@ -1190,13 +1301,7 @@ void CFE_ES_QueryAllCmd(CFE_SB_MsgPtr_t Msg)
           /*
           ** Initialize cFE file header
           */
-          CFE_PSP_MemSet(&FileHeader, 0, sizeof(CFE_FS_Header_t));
-          strcpy(FileHeader.Description, CFE_ES_APP_LOG_DESC);
-
-          /*
-          ** Write the File header SubType
-          */
-          FileHeader.SubType = CFE_FS_ES_QUERYALL_SUBTYPE;
+          CFE_FS_InitHeader(&FileHeader, CFE_ES_APP_LOG_DESC, CFE_FS_ES_QUERYALL_SUBTYPE);
 
           /*
           ** Output the Standard cFE File Header to the App File
@@ -1209,7 +1314,7 @@ void CFE_ES_QueryAllCmd(CFE_SB_MsgPtr_t Msg)
               CFE_ES_TaskData.ErrCounter++;
               CFE_EVS_SendEvent(CFE_ES_WRHDR_ERR_EID, CFE_EVS_ERROR,
                  "Failed to write App Info file, WriteHdr RC = 0x%08X, exp %d",
-                       Result,sizeof(CFE_FS_Header_t));
+              (unsigned int)Result,(int)sizeof(CFE_FS_Header_t));
               return;
           }/* end if */
 
@@ -1223,52 +1328,48 @@ void CFE_ES_QueryAllCmd(CFE_SB_MsgPtr_t Msg)
           */
           for(i=0;i<CFE_ES_MAX_APPLICATIONS;i++)
           {
-             if(CFE_ES_Global.AppTable[i].RecordUsed == FALSE)
+             if(CFE_ES_Global.AppTable[i].RecordUsed != FALSE)
              {
-               continue;
+                /* 
+                ** zero out the local entry 
+                */
+                CFE_PSP_MemSet(&AppInfo,0,sizeof(CFE_ES_AppInfo_t));
+
+                /*
+                ** Populate the AppInfo entry 
+                */
+                CFE_ES_GetAppInfoInternal(i, &AppInfo);
+
+                /*
+                ** Write the local entry to file 
+                */
+                Result = OS_write(FileDescriptor, &AppInfo, sizeof(CFE_ES_AppInfo_t));
+                if (Result !=  sizeof(CFE_ES_AppInfo_t))
+                {
+                   OS_close(FileDescriptor);
+                   CFE_ES_TaskData.ErrCounter++;
+                   CFE_EVS_SendEvent(CFE_ES_TASKWR_ERR_EID, CFE_EVS_ERROR,
+                      "Failed to write App Info file, Task write RC = 0x%08X, exp %d",
+                      (unsigned int)Result,(int)sizeof(CFE_ES_AppInfo_t));
+                   return;
+                }/* end if */
+
+                FileSize += Result;
+                EntryCount ++;
              }
-
-             /* 
-             ** zero out the local entry 
-             */
-             CFE_PSP_MemSet(&AppInfo,0,sizeof(CFE_ES_AppInfo_t));
-
-             /*
-             ** Populate the AppInfo entry 
-             */
-             CFE_ES_GetAppInfoInternal(i, &AppInfo);
-
-             /*
-             ** Write the local entry to file 
-             */
-             Result = OS_write(FileDescriptor, &AppInfo, sizeof(CFE_ES_AppInfo_t) );
-             if (Result !=  sizeof(CFE_ES_AppInfo_t))
-             {
-                OS_close(FileDescriptor);
-                CFE_ES_TaskData.ErrCounter++;
-                CFE_EVS_SendEvent(CFE_ES_TASKWR_ERR_EID, CFE_EVS_ERROR,
-                   "Failed to write App Info file, Task write RC = 0x%08X, exp %d",
-                                   Result,sizeof(CFE_ES_AppInfo_t));
-                return;
-             }/* end if */
-
-             FileSize += Result;
-             EntryCount ++;
-            
           } /* end for */
 
           OS_close(FileDescriptor);
           CFE_ES_TaskData.CmdCounter++;
           CFE_EVS_SendEvent(CFE_ES_ALL_APPS_EID, CFE_EVS_DEBUG,
                         "App Info file written to %s, Entries=%d, FileSize=%d",
-                         QueryAllFilename,EntryCount,FileSize);
+                      QueryAllFilename,(int)EntryCount,(int)FileSize);
        }
        else
        {
-           OS_close(FileDescriptor);
            CFE_ES_TaskData.ErrCounter++;
            CFE_EVS_SendEvent(CFE_ES_OSCREATE_ERR_EID, CFE_EVS_ERROR,
-              "Failed to write App Info file, OS_creat RC = 0x%08X",FileDescriptor);
+           "Failed to write App Info file, OS_creat RC = 0x%08X",(unsigned int)FileDescriptor);
        }
        
     } /* end if verify command length */
@@ -1293,7 +1394,7 @@ void CFE_ES_QueryAllTasksCmd(CFE_SB_MsgPtr_t Msg)
     uint32                     FileSize = 0;
     int32                      Result;
     CFE_ES_TaskInfo_t          TaskInfo;
-    CFE_ES_QueryAllTasksCmd_t  *CmdPtr = (CFE_ES_QueryAllTasksCmd_t *)Msg;
+    CFE_ES_QueryAllTasksCmd_Payload_t *CmdPtr = (CFE_ES_QueryAllTasksCmd_Payload_t *)&Msg->Byte[CFE_SB_CMD_HDR_SIZE];
     char                       QueryAllFilename[OS_MAX_PATH_LEN];
 
     /*
@@ -1304,20 +1405,8 @@ void CFE_ES_QueryAllTasksCmd(CFE_SB_MsgPtr_t Msg)
        /* 
        ** Copy the commanded filename into local buffer to ensure size limitation and to allow for modification 
        */
-       CFE_PSP_MemCpy(QueryAllFilename, (void *)CmdPtr->QueryAllFileName, OS_MAX_PATH_LEN);
-
-       /* 
-       ** Check to see if a default filename should be used 
-       */
-       if (QueryAllFilename[0] == '\0')
-       {
-           strncpy(QueryAllFilename, CFE_ES_DEFAULT_TASK_LOG_FILE, OS_MAX_PATH_LEN);
-       }
-
-       /* 
-       ** Make sure all strings are null terminated before attempting to process them 
-       */
-       QueryAllFilename[OS_MAX_PATH_LEN-1] = '\0';
+       CFE_SB_MessageStringGet(QueryAllFilename, (char *)CmdPtr->QueryAllFileName,
+               CFE_ES_DEFAULT_TASK_LOG_FILE, OS_MAX_PATH_LEN, sizeof(CmdPtr->QueryAllFileName));
 
        /* 
        ** Check to see if the file already exists 
@@ -1338,13 +1427,7 @@ void CFE_ES_QueryAllTasksCmd(CFE_SB_MsgPtr_t Msg)
           /*
           ** Initialize cFE file header
           */
-          CFE_PSP_MemSet(&FileHeader, 0, sizeof(CFE_FS_Header_t));
-          strcpy(FileHeader.Description, CFE_ES_TASK_LOG_DESC);
-
-          /*
-          ** Write the File header SubType
-          */
-          FileHeader.SubType = CFE_FS_ES_QUERYALLTASKS_SUBTYPE;
+          CFE_FS_InitHeader(&FileHeader, CFE_ES_TASK_LOG_DESC, CFE_FS_ES_QUERYALLTASKS_SUBTYPE);
 
           /*
           ** Output the Standard cFE File Header to the App File
@@ -1357,7 +1440,7 @@ void CFE_ES_QueryAllTasksCmd(CFE_SB_MsgPtr_t Msg)
               CFE_ES_TaskData.ErrCounter++;
               CFE_EVS_SendEvent(CFE_ES_TASKINFO_WRHDR_ERR_EID, CFE_EVS_ERROR,
                  "Failed to write Task Info file, WriteHdr RC = 0x%08X, exp %d",
-                       Result,sizeof(CFE_FS_Header_t));
+              (unsigned int)Result,(int)sizeof(CFE_FS_Header_t));
               return;
           }/* end if */
 
@@ -1371,37 +1454,35 @@ void CFE_ES_QueryAllTasksCmd(CFE_SB_MsgPtr_t Msg)
           */
           for(i=0;i<OS_MAX_TASKS;i++)
           {
-             if(CFE_ES_Global.TaskTable[i].RecordUsed == FALSE)
+             if(CFE_ES_Global.TaskTable[i].RecordUsed != FALSE)
              {
-               continue;
+                /* 
+                ** zero out the local entry 
+                */
+                CFE_PSP_MemSet(&TaskInfo,0,sizeof(CFE_ES_TaskInfo_t));
+
+                /*
+                ** Populate the AppInfo entry 
+                */
+                CFE_ES_GetTaskInfo(&TaskInfo,CFE_ES_Global.TaskTable[i].TaskId);
+
+                /*
+                ** Write the local entry to file 
+                */
+                Result = OS_write(FileDescriptor, &TaskInfo, sizeof(CFE_ES_TaskInfo_t));
+                if (Result !=  sizeof(CFE_ES_TaskInfo_t))
+                {
+                   OS_close(FileDescriptor);
+                   CFE_ES_TaskData.ErrCounter++;
+                   CFE_EVS_SendEvent(CFE_ES_TASKINFO_WR_ERR_EID, CFE_EVS_ERROR,
+                      "Failed to write Task Info file, Task write RC = 0x%08X, exp %d",
+                      (unsigned int)Result,(int)sizeof(CFE_ES_TaskInfo_t));
+                   return;
+                }/* end if */
+
+                FileSize += Result;
+                EntryCount ++;
              }
-
-             /* 
-             ** zero out the local entry 
-             */
-             CFE_PSP_MemSet(&TaskInfo,0,sizeof(CFE_ES_TaskInfo_t));
-
-             /*
-             ** Populate the AppInfo entry 
-             */
-             CFE_ES_GetTaskInfo(&TaskInfo,i);
-
-             /*
-             ** Write the local entry to file 
-             */
-             Result = OS_write(FileDescriptor, &TaskInfo, sizeof(CFE_ES_TaskInfo_t) );
-             if (Result !=  sizeof(CFE_ES_TaskInfo_t))
-             {
-                OS_close(FileDescriptor);
-                CFE_ES_TaskData.ErrCounter++;
-                CFE_EVS_SendEvent(CFE_ES_TASKINFO_WR_ERR_EID, CFE_EVS_ERROR,
-                   "Failed to write Task Info file, Task write RC = 0x%08X, exp %d",
-                                   Result,sizeof(CFE_ES_TaskInfo_t));
-                return;
-             }/* end if */
-
-             FileSize += Result;
-             EntryCount ++;
             
           } /* end for */
 
@@ -1409,14 +1490,13 @@ void CFE_ES_QueryAllTasksCmd(CFE_SB_MsgPtr_t Msg)
           CFE_ES_TaskData.CmdCounter++;
           CFE_EVS_SendEvent(CFE_ES_TASKINFO_EID, CFE_EVS_DEBUG,
                         "Task Info file written to %s, Entries=%d, FileSize=%d",
-                         QueryAllFilename,EntryCount,FileSize);
+                      QueryAllFilename,(int)EntryCount,(int)FileSize);
        }
        else
        {
-           OS_close(FileDescriptor);
            CFE_ES_TaskData.ErrCounter++;
            CFE_EVS_SendEvent(CFE_ES_TASKINFO_OSCREATE_ERR_EID, CFE_EVS_ERROR,
-              "Failed to write Task Info file, OS_creat RC = 0x%08X",FileDescriptor);
+           "Failed to write Task Info file, OS_creat RC = 0x%08X",(unsigned int)FileDescriptor);
        }
        
     } /* end if verify command length */
@@ -1465,7 +1545,7 @@ void CFE_ES_ClearSyslogCmd(CFE_SB_MsgPtr_t Msg)
 void CFE_ES_OverWriteSyslogCmd(CFE_SB_MsgPtr_t Msg)
 {
    uint32                        Status = 0;
-   CFE_ES_OverWriteSysLogCmd_t  *CmdPtr = ( CFE_ES_OverWriteSysLogCmd_t *)Msg;
+   CFE_ES_OverWriteSysLogCmd_Payload_t *CmdPtr = (CFE_ES_OverWriteSysLogCmd_Payload_t *)&Msg->Byte[CFE_SB_CMD_HDR_SIZE];
    uint16                        ExpectedLength = sizeof(CFE_ES_OverWriteSysLogCmd_t);
 
     /*
@@ -1480,7 +1560,7 @@ void CFE_ES_OverWriteSyslogCmd(CFE_SB_MsgPtr_t Msg)
       {
          CFE_EVS_SendEvent(CFE_ES_ERR_SYSLOGMODE_EID,
                            CFE_EVS_ERROR,
-                           "Set OverWriteSysLog Command: Invalid Mode setting = %d", CmdPtr->Mode);
+                        "Set OverWriteSysLog Command: Invalid Mode setting = %d", (int)CmdPtr->Mode);
                            
          CFE_ES_TaskData.ErrCounter++;      
       }
@@ -1488,7 +1568,7 @@ void CFE_ES_OverWriteSyslogCmd(CFE_SB_MsgPtr_t Msg)
       {
          CFE_EVS_SendEvent(CFE_ES_SYSLOGMODE_EID,
                            CFE_EVS_DEBUG,
-                           "Set OverWriteSysLog Command Received with Mode setting = %d", CmdPtr->Mode);
+                        "Set OverWriteSysLog Command Received with Mode setting = %d", (int)CmdPtr->Mode);
                            
          CFE_ES_TaskData.CmdCounter++;
       }
@@ -1527,25 +1607,20 @@ void CFE_ES_SysLogClear(void)
 
 void CFE_ES_WriteSyslogCmd(CFE_SB_MsgPtr_t Msg)
 {
-    CFE_ES_WriteSyslogCmd_t  *CmdPtr = (CFE_ES_WriteSyslogCmd_t *)Msg;
+    CFE_ES_WriteSyslogCmd_Payload_t *CmdPtr = (CFE_ES_WriteSyslogCmd_Payload_t *)&Msg->Byte[CFE_SB_CMD_HDR_SIZE];
     int32                     Stat;
     uint16                    ExpectedLength = sizeof(CFE_ES_WriteSyslogCmd_t);
+    char                      LogFilename[OS_MAX_PATH_LEN];
 
     /*
     ** Verify command packet length.
     */
     if (CFE_ES_VerifyCmdLength(Msg, ExpectedLength))
     {
+       CFE_SB_MessageStringGet(LogFilename, (char *)CmdPtr->SysLogFileName,
+               CFE_ES_DEFAULT_SYSLOG_FILE, OS_MAX_PATH_LEN, sizeof(CmdPtr->SysLogFileName));
 
-       if(CmdPtr->SysLogFileName[0]=='\0')
-       {     
-           Stat = CFE_ES_SysLogDump(CFE_ES_DEFAULT_SYSLOG_FILE);
-       }
-       else
-       {
-           CmdPtr->SysLogFileName[OS_MAX_PATH_LEN - 1] = '\0';
-           Stat = CFE_ES_SysLogDump(CmdPtr->SysLogFileName);        
-       }/* end if */
+       Stat = CFE_ES_SysLogDump(LogFilename);
          
        if(Stat == CFE_SUCCESS)
        {
@@ -1566,7 +1641,7 @@ void CFE_ES_WriteSyslogCmd(CFE_SB_MsgPtr_t Msg)
 /* CFE_ES_SysLogDump() -- Write ES System Log to a file.    */
 /*                                                                 */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-int32 CFE_ES_SysLogDump(char *Filename)
+int32 CFE_ES_SysLogDump(const char *Filename)
 {
     int32   fd;
     int32   WriteStat;
@@ -1576,20 +1651,13 @@ int32 CFE_ES_SysLogDump(char *Filename)
     fd = OS_creat(Filename, OS_WRITE_ONLY);
     if(fd < 0)
     {
-        OS_close(fd);
         CFE_EVS_SendEvent(CFE_ES_SYSLOG2_ERR_EID,CFE_EVS_ERROR,
                       "Error creating file %s, RC = 0x%08X",
-                      Filename,fd);
+                      Filename,(unsigned int)fd);
         return CFE_ES_FILE_IO_ERR;
     }/* end if */
 
-    CFE_PSP_MemSet(&FileHdr, 0, sizeof(CFE_FS_Header_t));
-    strcpy(&FileHdr.Description[0], CFE_ES_SYS_LOG_DESC);
-
-    /*
-    ** Write the File header SubType
-    */
-    FileHdr.SubType = CFE_FS_ES_SYSLOG_SUBTYPE;
+    CFE_FS_InitHeader(&FileHdr, CFE_ES_SYS_LOG_DESC, CFE_FS_ES_SYSLOG_SUBTYPE);
 
     WriteStat = CFE_FS_WriteHeader(fd, &FileHdr);
     if(WriteStat != sizeof(CFE_FS_Header_t))
@@ -1618,8 +1686,8 @@ int32 CFE_ES_SysLogDump(char *Filename)
     OS_close(fd);
 
     CFE_EVS_SendEvent(CFE_ES_SYSLOG2_EID, CFE_EVS_DEBUG,
-                      "%s written:Size=%d,Entries=%d",Filename,FileSize,
-                      CFE_ES_TaskData.HkPacket.SysLogEntries);
+                      "%s written:Size=%d,Entries=%d",Filename,(int)FileSize,
+                      (int)CFE_ES_TaskData.HkPacket.Payload.SysLogEntries);
 
     return CFE_SUCCESS;
 
@@ -1698,24 +1766,20 @@ void CFE_ES_ClearERlogCmd(CFE_SB_MsgPtr_t Msg)
 
 void CFE_ES_WriteERlogCmd(CFE_SB_MsgPtr_t Msg)
 {
-    CFE_ES_WriteERlogCmd_t  *CmdPtr = (CFE_ES_WriteERlogCmd_t *)Msg;
+    CFE_ES_WriteERlogCmd_Payload_t *CmdPtr = (CFE_ES_WriteERlogCmd_Payload_t *)&Msg->Byte[CFE_SB_CMD_HDR_SIZE];
     int32                    Stat;
     uint16                   ExpectedLength = sizeof(CFE_ES_WriteERlogCmd_t);
+    char                     LogFilename[OS_MAX_PATH_LEN];
 
     /*
     ** Verify command packet length
     */
     if (CFE_ES_VerifyCmdLength(Msg, ExpectedLength))
     {
-       if(CmdPtr->ERLogFileName[0]=='\0')
-       {     
-           Stat = CFE_ES_ERLogDump(CFE_ES_DEFAULT_ER_LOG_FILE);
-       }
-       else
-       {
-           CmdPtr->ERLogFileName[OS_MAX_PATH_LEN - 1] = '\0';
-           Stat = CFE_ES_ERLogDump(CmdPtr->ERLogFileName);        
-       }/* end if */
+       CFE_SB_MessageStringGet(LogFilename, (char *)CmdPtr->ERLogFileName,
+               CFE_ES_DEFAULT_ER_LOG_FILE, OS_MAX_PATH_LEN, sizeof(CmdPtr->ERLogFileName));
+
+       Stat = CFE_ES_ERLogDump(LogFilename);
          
        if(Stat == CFE_SUCCESS)
        {
@@ -1736,33 +1800,26 @@ void CFE_ES_WriteERlogCmd(CFE_SB_MsgPtr_t Msg)
 /* CFE_ES_ERLogDump() -- Write exception & reset log to a file.    */
 /*                                                                 */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-int32 CFE_ES_ERLogDump(char *Filename)
+int32 CFE_ES_ERLogDump(const char *Filename)
 {
 
     int32   fd;
     int32   WriteStat,BspStat;
     uint32  FileSize,i,ResetAreaSize;
     CFE_FS_Header_t FileHdr;
-    uint8   *ResetDataPtr;
+    cpuaddr ResetDataAddr;
     
     fd = OS_creat(Filename, OS_WRITE_ONLY);
     if(fd < 0)
     {
-        OS_close(fd);
         CFE_EVS_SendEvent(CFE_ES_ERLOG2_ERR_EID,CFE_EVS_ERROR,
                       "Error creating file %s, RC = 0x%08X",
-                      Filename,fd);
+                      Filename,(unsigned int)fd);
         return CFE_ES_FILE_IO_ERR;
     }/* end if */
 
-    CFE_PSP_MemSet(&FileHdr, 0, sizeof(CFE_FS_Header_t));
-    strcpy(&FileHdr.Description[0], CFE_ES_ER_LOG_DESC);
+    CFE_FS_InitHeader(&FileHdr, CFE_ES_ER_LOG_DESC, CFE_FS_ES_ERLOG_SUBTYPE);
 
-    /*
-    ** Write the File header SubType
-    */
-    FileHdr.SubType = CFE_FS_ES_ERLOG_SUBTYPE;
-    
     /* write the cFE header to the file */
     WriteStat = CFE_FS_WriteHeader(fd, &FileHdr);    
     if(WriteStat != sizeof(CFE_FS_Header_t))
@@ -1774,11 +1831,11 @@ int32 CFE_ES_ERLogDump(char *Filename)
     FileSize = WriteStat;
 
     /* Get the pointer to the Reset Log from the BSP */
-    BspStat = CFE_PSP_GetResetArea (&ResetDataPtr, &ResetAreaSize);
-    if(BspStat==OS_ERROR)
+    BspStat = CFE_PSP_GetResetArea (&ResetDataAddr, &ResetAreaSize);
+    if(BspStat != CFE_PSP_SUCCESS)
     {
         CFE_EVS_SendEvent(CFE_ES_RST_ACCESS_EID, CFE_EVS_ERROR,
-              "Error accessing ER Log,%s not written. RC = 0x%08X",Filename,BspStat);
+              "Error accessing ER Log,%s not written. RC = 0x%08X",Filename,(unsigned int)BspStat);
         OS_close(fd);
         return CFE_ES_RST_ACCESS_ERR;        
     }/* end if */
@@ -1786,7 +1843,7 @@ int32 CFE_ES_ERLogDump(char *Filename)
     /* write a single ER log entry on each pass */
     for(i=0;i<CFE_ES_ER_LOG_ENTRIES;i++)
     {
-        WriteStat = OS_write(fd,(uint8 *)ResetDataPtr,sizeof(CFE_ES_ERLog_t));
+        WriteStat = OS_write(fd,(uint8 *)ResetDataAddr,sizeof(CFE_ES_ERLog_t));
         if(WriteStat != sizeof(CFE_ES_ERLog_t))
         {
             CFE_ES_FileWriteByteCntErr(Filename,sizeof(CFE_ES_ERLog_t),WriteStat);
@@ -1794,13 +1851,13 @@ int32 CFE_ES_ERLogDump(char *Filename)
             return CFE_ES_FILE_IO_ERR;        
         }/* end if */        
         FileSize += WriteStat;
-        ResetDataPtr+=sizeof(CFE_ES_ERLog_t);
+        ResetDataAddr+=sizeof(CFE_ES_ERLog_t);
     }/* end for */   
     
     OS_close(fd);
 
     CFE_EVS_SendEvent(CFE_ES_ERLOG2_EID, CFE_EVS_DEBUG,
-                      "%s written:Size=%d",Filename,FileSize);
+                      "%s written:Size=%d",Filename,(int)FileSize);
 
     return CFE_SUCCESS;
 
@@ -1878,6 +1935,7 @@ void CFE_ES_ResetPRCountCmd(CFE_SB_MsgPtr_t Msg)
                                                                                    
 void CFE_ES_SetMaxPRCountCmd(CFE_SB_MsgPtr_t Msg)                                  
 {                                                                                  
+    CFE_ES_SetMaxPRCountCmd_Payload_t *cmd = (CFE_ES_SetMaxPRCountCmd_Payload_t *)&Msg->Byte[CFE_SB_CMD_HDR_SIZE];
     uint16 ExpectedLength = sizeof(CFE_ES_SetMaxPRCountCmd_t);                     
                                                                                    
     /*                                                                             
@@ -1885,7 +1943,6 @@ void CFE_ES_SetMaxPRCountCmd(CFE_SB_MsgPtr_t Msg)
     */                                                                             
     if (CFE_ES_VerifyCmdLength(Msg, ExpectedLength))                               
     {                                                                              
-        CFE_ES_SetMaxPRCountCmd_t *cmd = (CFE_ES_SetMaxPRCountCmd_t *) Msg;        
                                                                                    
         /*                                                                         
         ** Set the MAX Processor reset count                                       
@@ -1914,50 +1971,53 @@ void CFE_ES_DeleteCDSCmd(CFE_SB_MsgPtr_t Msg)
 {                                                                                  
     uint16 ExpectedLength = sizeof(CFE_ES_DeleteCDSCmd_t);                     
     int32   Status;
+    CFE_ES_DeleteCDSCmd_Payload_t *cmd = (CFE_ES_DeleteCDSCmd_Payload_t *)&Msg->Byte[CFE_SB_CMD_HDR_SIZE];
+    char LocalCdsName[CFE_ES_CDS_MAX_FULL_NAME_LEN];
                                                                                    
     /*                                                                             
     ** Verify command packet length.                                               
     */                                                                             
     if (CFE_ES_VerifyCmdLength(Msg, ExpectedLength))                               
-    {                                                                              
-        CFE_ES_DeleteCDSCmd_t *cmd = (CFE_ES_DeleteCDSCmd_t *) Msg;
-        
-        Status = CFE_ES_DeleteCDS(cmd->CdsName, FALSE);
+    {
+        CFE_SB_MessageStringGet(LocalCdsName, (char *)cmd->CdsName, NULL,
+                CFE_ES_CDS_MAX_FULL_NAME_LEN, sizeof(cmd->CdsName));
+
+        Status = CFE_ES_DeleteCDS(LocalCdsName, FALSE);
         
         if (Status == CFE_ES_CDS_WRONG_TYPE_ERR)
         {
             CFE_EVS_SendEvent(CFE_ES_CDS_DELETE_TBL_ERR_EID, CFE_EVS_ERROR,
                               "CDS '%s' is a Critical Table CDS. Must be deleted via TBL Command", 
-                              cmd->CdsName);
+                              LocalCdsName);
 
             CFE_ES_TaskData.ErrCounter++;      
         }
         else if (Status == CFE_ES_CDS_OWNER_ACTIVE_ERR)
         {
             CFE_EVS_SendEvent(CFE_ES_CDS_OWNER_ACTIVE_EID, CFE_EVS_ERROR,        
-                             "CDS '%s' not deleted because owning app is active", cmd->CdsName);
+                             "CDS '%s' not deleted because owning app is active", LocalCdsName);
                              
             CFE_ES_TaskData.ErrCounter++;
         }
         else if (Status == CFE_ES_CDS_NOT_FOUND_ERR)
         {
             CFE_EVS_SendEvent(CFE_ES_CDS_NAME_ERR_EID, CFE_EVS_ERROR,        
-                             "Unable to locate '%s' in CDS Registry", cmd->CdsName);
+                             "Unable to locate '%s' in CDS Registry", LocalCdsName);
                              
             CFE_ES_TaskData.ErrCounter++;
         }
         else if (Status != CFE_SUCCESS)
         {
             CFE_EVS_SendEvent(CFE_ES_CDS_DELETE_ERR_EID, CFE_EVS_ERROR,
-                              "Error while deleting '%s' from CDS, See SysLog.(Err=0x%08X)", 
-                              cmd->CdsName, Status);
+                             "Error while deleting '%s' from CDS, See SysLog.(Err=0x%08X)",
+                             LocalCdsName, (unsigned int)Status);
 
             CFE_ES_TaskData.ErrCounter++;      
         }
         else
         {
             CFE_EVS_SendEvent(CFE_ES_CDS_DELETED_INFO_EID, CFE_EVS_INFORMATION,
-                              "Successfully removed '%s' from CDS", cmd->CdsName);
+                              "Successfully removed '%s' from CDS", LocalCdsName);
 
             CFE_ES_TaskData.CmdCounter++;      
         }
@@ -1977,7 +2037,8 @@ void CFE_ES_DeleteCDSCmd(CFE_SB_MsgPtr_t Msg)
 void CFE_ES_TlmPoolStatsCmd(CFE_SB_MsgPtr_t Msg)                                  
 {                                                                                  
     uint16                    ExpectedLength = sizeof(CFE_ES_TlmPoolStatsCmd_t);                     
-    CFE_ES_TlmPoolStatsCmd_t *Cmd;
+    CFE_ES_TlmPoolStatsCmd_Payload_t *Cmd;
+    CFE_ES_MemHandle_t        MemHandle;
     boolean                   ValidHandle;
                                                                                    
     /*                                                                             
@@ -1985,18 +2046,19 @@ void CFE_ES_TlmPoolStatsCmd(CFE_SB_MsgPtr_t Msg)
     */                                                                             
     if (CFE_ES_VerifyCmdLength(Msg, ExpectedLength))                               
     {                                                                              
-        Cmd = (CFE_ES_TlmPoolStatsCmd_t *) Msg;
+        Cmd = (CFE_ES_TlmPoolStatsCmd_Payload_t *) &Msg->Byte[CFE_SB_CMD_HDR_SIZE];
         
         /* Verify the handle to make sure it is legit */
-        ValidHandle = CFE_ES_ValidateHandle(Cmd->PoolHandle);
+        MemHandle = CFE_SB_GET_MEMADDR(Cmd->PoolHandle);
+        ValidHandle = CFE_ES_ValidateHandle(MemHandle);
         
         if (ValidHandle)
         {
             /* Extract the memory statistics from the memory pool */
-            CFE_ES_GetMemPoolStats(&CFE_ES_TaskData.MemStatsPacket.PoolStats, Cmd->PoolHandle);
+            CFE_ES_GetMemPoolStats(&CFE_ES_TaskData.MemStatsPacket.Payload.PoolStats, MemHandle);
             
             /* Echo the specified pool handle in the telemetry packet */
-            CFE_ES_TaskData.MemStatsPacket.PoolHandle = Cmd->PoolHandle;
+            CFE_SB_SET_MEMADDR(CFE_ES_TaskData.MemStatsPacket.Payload.PoolHandle, MemHandle);
             
             /*
             ** Send memory statistics telemetry packet.
@@ -2006,14 +2068,14 @@ void CFE_ES_TlmPoolStatsCmd(CFE_SB_MsgPtr_t Msg)
 
             CFE_ES_TaskData.CmdCounter++;      
             CFE_EVS_SendEvent(CFE_ES_TLM_POOL_STATS_INFO_EID, CFE_EVS_DEBUG,
-                              "Successfully telemetered memory pool stats for 0x%08X", Cmd->PoolHandle);
+                        "Successfully telemetered memory pool stats for 0x%08lX", (unsigned long)Cmd->PoolHandle);
         }
         else
         {
             CFE_ES_TaskData.ErrCounter++;      
             CFE_EVS_SendEvent(CFE_ES_INVALID_POOL_HANDLE_ERR_EID, CFE_EVS_ERROR,
-                              "Cannot telemeter memory pool stats. Illegal Handle (0x%08X)", 
-                              Cmd->PoolHandle);
+                              "Cannot telemeter memory pool stats. Illegal Handle (0x%08lX)", 
+                              (unsigned long)Cmd->PoolHandle);
         }
     }
 
@@ -2031,7 +2093,7 @@ void CFE_ES_DumpCDSRegCmd( const CFE_SB_Msg_t *MessagePtr )
     int32                         FileDescriptor;
     int32                         Status;
     int16                         RegIndex=0;
-    const CFE_ES_DumpCDSRegCmd_t *CmdPtr = (const CFE_ES_DumpCDSRegCmd_t *) MessagePtr;
+    const CFE_ES_DumpCDSRegCmd_Payload_t *CmdPtr = (const CFE_ES_DumpCDSRegCmd_Payload_t *) &MessagePtr->Byte[CFE_SB_CMD_HDR_SIZE];
     char                          DumpFilename[OS_MAX_PATH_LEN];
     CFE_ES_CDS_RegRec_t          *RegRecPtr;
     CFE_ES_CDSRegDumpRec_t        DumpRecord;
@@ -2039,16 +2101,8 @@ void CFE_ES_DumpCDSRegCmd( const CFE_SB_Msg_t *MessagePtr )
     int32                         NumEntries=0;
 
     /* Copy the commanded filename into local buffer to ensure size limitation and to allow for modification */
-    CFE_PSP_MemCpy(DumpFilename, (void *)CmdPtr->DumpFilename, OS_MAX_PATH_LEN);
-    
-    /* Check to see if a default filename should be used */
-    if (DumpFilename[0] == '\0')
-    {
-        strncpy(DumpFilename, CFE_ES_DEFAULT_CDS_REG_DUMP_FILE, OS_MAX_PATH_LEN);
-    }
-
-    /* Make sure all strings are null terminated before attempting to process them */
-    DumpFilename[OS_MAX_PATH_LEN-1] = '\0';
+    CFE_SB_MessageStringGet(DumpFilename, CmdPtr->DumpFilename, CFE_ES_DEFAULT_CDS_REG_DUMP_FILE,
+            OS_MAX_PATH_LEN, sizeof(CmdPtr->DumpFilename));
 
     /* Create a new dump file, overwriting anything that may have existed previously */
     FileDescriptor = OS_creat(DumpFilename, OS_WRITE_ONLY);
@@ -2056,8 +2110,7 @@ void CFE_ES_DumpCDSRegCmd( const CFE_SB_Msg_t *MessagePtr )
     if (FileDescriptor >= OS_FS_SUCCESS)
     {
         /* Initialize the standard cFE File Header for the Dump File */
-        StdFileHeader.SubType = CFE_FS_ES_CDS_REG_SUBTYPE;
-        strcpy(&StdFileHeader.Description[0], "CDS Registry");
+        CFE_FS_InitHeader(&StdFileHeader, "CDS_Registry", CFE_FS_ES_CDS_REG_SUBTYPE);
 
         /* Output the Standard cFE File Header to the Dump File */
         Status = CFE_FS_WriteHeader(FileDescriptor, &StdFileHeader);
@@ -2082,9 +2135,8 @@ void CFE_ES_DumpCDSRegCmd( const CFE_SB_Msg_t *MessagePtr )
                     DumpRecord.Table            = RegRecPtr->Table;
                     DumpRecord.ByteAlignSpare1  = 0;
                     
-                    /* Zero character arrays to remove garbage text */
-                    CFE_PSP_MemSet(DumpRecord.Name, 0, CFE_ES_CDS_MAX_FULL_NAME_LEN);
-                    strncpy(DumpRecord.Name, RegRecPtr->Name, CFE_ES_CDS_MAX_FULL_NAME_LEN);
+                    /* strncpy will zero out any unused buffer - memset not necessary */
+                    strncpy(DumpRecord.Name, RegRecPtr->Name, sizeof(DumpRecord.Name));
 
                     /* Output Registry Dump Record to Registry Dump File */
                     Status = OS_write(FileDescriptor,
@@ -2104,7 +2156,7 @@ void CFE_ES_DumpCDSRegCmd( const CFE_SB_Msg_t *MessagePtr )
                 CFE_EVS_SendEvent(CFE_ES_CDS_REG_DUMP_INF_EID,
                                   CFE_EVS_DEBUG,
                                   "Successfully dumped CDS Registry to '%s':Size=%d,Entries=%d",
-                                  DumpFilename, FileSize, NumEntries);
+                                  DumpFilename, (int)FileSize, (int)NumEntries);
 
                 /* Increment Successful Command Counter */
                 CFE_ES_TaskData.CmdCounter++;      
@@ -2114,7 +2166,7 @@ void CFE_ES_DumpCDSRegCmd( const CFE_SB_Msg_t *MessagePtr )
                 CFE_EVS_SendEvent(CFE_ES_CDS_DUMP_ERR_EID,
                                   CFE_EVS_ERROR,
                                   "Error writing CDS Registry to '%s', Status=0x%08X",
-                                  DumpFilename, Status);
+                                  DumpFilename, (unsigned int)Status);
                             
                 /* Increment Command Error Counter */      
                 CFE_ES_TaskData.ErrCounter++;      
@@ -2125,7 +2177,7 @@ void CFE_ES_DumpCDSRegCmd( const CFE_SB_Msg_t *MessagePtr )
             CFE_EVS_SendEvent(CFE_ES_WRITE_CFE_HDR_ERR_EID,
                               CFE_EVS_ERROR,
                               "Error writing cFE File Header to '%s', Status=0x%08X",
-                              DumpFilename, Status);
+                              DumpFilename, (unsigned int)Status);
                             
             /* Increment Command Error Counter */      
             CFE_ES_TaskData.ErrCounter++;      
@@ -2139,7 +2191,7 @@ void CFE_ES_DumpCDSRegCmd( const CFE_SB_Msg_t *MessagePtr )
         CFE_EVS_SendEvent(CFE_ES_CREATING_CDS_DUMP_ERR_EID,
                           CFE_EVS_ERROR,
                           "Error creating CDS dump file '%s', Status=0x%08X",
-                          DumpFilename, FileDescriptor);
+                          DumpFilename, (unsigned int)FileDescriptor);
                             
         /* Increment Command Error Counter */      
         CFE_ES_TaskData.ErrCounter++;      
@@ -2153,12 +2205,12 @@ void CFE_ES_DumpCDSRegCmd( const CFE_SB_Msg_t *MessagePtr )
 /*                                a byte count discrepancy has been*/
 /*                                detected during the file write   */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-void CFE_ES_FileWriteByteCntErr(char *Filename,uint32 Requested,uint32 Actual)
+void CFE_ES_FileWriteByteCntErr(const char *Filename,uint32 Requested,uint32 Actual)
 {
 
     CFE_EVS_SendEvent(CFE_ES_FILEWRITE_ERR_EID,CFE_EVS_ERROR,
                       "File write,byte cnt err,file %s,request=%d,actual=%d",
-                       Filename,Requested,Actual);
+                       Filename,(int)Requested,(int)Actual);
 
 
 }/* End of CFE_ES_FileWriteByteCntErr() */                                                

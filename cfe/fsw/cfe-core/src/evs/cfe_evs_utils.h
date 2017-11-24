@@ -66,7 +66,6 @@
 
 /********************* Include Files  ************************/
 
-#include "cfe_platform_cfg.h"    /* cFE platform configuration definitions */
 #include "cfe_evs_task.h"        /* EVS internal definitions */
 
 /* ==============   Section I: Macro and Constant Type Definitions   =========== */
@@ -77,7 +76,7 @@
 
 int32 EVS_GetAppID(uint32 *AppIdPtr);
 
-int32 EVS_GetApplicationInfo(uint32 *pAppID, char *pAppName);
+int32 EVS_GetApplicationInfo(uint32 *pAppID, const char *pAppName);
 
 int32 EVS_NotRegistered(uint32 AppID);
 

@@ -22,7 +22,16 @@ endif
 
 write
 write "*** Sending ERROR message for CFE_EVS."
-write "*** No messages are being generated at this time ***"
+ut_setupevents $SC, $CPU, CFE_EVS, 40, ERROR, 1
+
+/$SC_$CPU_EVS_ENAAPPEVTTYPEMASK APPLICATION="CFE_SB" BITMASK=X'0'
+wait 4
+
+IF ($SC_$CPU_find_event[1].num_found_messages = 1) THEN
+  write "Event Message generated"
+ELSE
+  write "Event Message NOT generated."
+ENDIF
 write
 
 write "*** Sending ERROR message for CFE_SB."

@@ -14,7 +14,11 @@
 **      Define typedefs and macros for CCSDS packet headers.
 **
 ** $Log: ccsds.h  $
-** Revision 1.6 2014/07/10 09:24:07GMT-05:00 rmcgraw 
+** Revision 1.6.1.2 2014/12/02 13:48:54GMT-05:00 rmcgraw 
+** DCR22841:3 Added CFE_MAKE_BIG16 to ccsds.h in branch64
+** Revision 1.6.1.1 2014/12/01 11:18:00EST rmcgraw 
+** DCR22841:1 Reverted cmd sec hdr struct and RD/WR macros to pre-6.4.0 state
+** Revision 1.6 2014/07/10 10:24:07EDT rmcgraw
 ** DCR9772:1 Changes from C. Monaco & W.M Reid from APL for endianess neutrality
 ** Revision 1.5 2011/02/03 15:27:48EST lwalling
 ** Modified telemetry secondary header definition to support CFE_SB_PACKET_TIME_FORMAT selection
@@ -43,6 +47,14 @@
 
 #include "common_types.h"
 #include "cfe_mission_cfg.h"
+
+
+/* Macro to convert 16 bit word from platform "endianness" to Big Endian */
+#ifdef SOFTWARE_BIG_BIT_ORDER
+  #define CFE_MAKE_BIG16(n) (n)
+#else
+  #define CFE_MAKE_BIG16(n) ( (((n) << 8) & 0xFF00) | (((n) >> 8) & 0x00FF) )
+#endif
 
 
 /* CCSDS_TIME_SIZE is specific to the selected CFE_SB time format */
@@ -97,10 +109,7 @@ typedef struct {
 
 typedef struct {
 
-   uint8   Fc;       /* 0x8 bit is reserved, set to 0 */
-   uint8   Checksum;
-
-/*   uint16  Command;  */    /* command secondary header */
+   uint16  Command;      /* command secondary header */
       /*  bits  shift   ------------ description ---------------- */
       /* 0x00FF    0  : checksum, calculated by ground system     */
       /* 0x7F00    8  : command function code                     */
@@ -245,14 +254,14 @@ typedef struct {
                                    (((phdr).Length[1] = ((value) - 7) & 0xff)) )
 
 /* Read function code from command secondary header. */
-#define CCSDS_RD_FC(shdr)           ((shdr).Fc & 0x7F)
+#define CCSDS_RD_FC(shdr)           CCSDS_RD_BITS((shdr).Command, 0x7F00, 8)
 /* Write function code to command secondary header. */
-#define CCSDS_WR_FC(shdr,value)     ((shdr).Fc = ((shdr).Fc & 0x80) | (value & 0x7F))
+#define CCSDS_WR_FC(shdr,value)     CCSDS_WR_BITS((shdr).Command, 0x7F00, 8, value)
 
 /* Read checksum from command secondary header. */
-#define CCSDS_RD_CHECKSUM(shdr)     ((shdr).Checksum)
+#define CCSDS_RD_CHECKSUM(shdr)     CCSDS_RD_BITS((shdr).Command, 0x00FF, 0)
 /* Write checksum to command secondary header. */
-#define CCSDS_WR_CHECKSUM(shdr,val) ((shdr).Checksum = val)
+#define CCSDS_WR_CHECKSUM(shdr,val) CCSDS_WR_BITS((shdr).Command, 0x00FF, 0, val)
 
 
 /**********************************************************************
@@ -272,8 +281,7 @@ typedef struct {
 
 /* Clear command secondary header. */
 #define CCSDS_CLR_CMDSEC_HDR(shdr) \
-  ( (shdr).Fc = CCSDS_INIT_FC, \
-    (shdr).Checksum = CCSDS_INIT_CHECKSUM )
+  ( (shdr).Command = (CCSDS_INIT_CHECKSUM << 0) | (CCSDS_INIT_FC << 8) )
 
 
 #define CCSDS_WR_SEC_HDR_SEC(shdr, value)    shdr.Time[0] = ((value>>24) & 0xFF),  \
@@ -357,7 +365,7 @@ typedef struct {
 
 /* Increment sequence count in primary header by 1. */
 #define CCSDS_INC_SEQ(phdr) \
-   CCSDS_WR_SEQ(phdr, CCSDS_RD_SEQ(phdr)+1)
+   CCSDS_WR_SEQ(phdr, (CCSDS_RD_SEQ(phdr)+1))
 
 
 /*********************************************************************/

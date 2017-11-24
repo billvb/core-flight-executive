@@ -155,6 +155,10 @@ PROC $sc_$cpu_es_reset
 ;	01/03/07	W. Moleski	Initial development.
 ;	09/18/14	W. Moleski	Added code to disable SCH Debug events
 ;					after restarts.
+;       05/04/16        W. Moleski      Updated for 6.5.0 testing using CPU1 for
+;                                       commanding and added a hostCPU variable
+;                                       for the utility procs that connect to
+;                                       the host IP.
 ;
 ;  Arguments
 ;	None 
@@ -244,6 +248,7 @@ global ut_requirement[0 .. ut_req_array_size]
 LOCAL i,j, numMaxErrors
 LOCAL cmdcnt, errcnt
 local ramDir = "RAM:0"
+local hostCPU = "$CPU"
 
 ;**********************************************************************
 ; Initialize the global requirement values to "U" for Untested.
@@ -365,7 +370,7 @@ wait 10
 ; Setup for the ERLog DEBUG event
 ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ERLOG2_EID, "DEBUG", 1
 
-s get_file_to_cvt (ramDir,"cfe_erlog.log","$sc_$cpu_reset_er13.log","$CPU")
+s get_file_to_cvt (ramDir,"cfe_erlog.log","$sc_$cpu_reset_er13.log",hostCPU)
 wait 10
 
 ; Check if the proper event was generated
@@ -389,7 +394,7 @@ write ";             The file system is formatted if it does not contain any "
 write ";             files."
 write ";*********************************************************************"
 ;; ftp the file referenced by CFE_ES_NONVOL_STARTUP_FILE from the spacecraft
-s ftp_file ("CF:0/apps","cfe_es_startup.scr","cfe_es_startup_nv.scr","$CPU","G")
+s ftp_file ("CF:0/apps","cfe_es_startup.scr","cfe_es_startup_nv.scr",hostCPU,"G")
 wait 10
 
 ;; Verify that the file was retrieved from the spacecraft
@@ -422,7 +427,7 @@ page $SC_$CPU_EVS_LOG
 wait 10
 
 ut_setupevents "$SC", "$CPU", "CFE_EVS", CFE_EVS_WRLOG_EID, "DEBUG", 1
-s get_file_to_cvt (ramDir, "cfe_evs.log", "$sc_$cpu_cfe_evs.log", "$CPU")
+s get_file_to_cvt (ramDir, "cfe_evs.log", "$sc_$cpu_cfe_evs.log", hostCPU)
 wait 10
 
 if ($SC_$CPU_num_found_messages = 1) then
@@ -438,7 +443,7 @@ page $SC_$CPU_ES_APP_INFO
 wait 10
 ;  Dump all running apps
 ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ALL_APPS_EID, "DEBUG", 1
-s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log","$CPU")
+s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log",hostCPU)
 wait 10
 
 if ($SC_$CPU_num_found_messages = 1) then
@@ -482,7 +487,7 @@ if (UT_SC_Status = UT_SC_Success) then
   endif
 
   ;; Get the file to the ground whether or not the event msg was rcv'd
-  s ftp_file (ramDir,"cfe_es_syslog.log","$sc_$cpu_es_syslog145.log","$CPU","G")
+  s ftp_file (ramDir,"cfe_es_syslog.log","$sc_$cpu_es_syslog145.log",hostCPU,"G")
   wait 10
 
   ;; Check if the file above exists and pass the requirement if it does
@@ -661,9 +666,9 @@ write "; Step 3.1: Upload some files to the spacecraft in order to modify the"
 write ";           contents of the volatile file system."
 write ";*********************************************************************"
 ;; ftp several test files to the volatile file system
-s ftp_file (ramDir,"es_testfile_1","es_testfile_1","$CPU","P")
+s ftp_file (ramDir,"es_testfile_1","es_testfile_1",hostCPU,"P")
 wait 5
-s ftp_file (ramDir,"es_testfile_2","es_testfile_2","$CPU","P")
+s ftp_file (ramDir,"es_testfile_2","es_testfile_2",hostCPU,"P")
 wait 5
 
 write ";*********************************************************************"
@@ -674,7 +679,7 @@ write "; Step 3.2.1: Startup the TST_ES application."
 write ";*********************************************************************"
 ;  Dump all running apps
 ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ALL_APPS_EID, "DEBUG", 1
-s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log","$CPU")
+s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log",hostCPU)
 wait 10
 
 if ($SC_$CPU_num_found_messages = 1) then
@@ -702,12 +707,12 @@ enddo
 
 if (found_app = FALSE) then
   write "; Starting the TST_ES application. "
-  s load_start_app ("TST_ES", "$CPU")
+  s load_start_app ("TST_ES", hostCPU)
   wait 10
 
   ;; Dump all running apps again to verify that the TST_ES app is running
   ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ALL_APPS_EID, "DEBUG", 1
-  s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log","$CPU")
+  s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log",hostCPU)
   wait 10
 
   if ($SC_$CPU_num_found_messages = 1) then
@@ -820,17 +825,18 @@ wait 5
 write ";*********************************************************************"
 write "; Step 3.3: Upload a non-default volatile startup file."
 write ";*********************************************************************"
-write " Please verify that the RAM:0/apps directory exists on $CPU."
-write " If this directory does not exist, create it."
+write " Please verify that the RAM:0/apps directory exists on $CPU by entering"
+write " ls ""RAM:0"". If this directory does not exist, create it by entering "
+write " mkdir ""RAM:0/apps""."
 write " Type 'g' or 'go' when completed."
 wait
 
 ;; ftp several test files to the volatile file system
-s ftp_file (ramDir & "/apps","cfe_es_startup_vol.scr","cfe_es_startup.scr","$CPU","P")
+s ftp_file (ramDir & "/apps","cfe_es_startup_vol.scr","cfe_es_startup.scr",hostCPU,"P")
 wait 5
 
 ;; Upload the TST_ES2 application contained in the startup script
-s load_app (ramDir,"TST_ES2", "$CPU")
+s load_app (ramDir,"TST_ES2", hostCPU)
 wait 10
 
 local tbl_1_pkt,tbl_2_pkt,tbl_1_appid,tbl_2_appid
@@ -871,9 +877,9 @@ $SC_$CPU_TST_ES_TABLE2_PAD = 0
 s create_tbl_file_from_cvt ("$CPU",tbl_2_appid,"Table #2 First Load", "SecondTblDef.dat","TST_ES2.MySecondTable", "$SC_$CPU_TST_ES_TABLE2_ELEMENT1", "$SC_$CPU_TST_ES_TABLE2_PAD")
 
 ;; Upload the TST_ES2 table load data files to /ram
-s ftp_file (ramDir,"firsttbldef.dat","FirstTblDef.dat","$CPU","P")
+s ftp_file (ramDir,"firsttbldef.dat","FirstTblDef.dat",hostCPU,"P")
 wait 10
-s ftp_file (ramDir,"secondtbldef.dat","SecondTblDef.dat","$CPU","P")
+s ftp_file (ramDir,"secondtbldef.dat","SecondTblDef.dat",hostCPU,"P")
 wait 10
 
 write ";*********************************************************************"
@@ -941,14 +947,14 @@ ut_setrequirements ES_1515, "A"
 ut_setrequirements ES_15182, "A"
 
 ;;;; Need to use ftp_file for System Log
-s ftp_file (ramDir,"es_syslog1.log","$sc_$cpu_es_syslog1.log","$CPU","G")
+s ftp_file (ramDir,"es_syslog1.log","$sc_$cpu_es_syslog1.log",hostCPU,"G")
 wait 10
 
 ; Setup for the ERLog DEBUG event
 ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ERLOG2_EID, "DEBUG", 1
 
 ;;;; Can use get_file_to_cvt to get ER Log to the ground
-s get_file_to_cvt (ramDir, "es_erlog.log", "$sc_$cpu_es_erlog35.log", "$CPU","ES_ERLOG")
+s get_file_to_cvt (ramDir, "es_erlog.log", "$sc_$cpu_es_erlog35.log", hostCPU,"ES_ERLOG")
 wait 10
 
 ; Check if the proper event was generated
@@ -982,7 +988,7 @@ write ";*********************************************************************"
 write "; Step 3.6: Verify the Volatile File system has been preserved."
 write ";*********************************************************************"
 ;; ftp the files uploaded in Step 3.1 to see if they still exist
-s ftp_file (ramDir,"es_testfile_1","es_testfile_1_Verify","$CPU","G")
+s ftp_file (ramDir,"es_testfile_1","es_testfile_1_Verify",hostCPU,"G")
 wait 5
 filename = work_dir & "/image/es_testfile_1_Verify"
 
@@ -996,7 +1002,7 @@ else
   ut_setrequirements ES_1517, "F"
 endif
 
-s ftp_file (ramDir,"es_testfile_2","es_testfile_2_Verify","$CPU","G")
+s ftp_file (ramDir,"es_testfile_2","es_testfile_2_Verify",hostCPU,"G")
 wait 5
 filename = work_dir & "/image/es_testfile_2_Verify"
 
@@ -1019,7 +1025,7 @@ $SC_$CPU_TST_ES_CDSVAR5 = 0
 
 ;  Dump all running apps
 ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ALL_APPS_EID, "DEBUG", 1
-s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log","$CPU")
+s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log",hostCPU)
 wait 10
 
 if ($SC_$CPU_num_found_messages = 1) then
@@ -1124,7 +1130,7 @@ write ";*********************************************************************"
 write "; Step 3.8: Verify the EVS log entries."
 write ";*********************************************************************"
 ut_setupevents "$SC", "$CPU", "CFE_EVS", CFE_EVS_WRLOG_EID, "DEBUG", 1
-s get_file_to_cvt (ramDir, "cfe_evs.log", "$sc_$cpu_cfe_evs.log", "$CPU")
+s get_file_to_cvt (ramDir, "cfe_evs.log", "$sc_$cpu_cfe_evs.log", hostCPU)
 wait 10
 
 if ($SC_$CPU_num_found_messages = 1) then
@@ -1169,7 +1175,7 @@ write ";            that it is mounted. The file system is mounted if the   "
 write ";            startup file can be ftp'd to the ground. "
 write ";*********************************************************************"
 ;; ftp the file referenced by CFE_ES_NONVOL_STARTUP_FILE from the spacecraft
-s ftp_file ("CF:0/apps","cfe_es_startup.scr","cfe_es_startup_NV_311.scr","$CPU","G")
+s ftp_file ("CF:0/apps","cfe_es_startup.scr","cfe_es_startup_NV_311.scr",hostCPU,"G")
 wait 10
 
 ;; Verifiy that the file was retrieved from the spacecraft
@@ -1191,13 +1197,13 @@ write "; Step 4.1: Upload a new Non-Volatile startup file and the object files"
 write ";           for any added application contained in this file."
 write ";*********************************************************************"
 ;; Delete the existing startup file
-;;s ftp_file ("CF:0/apps","na","cfe_es_startup.scr","$CPU","R")
+;;s ftp_file ("CF:0/apps","na","cfe_es_startup.scr",hostCPU,"R")
 ;;wait 10
-s ftp_file ("CF:0/apps","cfe_es_startup_nv_1.scr","cfe_es_startup.scr","$CPU","P")
+s ftp_file ("CF:0/apps","cfe_es_startup_nv_1.scr","cfe_es_startup.scr",hostCPU,"P")
 wait 10
 
 ;; Upload the TST_ES application contained in the startup script
-s load_app ("CF:0/apps","TST_ES", "$CPU")
+s load_app ("CF:0/apps","TST_ES", hostCPU)
 wait 10
 
 write ";*********************************************************************"
@@ -1205,9 +1211,9 @@ write "; Step 4.2: Upload some files to the spacecraft in order to modify the"
 write ";           contents of the volatile file system."
 write ";*********************************************************************"
 ;; ftp several test files to the volatile file system
-s ftp_file (ramDir,"es_testfile_3","es_testfile_3","$CPU","P")
+s ftp_file (ramDir,"es_testfile_3","es_testfile_3",hostCPU,"P")
 wait 5
-s ftp_file (ramDir,"es_testfile_4","es_testfile_4","$CPU","P")
+s ftp_file (ramDir,"es_testfile_4","es_testfile_4",hostCPU,"P")
 wait 5
 
 write ";*********************************************************************"
@@ -1317,14 +1323,14 @@ ut_setrequirements ES_1505, "A"
 ut_setrequirements ES_15082, "A"
 
 ;;;; Need to use ftp_file for System Log
-s ftp_file (ramDir,"es_syslog45.log","$sc_$cpu_es_syslog45.log","$CPU","G")
+s ftp_file (ramDir,"es_syslog45.log","$sc_$cpu_es_syslog45.log",hostCPU,"G")
 wait 10
 
 ; Setup for the ERLog DEBUG event
 ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ERLOG2_EID, "DEBUG", 1
 
 ;;;; Can use get_file_to_cvt to get ER Log to the ground
-s get_file_to_cvt (ramDir, "cfe_erlog.log", "$sc_$cpu_es_erlog45.log", "$CPU")
+s get_file_to_cvt (ramDir, "cfe_erlog.log", "$sc_$cpu_es_erlog45.log", hostCPU)
 wait 5
 
 ; Check if the proper event was generated
@@ -1355,7 +1361,7 @@ write ";*********************************************************************"
 write "; Step 4.6: Verify the Volatile File system has been cleared."
 write ";*********************************************************************"
 ;; ftp the files uploaded in Step 4.1 to see if they have beed cleared
-s ftp_file (ramDir,"es_testfile_3","es_testfile_3_Verify","$CPU","G")
+s ftp_file (ramDir,"es_testfile_3","es_testfile_3_Verify",hostCPU,"G")
 wait 5
 filename = work_dir & "/image/es_testfile_3_Verify"
 
@@ -1369,7 +1375,7 @@ else
   ut_setrequirements ES_1507, "P"
 endif
 
-s ftp_file (ramDir,"es_testfile_4","es_testfile_4_Verify","$CPU","G")
+s ftp_file (ramDir,"es_testfile_4","es_testfile_4_Verify",hostCPU,"G")
 wait 5
 filename = work_dir & "/image/es_testfile_4_Verify"
 
@@ -1385,7 +1391,7 @@ endif
 
 ;  Dump all running apps
 ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ALL_APPS_EID, "DEBUG", 1
-s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log","$CPU")
+s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log",hostCPU)
 wait 10
 
 if ($SC_$CPU_num_found_messages = 1) then
@@ -1481,7 +1487,7 @@ write ";*********************************************************************"
 write "; Step 4.8: Verify the EVS log entries."
 write ";*********************************************************************"
 ut_setupevents "$SC", "$CPU", "CFE_EVS", CFE_EVS_WRLOG_EID, "DEBUG", 1
-s get_file_to_cvt (ramDir, "cfe_evs.log", "$sc_$cpu_cfe_evs48.log", "$CPU")
+s get_file_to_cvt (ramDir, "cfe_evs.log", "$sc_$cpu_cfe_evs48.log", hostCPU)
 wait 10
 
 if ($SC_$CPU_num_found_messages = 1) then
@@ -1510,7 +1516,7 @@ write ";            that it is mounted. The file system is mounted if the   "
 write ";            startup file can be ftp'd to the ground. "
 write ";*********************************************************************"
 ;; ftp the file referenced by CFE_ES_NONVOL_STARTUP_FILE from the spacecraft
-s ftp_file ("CF:0/apps","cfe_es_startup.scr","cfe_es_startup_nv_410.scr","$CPU","G")
+s ftp_file ("CF:0/apps","cfe_es_startup.scr","cfe_es_startup_nv_410.scr",hostCPU,"G")
 wait 10
 
 ;; Verify that the file was retrieved from the spacecraft
@@ -1548,9 +1554,9 @@ write "; Step 5.1: Upload some files to the spacecraft in order to modify the"
 write ";           contents of the volatile file system."
 write ";*********************************************************************"
 ;; ftp several test files to the volatile file system
-s ftp_file (ramDir,"es_testfile_5","es_testfile_5","$CPU","P")
+s ftp_file (ramDir,"es_testfile_5","es_testfile_5",hostCPU,"P")
 wait 5
-s ftp_file (ramDir,"es_testfile_6","es_testfile_6","$CPU","P")
+s ftp_file (ramDir,"es_testfile_6","es_testfile_6",hostCPU,"P")
 wait 5
 
 write ";*********************************************************************"
@@ -1608,7 +1614,7 @@ write "; Step 5.3: Verify that the Volatile Startup file does not exist. This"
 write ";           will force the cFE to use the Non-Volatile Startup file. "
 write ";*********************************************************************"
 ;; Try to get the volatile startup file
-s ftp_file (ramDir & "/apps","cfe_es_startup.scr","cfe_es_startup_vol_Verify","$CPU","G")
+s ftp_file (ramDir & "/apps","cfe_es_startup.scr","cfe_es_startup_vol_Verify",hostCPU,"G")
 wait 5
 filename = work_dir & "/image/cfe_es_startup_vol_Verify"
 
@@ -1686,14 +1692,14 @@ ut_setrequirements ES_1515, "A"
 ut_setrequirements ES_15192, "A"
 
 ;;;; Need to use ftp_file for System Log
-s ftp_file (ramDir,"es_syslog1.log","$sc_$cpu_es_syslog1.log","$CPU","G")
+s ftp_file (ramDir,"es_syslog1.log","$sc_$cpu_es_syslog1.log",hostCPU,"G")
 wait 10
 
 ; Setup for the ERLog DEBUG event
 ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ERLOG2_EID, "DEBUG", 1
 
 ;;;; Can use get_file_to_cvt to get ER Log to the ground
-s get_file_to_cvt (ramDir, "es_erlog.log", "$sc_$cpu_es_erlog55.log", "$CPU","ES_ERLOG")
+s get_file_to_cvt (ramDir, "es_erlog.log", "$sc_$cpu_es_erlog55.log", hostCPU,"ES_ERLOG")
 wait 5
 
 ; Check if the proper event was generated
@@ -1727,7 +1733,7 @@ write ";*********************************************************************"
 write "; Step 5.6: Verify the Volatile File system has been preserved."
 write ";*********************************************************************"
 ;; ftp the files uploaded in Step 3.1 to see if they still exist
-s ftp_file (ramDir,"es_testfile_5","es_testfile_5_Verify","$CPU","G")
+s ftp_file (ramDir,"es_testfile_5","es_testfile_5_Verify",hostCPU,"G")
 wait 5
 filename = work_dir & "/image/es_testfile_5_Verify"
 
@@ -1741,7 +1747,7 @@ else
   ut_setrequirements ES_1517, "F"
 endif
 
-s ftp_file (ramDir,"es_testfile_6","es_testfile_6_Verify","$CPU","G")
+s ftp_file (ramDir,"es_testfile_6","es_testfile_6_Verify",hostCPU,"G")
 wait 5
 filename = work_dir & "/image/es_testfile_6_Verify"
 
@@ -1764,7 +1770,7 @@ $SC_$CPU_TST_ES_CDSVAR5 = 0
 
 ;  Dump all running apps
 ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ALL_APPS_EID, "DEBUG", 1
-s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log","$CPU")
+s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log",hostCPU)
 wait 10
 
 if ($SC_$CPU_num_found_messages = 1) then
@@ -1866,7 +1872,7 @@ write ";*********************************************************************"
 write "; Step 5.8: Verify the EVS log entries."
 write ";*********************************************************************"
 ut_setupevents "$SC", "$CPU", "CFE_EVS", CFE_EVS_WRLOG_EID, "DEBUG", 1
-s get_file_to_cvt (ramDir, "cfe_evs.log", "$sc_$cpu_cfe_evs.log", "$CPU")
+s get_file_to_cvt (ramDir, "cfe_evs.log", "$sc_$cpu_cfe_evs.log", hostCPU)
 wait 10
 
 if ($SC_$CPU_num_found_messages = 1) then
@@ -1912,11 +1918,11 @@ write ";*********************************************************************"
 write "; Step 6.1: Upload the original Non-Volatile startup file."
 write ";*********************************************************************"
 ;; Restore the original Non-volatile startup file
-s ftp_file ("CF:0/apps","cfe_es_startup_nv.scr","cfe_es_startup.scr","$CPU","P")
+s ftp_file ("CF:0/apps","cfe_es_startup_nv.scr","cfe_es_startup.scr",hostCPU,"P")
 wait 10
 
 ;; Delete any files uploaded to the CF:0/apps directory
-s ftp_file ("CF:0/apps","na","tst_es.o","$CPU","R")
+s ftp_file ("CF:0/apps","na","tst_es.o",hostCPU,"R")
 wait 10
 
 write ";*********************************************************************"

@@ -79,11 +79,20 @@
 */
 #include "common_types.h"
 #include "osapi.h"
-#include "cfe_platform_cfg.h"
 
 /*
 ** Macro Definitions
 */
+
+/*
+** The overall cFE System State
+*/
+#define CFE_ES_SYSTEM_STATE_UNDEFINED       0   /**< reserved */
+#define CFE_ES_SYSTEM_STATE_EARLY_INIT      1   /**< single threaded mode while setting up CFE itself */
+#define CFE_ES_SYSTEM_STATE_CORE_STARTUP    2   /**< core apps (CFE_ES_ObjectTable) are starting (multi-threaded) */
+#define CFE_ES_SYSTEM_STATE_CORE_READY      3   /**< core is ready, starting other external apps/libraries (if any) */
+#define CFE_ES_SYSTEM_STATE_OPERATIONAL     4   /**< normal operation mode */
+#define CFE_ES_SYSTEM_STATE_SHUTTING_DOWN   5   /**< reserved for future use */
 
 /*
 ** The Type of cFE Application
@@ -129,12 +138,12 @@ typedef struct
 */
 typedef struct
 {
-  uint8                 Name[OS_MAX_API_NAME];
-  uint8                 EntryPoint[OS_MAX_API_NAME];
-  uint8                 FileName[OS_MAX_PATH_LEN];
+  char                  Name[OS_MAX_API_NAME];
+  char                  EntryPoint[OS_MAX_API_NAME];
+  char                  FileName[OS_MAX_PATH_LEN];
 
   uint32                StackSize;
-  uint32                StartAddress;
+  cpuaddr               StartAddress;
   uint32                ModuleId;
 
   uint16                ExceptionAction;
@@ -150,7 +159,7 @@ typedef struct
 typedef struct
 {
    uint32   MainTaskId;                     /* The Application's Main Task ID */
-   uint8    MainTaskName[OS_MAX_API_NAME];  /* The Application's Main Task ID */
+   char     MainTaskName[OS_MAX_API_NAME];  /* The Application's Main Task ID */
    uint32   NumOfChildTasks;                /* Number of Child tasks for an App */
 
 } CFE_ES_MainTaskInfo_t;
@@ -204,21 +213,26 @@ typedef struct
 /*
 ** Internal function start applications based on the startup script
 */
-void  CFE_ES_StartApplications(uint32 ResetType, uint8 *StartFilePath );
+void  CFE_ES_StartApplications(uint32 ResetType, const char *StartFilePath );
 
 /*
 ** Internal function to parse/execute a line of the cFE application startup 'script'
 */
-int32 CFE_ES_ParseFileEntry(char *FileEntry);
+int32 CFE_ES_ParseFileEntry(const char *FileEntry);
+
+/*
+ * Internal function to synchronize application startup
+ */
+int32 CFE_ES_ApplicationSyncDelay(uint32 MinimumSystemState, uint32 TimeOutMilliseconds);
 
 /*
 ** Internal function to create/start a new cFE app
 ** based on the parameters passed in
 */
 int32 CFE_ES_AppCreate(uint32 *ApplicationIdPtr,
-                       char   *FileName,
-                       char   *EntryPoint,
-                       char   *AppName,
+                       const char   *FileName,
+                       const void   *EntryPointData,
+                       const char   *AppName,
                        uint32  Priority,
                        uint32  StackSize,
                        uint32  ExceptionAction);
@@ -226,9 +240,9 @@ int32 CFE_ES_AppCreate(uint32 *ApplicationIdPtr,
 ** Internal function to load a a new cFE shared Library
 */
 int32 CFE_ES_LoadLibrary(uint32 *LibraryIdPtr,
-                       char   *Path,
-                       char   *EntryPoint,
-                       char   *Name);
+                       const char   *Path,
+                       const void   *EntryPointData,
+                       const char   *Name);
 
 /*
 ** Get Application List

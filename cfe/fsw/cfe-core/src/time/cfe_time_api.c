@@ -67,7 +67,6 @@
 ** Required header files...
 */
 #include "cfe_time_utils.h"
-extern CFE_TIME_TaskData_t CFE_TIME_TaskData;
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /*                                                                         */
@@ -165,32 +164,28 @@ CFE_TIME_SysTime_t CFE_TIME_MET2SCTime (CFE_TIME_SysTime_t METTime)
 
     CFE_TIME_SysTime_t STCF;
     CFE_TIME_SysTime_t TIATime;
-    CFE_TIME_SysTime_t UTCTime;
     CFE_TIME_SysTime_t ReturnTime;
+#if (CFE_TIME_CFG_DEFAULT_TAI != TRUE)
     CFE_TIME_SysTime_t LeapSecsAsSysTime;
-    int16              LeapSeconds;
+#endif
     
     STCF = CFE_TIME_GetSTCF();
 
     /* TIA = MET + STCF */
     TIATime = CFE_TIME_Add(METTime, STCF);
 
-    LeapSeconds = CFE_TIME_GetLeapSeconds();
-
-    /* Put leap seconds in correct format */
-    LeapSecsAsSysTime.Seconds       = LeapSeconds;
-    LeapSecsAsSysTime.Subseconds    = 0;
-    
-    /* UTC Time = TIA Time - Leap Seconds */
-    UTCTime = CFE_TIME_Subtract(TIATime, LeapSecsAsSysTime);
-
-
 #if (CFE_TIME_CFG_DEFAULT_TAI == TRUE)
 
     ReturnTime = TIATime;
 
 #else
-    ReturnTime = UTCTime;
+
+    /* Put leap seconds in correct format */
+    LeapSecsAsSysTime.Seconds       = CFE_TIME_GetLeapSeconds();
+    LeapSecsAsSysTime.Subseconds    = 0;
+    
+    /* UTC Time = TIA Time - Leap Seconds */
+    ReturnTime = CFE_TIME_Subtract(TIATime, LeapSecsAsSysTime);
 
 #endif
 
@@ -835,6 +830,10 @@ void CFE_TIME_Print(char *PrintBuffer, CFE_TIME_SysTime_t TimeToPrint)
             else if ((NumberOfYears % 400) == 0)
             {
                 DaysInThisYear = 366;
+            }
+            else
+            {
+                /* Do Nothing. Non-leap year. */ 
             }
         }
 

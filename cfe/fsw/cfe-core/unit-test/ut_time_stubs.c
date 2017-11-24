@@ -48,11 +48,7 @@
 #include "cfe_time_utils.h"
 #include "ut_stubs.h"
 
-/*
-** Globals
-*/
 extern UT_SetRtn_t TIMECleanUpRtn;
-extern char cMsg[];
 
 /*
 ** Functions
@@ -113,11 +109,11 @@ void CFE_TIME_TaskMain(void)
 ******************************************************************************/
 void CFE_TIME_Print(char *PrintBuffer, CFE_TIME_SysTime_t TimeToPrint)
 {
-    SNPRINTF(PrintBuffer,
-             CFE_ES_MAX_SYSLOG_MSG_SIZE,
-             "  CFE_TIME_Print Secs: %lu, SubSecs: %lu -",
-             TimeToPrint.Seconds,
-             TimeToPrint.Subseconds);
+    snprintf(PrintBuffer,
+            CFE_TIME_PRINTED_STRING_SIZE,
+             "UT %lu.%lu -",
+             (unsigned long)TimeToPrint.Seconds,
+             (unsigned long)TimeToPrint.Subseconds);
 }
 
 /*****************************************************************************/
@@ -165,7 +161,7 @@ CFE_TIME_SysTime_t CFE_TIME_GetTime(void)
 **        Returns either a user-defined status flag or CFE_SUCCESS.
 **
 ******************************************************************************/
-int32 CFE_TIME_CleanUpApp(void)
+int32 CFE_TIME_CleanUpApp(uint32 AppId)
 {
     int32 status = CFE_SUCCESS;
 

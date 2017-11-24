@@ -25,6 +25,10 @@
 */
 #include "common_types.h"
 
+#ifndef OS_PRINTF
+#define OS_PRINTF(m,n)
+#endif
+
 /*
 ** Macro definitions
 */
@@ -117,7 +121,7 @@ extern int OS_printf_skip;
 ** \sa #OS_vsnprintf
 **
 ******************************************************************************/
-void OS_printf(const char *format, ...);
+void OS_printf(const char *format, ...) OS_PRINTF(1,2);
 
 /*****************************************************************************/
 /**
@@ -147,7 +151,7 @@ void OS_printf(const char *format, ...);
 ** \sa #OS_vsnprintf
 **
 ******************************************************************************/
-int OS_sprintf(char *out, const char *format, ...);
+int OS_sprintf(char *out, const char *format, ...) OS_PRINTF(2,3);
 
 /*****************************************************************************/
 /**
@@ -180,7 +184,7 @@ int OS_sprintf(char *out, const char *format, ...);
 ** \sa #OS_vsnprintf
 **
 ******************************************************************************/
-int OS_snprintf(char *out, unsigned max_len, const char *format, ...);
+int OS_snprintf(char *out, unsigned max_len, const char *format, ...) OS_PRINTF(3,4);
 
 /*****************************************************************************/
 /**

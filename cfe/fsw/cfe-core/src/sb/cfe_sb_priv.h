@@ -86,7 +86,7 @@
 ** Includes
 */
 #include "common_types.h"
-#include "cfe.h"
+#include "private/cfe_private.h"
 #include "cfe_sb.h"
 #include "cfe_sb_msg.h"
 #include "cfe_time.h"
@@ -330,7 +330,6 @@ typedef struct{
 ** Software Bus Function Prototypes
 */
 
-int32  CFE_SB_EarlyInit(void);
 int32  CFE_SB_AppInit(void);
 int32  CFE_SB_InitBuffers(void);
 void   CFE_SB_InitPipeTbl(void);
@@ -356,8 +355,8 @@ void   CFE_SB_ResetCounters(void);
 char   *CFE_SB_GetPipeName(CFE_SB_PipeId_t PipeId);
 void   CFE_SB_SetMsgSeqCnt(CFE_SB_MsgPtr_t MsgPtr,uint32 Count);
 void   CFE_SB_SendStats(void);
-void   CFE_SB_EnableRoute(CFE_SB_MsgPtr_t MsgPtr);
-void   CFE_SB_DisableRoute(CFE_SB_MsgPtr_t MsgPtr);
+void   CFE_SB_EnableRoute(CFE_SB_MsgPayloadPtr_t Payload);
+void   CFE_SB_DisableRoute(CFE_SB_MsgPayloadPtr_t Payload);
 char   *CFE_SB_GetAppTskName(uint32 TaskId, char* FullName);
 CFE_SB_BufferD_t *CFE_SB_GetBufferFromPool(CFE_SB_MsgId_t MsgId, uint16 size);
 CFE_SB_BufferD_t *CFE_SB_GetBufferFromCaller(CFE_SB_MsgId_t MsgId, void *Address);
@@ -378,29 +377,35 @@ int32 CFE_SB_UnsubscribeWithAppId(CFE_SB_MsgId_t MsgId, CFE_SB_PipeId_t PipeId,
 int32 CFE_SB_UnsubscribeFull(CFE_SB_MsgId_t MsgId, CFE_SB_PipeId_t PipeId,
                               uint8 Scope, uint32 AppId);
 int32  CFE_SB_SendMsgFull(CFE_SB_Msg_t   *MsgPtr, uint32 TlmCntIncrements, uint32 CopyMode);
-int32 CFE_SB_SendRtgInfo(char *Filename);
-int32 CFE_SB_SendPipeInfo(char *Filename);
-int32 CFE_SB_SendMapInfo(char *Filename);
+int32 CFE_SB_SendRtgInfo(const char *Filename);
+int32 CFE_SB_SendPipeInfo(const char *Filename);
+int32 CFE_SB_SendMapInfo(const char *Filename);
 int32 CFE_SB_ZeroCopyReleaseDesc(CFE_SB_Msg_t *Ptr2Release, CFE_SB_ZeroCopyHandle_t BufferHandle);
 int32 CFE_SB_ZeroCopyReleaseAppId(uint32         AppId);
 int32 CFE_SB_DecrBufUseCnt(CFE_SB_BufferD_t *bd);
 int32 CFE_SB_ValidateMsgId(CFE_SB_MsgId_t MsgId);
 int32 CFE_SB_ValidatePipeId(CFE_SB_PipeId_t PipeId);
 int32 CFE_SB_GetPktType(CFE_SB_MsgId_t MsgId);
-void CFE_SB_ProcessSendRtgInfoCmd(void);
-void CFE_SB_ProcessSendPipeInfoCmd(void);
-void CFE_SB_ProcessSendMapInfoCmd(void);
+void CFE_SB_ProcessSendRtgInfoCmd(CFE_SB_MsgPayloadPtr_t Payload);
+void CFE_SB_ProcessSendPipeInfoCmd(CFE_SB_MsgPayloadPtr_t Payload);
+void CFE_SB_ProcessSendMapInfoCmd(CFE_SB_MsgPayloadPtr_t Payload);
 void CFE_SB_SendPrevSubs(void);
 void CFE_SB_IncrCmdCtr(int32 status);
-void CFE_SB_FileWriteByteCntErr(char *Filename,uint32 Requested,uint32 Actual);
+void CFE_SB_FileWriteByteCntErr(const char *Filename,uint32 Requested,uint32 Actual);
 void CFE_SB_SetSubscriptionReporting(uint32 state);
 uint32 CFE_SB_FindGlobalMsgIdCnt(void);
 uint32 CFE_SB_RequestToSendEvent(uint32 TaskId, uint32 Bit);
+void CFE_SB_FinishSendEvent(uint32 TaskId, uint32 Bit);
 CFE_SB_DestinationD_t *CFE_SB_GetDestinationBlk(void);
 int32 CFE_SB_PutDestinationBlk(CFE_SB_DestinationD_t *Dest);
 int32 CFE_SB_AddDest(uint16 RtgTblIdx, CFE_SB_DestinationD_t *Dest);
 int32 CFE_SB_RemoveDest(uint16 RtgTblIdx, CFE_SB_DestinationD_t *Dest);
-void CFE_SB_CleanUpApp(uint32 AppId);
+
+/*
+ * External variables private to the software bus module
+ */
+
+extern cfe_sb_t CFE_SB;
 
 #endif /* _cfe_sb_priv_ */
 /*****************************************************************************/

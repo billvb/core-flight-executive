@@ -914,6 +914,24 @@ int32  CFE_TIME_RegisterSynchCallback(CFE_TIME_SynchCallbackPtr_t CallbackFuncPt
 ******************************************************************************/
 int32  CFE_TIME_UnregisterSynchCallback(CFE_TIME_SynchCallbackPtr_t CallbackFuncPtr);   
 
+
+/*****************************************************************************/
+/**
+** \brief This function should be called from the system PSP layer once per second
+**
+** \par Description
+**        Drives the time processing logic from the system PSP layer.  This must be called
+**        once per second based on a hardware interrupt or OS kernel signal.
+**
+** \par Assumptions, External Events, and Notes:
+**        This will update the global data structures accordingly, incrementing each
+**        by the 1Hz amount.
+**
+**
+******************************************************************************/
+void CFE_TIME_Local1HzISR(void);
+
+
 #endif /* _cfe_time_ */
 
 /************************/

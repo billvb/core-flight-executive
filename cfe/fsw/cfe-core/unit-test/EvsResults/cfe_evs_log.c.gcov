@@ -1,9 +1,12 @@
-        -:    0:Source:/mnt/hgfs/Projects/Repo_cFE/fsw/cfe-core/src/evs/cfe_evs_log.c
-        -:    0:Programs:4
+        -:    0:Source:/home/sstrege/cFE650/cfe/fsw/cfe-core/src/evs/cfe_evs_log.c
+        -:    0:Graph:cfe_evs_log.gcno
+        -:    0:Data:cfe_evs_log.gcda
+        -:    0:Runs:1
+        -:    0:Programs:2
         -:    1:/*
         -:    2:**
         -:    3:**  File Name: cfe_evslog.c
-        -:    4:**  $Id: cfe_evs_log.c.gcov 1.4 2014/09/05 15:56:34GMT-05:00 rmcgraw Exp  $
+        -:    4:**  $Id: cfe_evs_log.c 1.11 2014/08/22 16:53:23GMT-05:00 lwalling Exp  $
         -:    5:**
         -:    6:**
         -:    7:**
@@ -23,320 +26,309 @@
         -:   21:**  Purpose: This module defines the top level functions of the
         -:   22:**           Event Services Log control interfaces
         -:   23:**
-        -:   24:** $Date: 2014/09/05 15:56:34GMT-05:00 $
-        -:   25:** $Revision: 1.4 $
-        -:   26:** $Log: cfe_evs_log.c.gcov  $
-        -:   26:** Revision 1.4 2014/09/05 15:56:34GMT-05:00 rmcgraw 
-        -:   26:** DCR22107:23 Baseline Unit Tests for cFE6.4.0
-        -:   27:** Revision 1.10 2012/01/13 12:00:54EST acudmore 
-        -:   28:** Changed license text to reflect open source
-        -:   29:** Revision 1.9 2011/06/01 17:45:26EDT lwalling 
-        -:   30:** Update Add Log Entry comments, Write Log File logic and events, Set Log Mode events
-        -:   31:** Revision 1.8 2011/06/01 10:32:42EDT lwalling 
-        -:   32:** Remove unused reference to internal ES header file
-        -:   33:** Revision 1.7 2011/06/01 10:19:50EDT lwalling 
-        -:   34:** Modify function CFE_EVS_WriteLogFileCmd() to match prototype
-        -:   35:** Revision 1.6 2011/05/23 15:57:11EDT lwalling 
-        -:   36:** Change startup to not fail if unable to create event log, verify reset area size and event log contents
-        -:   37:** Revision 1.5 2011/04/05 16:33:42EDT lwalling 
-        -:   38:** Optimize EVS use of string functions, plus other performance improvements
-        -:   39:** Revision 1.4 2010/10/04 17:08:18EDT jmdagost 
-        -:   40:** Cleaned up copyright symbol.
-        -:   41:** Revision 1.3 2010/09/21 16:12:12EDT jmdagost 
-        -:   42:** Added conditional statements around conditionally-used local variables.
-        -:   43:** Revision 1.2 2009/06/10 09:12:42EDT acudmore 
-        -:   44:** Converted OS_Mem* and OS_BSP* calls to CFE_PSP_*
-        -:   45:** Revision 1.1 2008/04/17 08:05:12EDT ruperera 
-        -:   46:** Initial revision
-        -:   47:** Member added to project c:/MKSDATA/MKS-REPOSITORY/MKS-CFE-PROJECT/fsw/cfe-core/src/evs/project.pj
-        -:   48:** Revision 1.24 2007/07/18 15:47:59EDT njyanchik 
-        -:   49:** Jonathan added text into each error event in the two functions that write files (WriteLog and WriteAppData), as well as updated the doxygen comments in the header file
-        -:   50:** Revision 1.23 2007/05/14 10:26:03EDT apcudmore 
-        -:   51:** Preserve the EVS Local event log on a processor restart:
-        -:   52:** - moved the EVS Log to the ES reset data structure
-        -:   53:** - Added a couple of EVS Log related variables into the EVS_Log_t structure
-        -:   54:** - Added a routine to the EVS early init to get a pointer to the EVS Log 
-        -:   55:** - Added code to the EVS housekeeping service routine to copy Log variables into TLM
-        -:   56:** Revision 1.22 2007/04/03 09:27:29EDT njyanchik 
-        -:   57:** I added the SubType to the cFE file header for the event log and the write app data files in EVS
-        -:   58:** Revision 1.21 2007/03/02 10:59:57EST njyanchik 
-        -:   59:** The names of the command functions in cfe_evs_task.c didn't start with "CFE_", so that has been 
-        -:   60:** fixed.
-        -:   61:** Revision 1.20 2007/03/01 11:54:33EST njyanchik 
-        -:   62:** This cp handles issues 1,6,7,8 as described in the DCR
-        -:   63:** Revision 1.19 2006/11/14 15:02:55EST rjmcgraw 
-        -:   64:** Removed file open check
-        -:   65:** Revision 1.18 2006/10/20 16:26:59EDT kkaudra 
-        -:   66:** Added cmd parameter for filenames
-        -:   67:** Revision 1.17 2006/09/01 11:17:13EDT kkaudra 
-        -:   68:** IV&V:Removed osapi-os-filesys.h
-        -:   69:** Revision 1.16 2006/08/31 17:50:56EDT kkaudra 
-        -:   70:** Added event messages to set log mode ()
-        -:   71:** Revision 1.15 2006/06/08 14:14:53EDT njyanchik 
-        -:   72:** added the appropriate legal headers to all of the evs files
-        -:   73:**
-        -:   74:*/
-        -:   75:
-        -:   76:/* Include Files */
-        -:   77:#include "cfe_evs_task.h"     /* EVS internal definitions */
-        -:   78:#include "cfe_evs_log.h"      /* EVS log file definitions */
-        -:   79:#include "cfe_evs.h"          /* EVS API definitions */
-        -:   80:#include "cfe_evs_utils.h"    /* EVS utility function definitions */
-        -:   81:#include "cfe_fs.h"           /* File Service definitions */
-        -:   82:#include "cfe_error.h"        /* cFE error code definitions */
-        -:   83:#include "cfe_psp.h"          /* Get reset area function prototype */
-        -:   84:
-        -:   85:
-        -:   86:#include <string.h>
+        -:   24:** $Date: 2014/08/22 16:53:23GMT-05:00 $
+        -:   25:** $Revision: 1.11 $
+        -:   26:** $Log: cfe_evs_log.c  $
+        -:   27:** Revision 1.11 2014/08/22 16:53:23GMT-05:00 lwalling 
+        -:   28:** Change signed loop counters to unsigned
+        -:   29:** Revision 1.10 2012/01/13 12:00:54EST acudmore 
+        -:   30:** Changed license text to reflect open source
+        -:   31:** Revision 1.9 2011/06/01 17:45:26EDT lwalling 
+        -:   32:** Update Add Log Entry comments, Write Log File logic and events, Set Log Mode events
+        -:   33:** Revision 1.8 2011/06/01 10:32:42EDT lwalling 
+        -:   34:** Remove unused reference to internal ES header file
+        -:   35:** Revision 1.7 2011/06/01 10:19:50EDT lwalling 
+        -:   36:** Modify function CFE_EVS_WriteLogFileCmd() to match prototype
+        -:   37:** Revision 1.6 2011/05/23 15:57:11EDT lwalling 
+        -:   38:** Change startup to not fail if unable to create event log, verify reset area size and event log contents
+        -:   39:** Revision 1.5 2011/04/05 16:33:42EDT lwalling 
+        -:   40:** Optimize EVS use of string functions, plus other performance improvements
+        -:   41:** Revision 1.4 2010/10/04 17:08:18EDT jmdagost 
+        -:   42:** Cleaned up copyright symbol.
+        -:   43:** Revision 1.3 2010/09/21 16:12:12EDT jmdagost 
+        -:   44:** Added conditional statements around conditionally-used local variables.
+        -:   45:** Revision 1.2 2009/06/10 09:12:42EDT acudmore 
+        -:   46:** Converted OS_Mem* and OS_BSP* calls to CFE_PSP_*
+        -:   47:** Revision 1.1 2008/04/17 08:05:12EDT ruperera 
+        -:   48:** Initial revision
+        -:   49:** Member added to project c:/MKSDATA/MKS-REPOSITORY/MKS-CFE-PROJECT/fsw/cfe-core/src/evs/project.pj
+        -:   50:** Revision 1.24 2007/07/18 15:47:59EDT njyanchik 
+        -:   51:** Jonathan added text into each error event in the two functions that write files (WriteLog and WriteAppData), as well as updated the doxygen comments in the header file
+        -:   52:** Revision 1.23 2007/05/14 10:26:03EDT apcudmore 
+        -:   53:** Preserve the EVS Local event log on a processor restart:
+        -:   54:** - moved the EVS Log to the ES reset data structure
+        -:   55:** - Added a couple of EVS Log related variables into the EVS_Log_t structure
+        -:   56:** - Added a routine to the EVS early init to get a pointer to the EVS Log 
+        -:   57:** - Added code to the EVS housekeeping service routine to copy Log variables into TLM
+        -:   58:** Revision 1.22 2007/04/03 09:27:29EDT njyanchik 
+        -:   59:** I added the SubType to the cFE file header for the event log and the write app data files in EVS
+        -:   60:** Revision 1.21 2007/03/02 10:59:57EST njyanchik 
+        -:   61:** The names of the command functions in cfe_evs_task.c didn't start with "CFE_", so that has been 
+        -:   62:** fixed.
+        -:   63:** Revision 1.20 2007/03/01 11:54:33EST njyanchik 
+        -:   64:** This cp handles issues 1,6,7,8 as described in the DCR
+        -:   65:** Revision 1.19 2006/11/14 15:02:55EST rjmcgraw 
+        -:   66:** Removed file open check
+        -:   67:** Revision 1.18 2006/10/20 16:26:59EDT kkaudra 
+        -:   68:** Added cmd parameter for filenames
+        -:   69:** Revision 1.17 2006/09/01 11:17:13EDT kkaudra 
+        -:   70:** IV&V:Removed osapi-os-filesys.h
+        -:   71:** Revision 1.16 2006/08/31 17:50:56EDT kkaudra 
+        -:   72:** Added event messages to set log mode ()
+        -:   73:** Revision 1.15 2006/06/08 14:14:53EDT njyanchik 
+        -:   74:** added the appropriate legal headers to all of the evs files
+        -:   75:**
+        -:   76:*/
+        -:   77:
+        -:   78:/* Include Files */
+        -:   79:#include "cfe_evs_task.h"     /* EVS internal definitions */
+        -:   80:#include "cfe_evs_log.h"      /* EVS log file definitions */
+        -:   81:#include "cfe_evs.h"          /* EVS API definitions */
+        -:   82:#include "cfe_evs_utils.h"    /* EVS utility function definitions */
+        -:   83:#include "cfe_fs.h"           /* File Service definitions */
+        -:   84:#include "cfe_error.h"        /* cFE error code definitions */
+        -:   85:#include "cfe_psp.h"          /* Get reset area function prototype */
+        -:   86:
         -:   87:
-        -:   88:/* External Data */
-        -:   89:extern CFE_EVS_GlobalData_t   CFE_EVS_GlobalData;
+        -:   88:#include <string.h>
+        -:   89:
         -:   90:
-        -:   91:
-        -:   92:/*
-        -:   93:**             Function Prologue
-        -:   94:**
-        -:   95:** Function Name:      EVS_AddLog
-        -:   96:**
-        -:   97:** Purpose:  This routine adds an event packet to the internal event log.
-        -:   98:**
-        -:   99:** Assumptions and Notes:
-        -:  100:**
-        -:  101:*/
-      155:  102:void EVS_AddLog (CFE_EVS_Packet_t *EVS_PktPtr)
-        -:  103:{
-        -:  104:
-      155:  105:   if (CFE_EVS_GlobalData.EVS_TlmPkt.LogEnabled == TRUE)
-        -:  106:   {   
-        -:  107:      /* Serialize access to event log control variables */
-      129:  108:      OS_MutSemTake(CFE_EVS_GlobalData.EVS_SharedDataMutexID);
-        -:  109:
-      137:  110:      if ((CFE_EVS_GlobalData.EVS_LogPtr->LogFullFlag == TRUE) &&
-        5:  111:          (CFE_EVS_GlobalData.EVS_LogPtr->LogMode == CFE_EVS_LOG_DISCARD))
-        -:  112:      {
-        -:  113:         /* If log is full and in discard mode, just count the event */
-        3:  114:         CFE_EVS_GlobalData.EVS_LogPtr->LogOverflowCounter++;
-        -:  115:      }
-        -:  116:      else
-        -:  117:      {
-      126:  118:         if (CFE_EVS_GlobalData.EVS_LogPtr->LogFullFlag == TRUE)
-        -:  119:         {
-        -:  120:            /* If log is full and in wrap mode, count it and store it */
-        2:  121:            CFE_EVS_GlobalData.EVS_LogPtr->LogOverflowCounter++;
-        -:  122:         }
-        -:  123:
-        -:  124:         /* Copy the event data to the next available entry in the log */
-      126:  125:         CFE_PSP_MemCpy(&CFE_EVS_GlobalData.EVS_LogPtr->LogEntry[CFE_EVS_GlobalData.EVS_LogPtr->Next],
-        -:  126:                        EVS_PktPtr, sizeof(CFE_EVS_Packet_t));
-        -:  127:
-      126:  128:         CFE_EVS_GlobalData.EVS_LogPtr->Next++;
-        -:  129:
-      126:  130:         if (CFE_EVS_GlobalData.EVS_LogPtr->Next >= CFE_EVS_LOG_MAX)
-        -:  131:         {
-        -:  132:            /* This is important, even if we are in discard mode */
-        6:  133:            CFE_EVS_GlobalData.EVS_LogPtr->Next = 0;
-        -:  134:         }
-        -:  135:
-        -:  136:         /* Log count cannot exceed the number of entries in the log */
-      126:  137:         if (CFE_EVS_GlobalData.EVS_LogPtr->LogCount < CFE_EVS_LOG_MAX)
-        -:  138:         {
-       25:  139:            CFE_EVS_GlobalData.EVS_LogPtr->LogCount++;
-        -:  140:
-       25:  141:            if (CFE_EVS_GlobalData.EVS_LogPtr->LogCount == CFE_EVS_LOG_MAX)
-        -:  142:            {
-        -:  143:               /* The full flag and log count are somewhat redundant */
-        1:  144:               CFE_EVS_GlobalData.EVS_LogPtr->LogFullFlag = TRUE;
-        -:  145:            }
-        -:  146:         }
-        -:  147:      }
-        -:  148:    
-      129:  149:      OS_MutSemGive(CFE_EVS_GlobalData.EVS_SharedDataMutexID);
-        -:  150:   }
-        -:  151:
-      155:  152:   return;
-        -:  153:
-        -:  154:} /* End EVS_AddLog */
+        -:   91:/*
+        -:   92:**             Function Prologue
+        -:   93:**
+        -:   94:** Function Name:      EVS_AddLog
+        -:   95:**
+        -:   96:** Purpose:  This routine adds an event packet to the internal event log.
+        -:   97:**
+        -:   98:** Assumptions and Notes:
+        -:   99:**
+        -:  100:*/
+        -:  101:void EVS_AddLog (CFE_EVS_Packet_t *EVS_PktPtr)
+      169:  102:{
+        -:  103:
+      169:  104:   if (CFE_EVS_GlobalData.EVS_TlmPkt.Payload.LogEnabled == TRUE)
+        -:  105:   {   
+        -:  106:      /* Serialize access to event log control variables */
+      135:  107:      OS_MutSemTake(CFE_EVS_GlobalData.EVS_SharedDataMutexID);
+        -:  108:
+      138:  109:      if ((CFE_EVS_GlobalData.EVS_LogPtr->LogFullFlag == TRUE) &&
+        -:  110:          (CFE_EVS_GlobalData.EVS_LogPtr->LogMode == CFE_EVS_LOG_DISCARD))
+        -:  111:      {
+        -:  112:         /* If log is full and in discard mode, just count the event */
+        3:  113:         CFE_EVS_GlobalData.EVS_LogPtr->LogOverflowCounter++;
+        -:  114:      }
+        -:  115:      else
+        -:  116:      {
+      132:  117:         if (CFE_EVS_GlobalData.EVS_LogPtr->LogFullFlag == TRUE)
+        -:  118:         {
+        -:  119:            /* If log is full and in wrap mode, count it and store it */
+        2:  120:            CFE_EVS_GlobalData.EVS_LogPtr->LogOverflowCounter++;
+        -:  121:         }
+        -:  122:
+        -:  123:         /* Copy the event data to the next available entry in the log */
+      132:  124:         CFE_PSP_MemCpy(&CFE_EVS_GlobalData.EVS_LogPtr->LogEntry[CFE_EVS_GlobalData.EVS_LogPtr->Next],
+        -:  125:                        EVS_PktPtr, sizeof(CFE_EVS_Packet_t));
+        -:  126:
+      132:  127:         CFE_EVS_GlobalData.EVS_LogPtr->Next++;
+        -:  128:
+      132:  129:         if (CFE_EVS_GlobalData.EVS_LogPtr->Next >= CFE_EVS_LOG_MAX)
+        -:  130:         {
+        -:  131:            /* This is important, even if we are in discard mode */
+        6:  132:            CFE_EVS_GlobalData.EVS_LogPtr->Next = 0;
+        -:  133:         }
+        -:  134:
+        -:  135:         /* Log count cannot exceed the number of entries in the log */
+      132:  136:         if (CFE_EVS_GlobalData.EVS_LogPtr->LogCount < CFE_EVS_LOG_MAX)
+        -:  137:         {
+       25:  138:            CFE_EVS_GlobalData.EVS_LogPtr->LogCount++;
+        -:  139:
+       25:  140:            if (CFE_EVS_GlobalData.EVS_LogPtr->LogCount == CFE_EVS_LOG_MAX)
+        -:  141:            {
+        -:  142:               /* The full flag and log count are somewhat redundant */
+        1:  143:               CFE_EVS_GlobalData.EVS_LogPtr->LogFullFlag = TRUE;
+        -:  144:            }
+        -:  145:         }
+        -:  146:      }
+        -:  147:    
+      135:  148:      OS_MutSemGive(CFE_EVS_GlobalData.EVS_SharedDataMutexID);
+        -:  149:   }
+        -:  150:
+        -:  151:   return;
+        -:  152:
+        -:  153:} /* End EVS_AddLog */
+        -:  154:
         -:  155:
-        -:  156:
-        -:  157:/*
-        -:  158:**             Function Prologue
-        -:  159:**
-        -:  160:** Function Name:      EVS_ClearLog
-        -:  161:**
-        -:  162:** Purpose:  This routine clears the contents of the internal event log.
-        -:  163:**
-        -:  164:** Assumptions and Notes:
-        -:  165:**
-        -:  166:*/
-        3:  167:void EVS_ClearLog ( void )
-        -:  168:{
-        -:  169:
-        -:  170:   /* Serialize access to event log control variables */
-        3:  171:   OS_MutSemTake(CFE_EVS_GlobalData.EVS_SharedDataMutexID);
-        -:  172:
-        -:  173:   /* Clears everything but LogMode (overwrite vs discard) */
-        3:  174:   CFE_EVS_GlobalData.EVS_LogPtr->Next = 0;
-        3:  175:   CFE_EVS_GlobalData.EVS_LogPtr->LogCount = 0;
-        3:  176:   CFE_EVS_GlobalData.EVS_LogPtr->LogFullFlag = FALSE;
-        3:  177:   CFE_EVS_GlobalData.EVS_LogPtr->LogOverflowCounter = 0;
-        -:  178:
-        3:  179:   CFE_PSP_MemSet(CFE_EVS_GlobalData.EVS_LogPtr->LogEntry, 0,
-        -:  180:                  CFE_EVS_LOG_MAX * sizeof(CFE_EVS_Packet_t));
-        -:  181:
-        3:  182:   OS_MutSemGive(CFE_EVS_GlobalData.EVS_SharedDataMutexID);
-        -:  183:
-        3:  184:   return;
-        -:  185:
-        -:  186:} /* End EVS_ClearLog */
+        -:  156:/*
+        -:  157:**             Function Prologue
+        -:  158:**
+        -:  159:** Function Name:      EVS_ClearLog
+        -:  160:**
+        -:  161:** Purpose:  This routine clears the contents of the internal event log.
+        -:  162:**
+        -:  163:** Assumptions and Notes:
+        -:  164:**
+        -:  165:*/
+        -:  166:void EVS_ClearLog ( void )
+        5:  167:{
+        -:  168:
+        -:  169:   /* Serialize access to event log control variables */
+        5:  170:   OS_MutSemTake(CFE_EVS_GlobalData.EVS_SharedDataMutexID);
+        -:  171:
+        -:  172:   /* Clears everything but LogMode (overwrite vs discard) */
+        5:  173:   CFE_EVS_GlobalData.EVS_LogPtr->Next = 0;
+        5:  174:   CFE_EVS_GlobalData.EVS_LogPtr->LogCount = 0;
+        5:  175:   CFE_EVS_GlobalData.EVS_LogPtr->LogFullFlag = FALSE;
+        5:  176:   CFE_EVS_GlobalData.EVS_LogPtr->LogOverflowCounter = 0;
+        -:  177:
+        5:  178:   CFE_PSP_MemSet(CFE_EVS_GlobalData.EVS_LogPtr->LogEntry, 0,
+        -:  179:                  CFE_EVS_LOG_MAX * sizeof(CFE_EVS_Packet_t));
+        -:  180:
+        5:  181:   OS_MutSemGive(CFE_EVS_GlobalData.EVS_SharedDataMutexID);
+        -:  182:
+        -:  183:   return;
+        -:  184:
+        -:  185:} /* End EVS_ClearLog */
+        -:  186:
         -:  187:
-        -:  188:
-        -:  189:/*
-        -:  190:**             Function Prologue
-        -:  191:**
-        -:  192:** Function Name:      CFE_EVS_WriteLogFileCmd
-        -:  193:**
-        -:  194:** Purpose:  This routine writes the contents of the internal event log to a file
-        -:  195:**
-        -:  196:** Assumptions and Notes:
-        -:  197:**
-        -:  198:*/
-        5:  199:boolean CFE_EVS_WriteLogFileCmd ( CFE_EVS_LogFileCmd_t *CmdPtr )
-        -:  200:{
-        5:  201:   boolean         Result = FALSE;
+        -:  188:/*
+        -:  189:**             Function Prologue
+        -:  190:**
+        -:  191:** Function Name:      CFE_EVS_WriteLogFileCmd
+        -:  192:**
+        -:  193:** Purpose:  This routine writes the contents of the internal event log to a file
+        -:  194:**
+        -:  195:** Assumptions and Notes:
+        -:  196:**
+        -:  197:*/
+        -:  198:boolean CFE_EVS_WriteLogFileCmd (CFE_SB_MsgPayloadPtr_t Payload)
+        7:  199:{
+        7:  200:   const CFE_EVS_LogFileCmd_Payload_t *CmdPtr = (const CFE_EVS_LogFileCmd_Payload_t *)Payload;
+        7:  201:   boolean         Result = FALSE;
         -:  202:   int32           LogIndex;
         -:  203:   int32           BytesWritten;
         -:  204:   int32           LogFileHandle;
-        -:  205:   int32           i;
+        -:  205:   uint32          i;
         -:  206:   CFE_FS_Header_t LogFileHdr;
         -:  207:   char            LogFilename[OS_MAX_PATH_LEN];
         -:  208:
         -:  209:
         -:  210:   /* Serialize access to event log control variables */
-        5:  211:   OS_MutSemTake(CFE_EVS_GlobalData.EVS_SharedDataMutexID);
+        7:  211:   OS_MutSemTake(CFE_EVS_GlobalData.EVS_SharedDataMutexID);
         -:  212:
         -:  213:   /* Copy the commanded filename into local buffer to ensure size limitation and to allow for modification */
-        5:  214:   CFE_PSP_MemCpy(LogFilename, (void *)CmdPtr->LogFilename, OS_MAX_PATH_LEN);
-        -:  215:
-        -:  216:   /* Check to see if a default filename should be used */
-        5:  217:   if (LogFilename[0] == '\0')
-        -:  218:   {
-        5:  219:       strncpy(LogFilename, CFE_EVS_DEFAULT_LOG_FILE, OS_MAX_PATH_LEN);
-        -:  220:   }
-        -:  221:
-        -:  222:   /* Make sure all strings are null terminated before attempting to process them */
-        5:  223:   LogFilename[OS_MAX_PATH_LEN-1] = '\0';
-        -:  224:
-        -:  225:   /* Create the log file */
-        5:  226:   LogFileHandle = OS_creat(LogFilename, OS_WRITE_ONLY);
-        -:  227:
-        5:  228:   if (LogFileHandle < OS_FS_SUCCESS)
-        -:  229:   {
-        1:  230:      EVS_SendEvent(CFE_EVS_ERR_CRLOGFILE_EID, CFE_EVS_ERROR,
-        -:  231:                   "Write Log File Command Error: OS_creat = 0x%08X, filename = %s",
-        -:  232:                    LogFileHandle, LogFilename);
-        -:  233:   }
-        -:  234:   else
-        -:  235:   {
-        -:  236:      /* Initialize cFE file header for an event log file */
-        4:  237:      CFE_PSP_MemSet(&LogFileHdr, 0, sizeof(CFE_FS_Header_t));
-        4:  238:      strcpy(&LogFileHdr.Description[0], "cFE EVS Log File");
-        4:  239:      LogFileHdr.SubType = CFE_FS_EVS_EVENTLOG_SUBTYPE;
-        -:  240:
-        -:  241:      /* Write the file header to the log file */
-        4:  242:      BytesWritten = CFE_FS_WriteHeader(LogFileHandle, &LogFileHdr);
-        -:  243:
-        4:  244:      if (BytesWritten == sizeof(CFE_FS_Header_t))
-        -:  245:      {
-        -:  246:         /* Is the log full? -- Doesn't matter if wrap mode is enabled */
-        4:  247:         if (CFE_EVS_GlobalData.EVS_LogPtr->LogCount == CFE_EVS_LOG_MAX)
-        -:  248:         {
-        -:  249:            /* Start with log entry that will be overwritten next (oldest) */
-        3:  250:            LogIndex = CFE_EVS_GlobalData.EVS_LogPtr->Next;
-        -:  251:         }
-        -:  252:         else
-        -:  253:         {
-        -:  254:            /* Start with the first entry in the log (oldest) */
-        1:  255:            LogIndex = 0;
-        -:  256:         }
-        -:  257:
-        -:  258:         /* Write all the "in-use" event log entries to the file */
-       45:  259:         for (i = 0; i < CFE_EVS_GlobalData.EVS_LogPtr->LogCount; i++)
-        -:  260:         {
-       84:  261:            BytesWritten = OS_write(LogFileHandle,
-       84:  262:                                    &CFE_EVS_GlobalData.EVS_LogPtr->LogEntry[LogIndex],
-        -:  263:                                    sizeof(CFE_EVS_Packet_t));
-        -:  264:
-       42:  265:            if (BytesWritten == sizeof(CFE_EVS_Packet_t))
-        -:  266:            {
-       41:  267:               LogIndex++;
-        -:  268:
-       41:  269:               if (LogIndex >= CFE_EVS_LOG_MAX)
-        -:  270:               {
-        2:  271:                  LogIndex = 0;
-        -:  272:               }
-        -:  273:            }
-        -:  274:            else
-        -:  275:            {
-        1:  276:               EVS_SendEvent(CFE_EVS_ERR_WRLOGFILE_EID, CFE_EVS_ERROR,
-        -:  277:                            "Write Log File Command Error: OS_write = 0x%08X, filename = %s",
-        -:  278:                             BytesWritten, LogFilename);
-        1:  279:               break;
-        -:  280:            }
-        -:  281:         }
+        7:  214:   CFE_SB_MessageStringGet(LogFilename, (const char *)CmdPtr->LogFilename, CFE_EVS_DEFAULT_LOG_FILE,
+        -:  215:           OS_MAX_PATH_LEN, sizeof(CmdPtr->LogFilename));
+        -:  216:
+        -:  217:   /* Create the log file */
+        7:  218:   LogFileHandle = OS_creat(LogFilename, OS_WRITE_ONLY);
+        -:  219:
+        7:  220:   if (LogFileHandle < OS_FS_SUCCESS)
+        -:  221:   {
+        1:  222:      EVS_SendEvent(CFE_EVS_ERR_CRLOGFILE_EID, CFE_EVS_ERROR,
+        -:  223:                   "Write Log File Command Error: OS_creat = 0x%08X, filename = %s",
+        -:  224:                    LogFileHandle, LogFilename);
+        -:  225:   }
+        -:  226:   else
+        -:  227:   {
+        -:  228:      /* Initialize cFE file header for an event log file */
+        6:  229:      CFE_FS_InitHeader(&LogFileHdr, "cFE EVS Log File", CFE_FS_EVS_EVENTLOG_SUBTYPE);
+        -:  230:
+        -:  231:      /* Write the file header to the log file */
+        6:  232:      BytesWritten = CFE_FS_WriteHeader(LogFileHandle, &LogFileHdr);
+        -:  233:
+        6:  234:      if (BytesWritten == sizeof(CFE_FS_Header_t))
+        -:  235:      {
+        -:  236:         /* Is the log full? -- Doesn't matter if wrap mode is enabled */
+        5:  237:         if (CFE_EVS_GlobalData.EVS_LogPtr->LogCount == CFE_EVS_LOG_MAX)
+        -:  238:         {
+        -:  239:            /* Start with log entry that will be overwritten next (oldest) */
+        4:  240:            LogIndex = CFE_EVS_GlobalData.EVS_LogPtr->Next;
+        -:  241:         }
+        -:  242:         else
+        -:  243:         {
+        -:  244:            /* Start with the first entry in the log (oldest) */
+        1:  245:            LogIndex = 0;
+        -:  246:         }
+        -:  247:
+        -:  248:         /* Write all the "in-use" event log entries to the file */
+      132:  249:         for (i = 0; i < CFE_EVS_GlobalData.EVS_LogPtr->LogCount; i++)
+        -:  250:         {
+       62:  251:            BytesWritten = OS_write(LogFileHandle,
+        -:  252:                                    &CFE_EVS_GlobalData.EVS_LogPtr->LogEntry[LogIndex],
+        -:  253:                                    sizeof(CFE_EVS_Packet_t));
+        -:  254:
+       62:  255:            if (BytesWritten == sizeof(CFE_EVS_Packet_t))
+        -:  256:            {
+       61:  257:               LogIndex++;
+        -:  258:
+       61:  259:               if (LogIndex >= CFE_EVS_LOG_MAX)
+        -:  260:               {
+        3:  261:                  LogIndex = 0;
+        -:  262:               }
+        -:  263:            }
+        -:  264:            else
+        -:  265:            {
+        1:  266:               EVS_SendEvent(CFE_EVS_ERR_WRLOGFILE_EID, CFE_EVS_ERROR,
+        -:  267:                            "Write Log File Command Error: OS_write = 0x%08X, filename = %s",
+        -:  268:                            (unsigned int)BytesWritten, LogFilename);
+        1:  269:               break;
+        -:  270:            }
+        -:  271:         }
+        -:  272:
+        -:  273:         /* Process command handler success result */
+        5:  274:         if (i == CFE_EVS_GlobalData.EVS_LogPtr->LogCount)
+        -:  275:         {
+        4:  276:            EVS_SendEvent(CFE_EVS_WRLOG_EID, CFE_EVS_DEBUG,
+        -:  277:                         "Write Log File Command: %d event log entries written to %s",
+        -:  278:                          (int)CFE_EVS_GlobalData.EVS_LogPtr->LogCount, LogFilename);
+        4:  279:            Result = TRUE;
+        -:  280:         }
+        -:  281:      }
         -:  282:
-        -:  283:         /* Process command handler success result */
-        4:  284:         if (i == CFE_EVS_GlobalData.EVS_LogPtr->LogCount)
-        -:  285:         {
-        3:  286:            EVS_SendEvent(CFE_EVS_WRLOG_EID, CFE_EVS_DEBUG,
-        -:  287:                         "Write Log File Command: %d event log entries written to %s",
-        3:  288:                          CFE_EVS_GlobalData.EVS_LogPtr->LogCount, LogFilename);
-        3:  289:            Result = TRUE;
-        -:  290:         }
-        -:  291:      }
+        6:  283:      OS_close(LogFileHandle);
+        -:  284:   }
+        -:  285:
+        7:  286:   OS_MutSemGive(CFE_EVS_GlobalData.EVS_SharedDataMutexID);
+        -:  287:
+        7:  288:   return(Result);
+        -:  289:
+        -:  290:} /* End CFE_EVS_WriteLogFileCmd */
+        -:  291:
         -:  292:
-        4:  293:      OS_close(LogFileHandle);
-        -:  294:   }
-        -:  295:
-        5:  296:   OS_MutSemGive(CFE_EVS_GlobalData.EVS_SharedDataMutexID);
-        -:  297:
-        5:  298:   return(Result);
-        -:  299:
-        -:  300:} /* End CFE_EVS_WriteLogFileCmd */
-        -:  301:
-        -:  302:
-        -:  303:/*
-        -:  304:**             Function Prologue
-        -:  305:**
-        -:  306:** Function Name:      CFE_EVS_SetLoggingModeCmd
-        -:  307:**
-        -:  308:** Purpose:  This routine sets the internal event log mode.
-        -:  309:**
-        -:  310:** Assumptions and Notes:
-        -:  311:**
-        -:  312:*/
-        5:  313:boolean CFE_EVS_SetLoggingModeCmd (CFE_EVS_ModeCmd_t *CmdPtr)
-        -:  314:{
-        5:  315:   boolean Status = TRUE;
-        -:  316:
-        9:  317:   if ((CmdPtr->Mode == CFE_EVS_LOG_OVERWRITE) || (CmdPtr->Mode == CFE_EVS_LOG_DISCARD))
-        -:  318:   {
-        -:  319:      /* Serialize access to event log control variables */
-        4:  320:      OS_MutSemTake(CFE_EVS_GlobalData.EVS_SharedDataMutexID);
-        4:  321:      CFE_EVS_GlobalData.EVS_LogPtr->LogMode = CmdPtr->Mode;
-        4:  322:      OS_MutSemGive(CFE_EVS_GlobalData.EVS_SharedDataMutexID);
-        -:  323:
-        4:  324:      EVS_SendEvent(CFE_EVS_LOGMODE_EID, CFE_EVS_DEBUG,
-        4:  325:                   "Set Log Mode Command: Log Mode = %d", CmdPtr->Mode);
-        -:  326:   }
-        -:  327:   else
-        -:  328:   {
-        1:  329:      Status = FALSE;
-        1:  330:      EVS_SendEvent(CFE_EVS_ERR_LOGMODE_EID, CFE_EVS_ERROR,
-        1:  331:                   "Set Log Mode Command Error: Log Mode = %d", CmdPtr->Mode);
-        -:  332:   }
-        -:  333:
-        5:  334:   return Status;
-        -:  335:
-        -:  336:} /* End CFE_EVS_SetLoggingModeCmd */
-        -:  337:
-        -:  338:/* END EVSLOG.C */
+        -:  293:/*
+        -:  294:**             Function Prologue
+        -:  295:**
+        -:  296:** Function Name:      CFE_EVS_SetLoggingModeCmd
+        -:  297:**
+        -:  298:** Purpose:  This routine sets the internal event log mode.
+        -:  299:**
+        -:  300:** Assumptions and Notes:
+        -:  301:**
+        -:  302:*/
+        -:  303:boolean CFE_EVS_SetLoggingModeCmd (CFE_SB_MsgPayloadPtr_t Payload)
+        5:  304:{
+        5:  305:   CFE_EVS_ModeCmd_Payload_t *CmdPtr = (CFE_EVS_ModeCmd_Payload_t *)Payload;
+        5:  306:   boolean Status = TRUE;
+        -:  307:
+        9:  308:   if ((CmdPtr->Mode == CFE_EVS_LOG_OVERWRITE) || (CmdPtr->Mode == CFE_EVS_LOG_DISCARD))
+        -:  309:   {
+        -:  310:      /* Serialize access to event log control variables */
+        4:  311:      OS_MutSemTake(CFE_EVS_GlobalData.EVS_SharedDataMutexID);
+        4:  312:      CFE_EVS_GlobalData.EVS_LogPtr->LogMode = CmdPtr->Mode;
+        4:  313:      OS_MutSemGive(CFE_EVS_GlobalData.EVS_SharedDataMutexID);
+        -:  314:
+        4:  315:      EVS_SendEvent(CFE_EVS_LOGMODE_EID, CFE_EVS_DEBUG,
+        -:  316:                   "Set Log Mode Command: Log Mode = %d", (int)CmdPtr->Mode);
+        -:  317:   }
+        -:  318:   else
+        -:  319:   {
+        1:  320:      Status = FALSE;
+        1:  321:      EVS_SendEvent(CFE_EVS_ERR_LOGMODE_EID, CFE_EVS_ERROR,
+        -:  322:                   "Set Log Mode Command Error: Log Mode = %d", (int)CmdPtr->Mode);
+        -:  323:   }
+        -:  324:
+        5:  325:   return Status;
+        -:  326:
+        -:  327:} /* End CFE_EVS_SetLoggingModeCmd */
+        -:  328:
+        -:  329:/* END EVSLOG.C */

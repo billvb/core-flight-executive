@@ -76,7 +76,8 @@
 ** Includes:
 */
 #include "osapi.h"
-#include "cfe.h"
+#include "private/cfe_private.h"
+#include "private/cfe_es_resetdata_typedef.h"
 #include "cfe_es.h"
 #include "cfe_es_apps.h"
 #include "cfe_es_cds.h"
@@ -94,52 +95,6 @@
 /*
 ** Typedefs
 */
-
-/*
-** Reset Variables type
-*/
-typedef struct
-{
-   uint32     ResetType;
-   uint32     ResetSubtype;
-   uint32     BootSource;
-   uint32     ES_CausedReset;
-   uint32     ProcessorResetCount;
-   uint32     MaxProcessorResetCount;
-      
-} CFE_ES_ResetVariables_t;
-
-/*
-** Debug variables type
-*/
-typedef struct
-{  
-   uint32 DebugFlag;
-   uint32 WatchdogWriteFlag;
-   uint32 PrintfEnabledFlag;
-   uint32 LastAppId;
-   
-} CFE_ES_DebugVariables_t;
-
-/*
-** Exception and Reset Log Structure
-*/
-typedef struct
-{
-     uint32                  LogEntryType;                  /* What type of log entry */
-     uint32                  ResetType;                     /* Main cause for the reset */
-     uint32                  ResetSubtype;                  /* The sub-type for the reset */
-     uint32                  BootSource;                    /* The boot source  */
-     uint32                  ProcessorResetCount;           /* The number of processor resets */
-     uint32                  MaxProcessorResetCount;        /* The maximum number before a Power On */
-     CFE_ES_DebugVariables_t DebugVars;                     /* ES Debug variables */
-     CFE_TIME_SysTime_t      TimeCode;                      /* Time code */
-     char                    Description[80];               /* The ascii data for the event */
-     uint32                  ContextIsPresent;                  /* Indicates the context data is valid */
-     uint32                  AppID;                          /* The application ID */
-     uint8                   Context[CFE_PSP_CPU_CONTEXT_SIZE];  /* cpu  context */
-
-} CFE_ES_ERLog_t;
 
 /*
 ** CFE_ES_GenCounterRecord_t is an internal structure used to keep track of
@@ -173,10 +128,9 @@ typedef struct
    /*
    ** Startup Sync variables.
    */
-   uint32  StartupSyncSemaphore;
-   int32   AppStartupCounter;
-   boolean StartupFileComplete;
-   boolean StartupSemaphoreReleased;
+   uint32  AppStartedCount;
+   uint32  AppReadyCount;
+   uint32  SystemState;
 
    /*
    ** ES Task Table
@@ -208,54 +162,6 @@ typedef struct
    CFE_ES_CDSVariables_t CDSVars;
 
 } CFE_ES_Global_t;
-
-/*
-** Executive Services Global Reset Data type
-** This is the special memory area for ES that is preserved
-** on a processor reset.
-*/
-typedef struct
-{
-   /*
-   ** Exception and Reset log declaration
-   */
-   CFE_ES_ERLog_t    ERLog[CFE_ES_ER_LOG_ENTRIES];
-   uint32            ERLogIndex;
-   uint32            ERLogEntries;
-   uint32            LastAppId;
-
-   /*
-   ** System Log declaration
-   */
-   char            SystemLog[CFE_ES_SYSTEM_LOG_SIZE];
-   uint32          SystemLogIndex;
-   uint32          SystemLogMode;
-   uint32          SystemLogEntryNum;
- 
-   /*
-   ** Performance Data
-   */
-   CFE_ES_PerfData_t       Perf;
- 
-   /*
-   ** Reset Variables
-   */
-   CFE_ES_ResetVariables_t  ResetVars;
-
-   /*
-   ** Time variables that are 
-   ** preserved on a processor reset
-   */ 
-   CFE_TIME_ResetVars_t TimeResetVars;
-
-   #ifdef CFE_EVS_LOG_ON
-      /*
-      ** EVS Log and associated variables. This needs to be preserved on a processor reset.
-      */
-      CFE_EVS_Log_t              EVS_Log;
-   #endif
-
-} CFE_ES_ResetData_t;
 
 /*
 ** The Executive Services Global Data declaration

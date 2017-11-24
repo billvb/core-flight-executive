@@ -595,6 +595,21 @@
 */
 #define CFE_ES_ER_LOG_ENTRIES 20
 
+/** \cfeescfg Maximum size of CPU Context in ES Error Log
+**
+**  \par Description:
+**       This should be large enough to accommodate the CPU context
+**       information supplied by the PSP on the given platform.
+**
+**  \par Limits:
+**       Must be greater than zero and a multiple of sizeof(uint32).
+**       Limited only by the available memory and the number of entries
+**       in the error log. Any context information beyond this size will
+**       be truncated.
+*/
+#define CFE_ES_ER_LOG_MAX_CONTEXT_SIZE     128
+
+
 /**
 **  \cfeescfg Define Size of the cFE System Log.
 **
@@ -607,7 +622,7 @@
 **       There is a lower limit of 512 and an upper limit of 16384 on this
 **       configuration paramater.
 */
-#define CFE_ES_SYSTEM_LOG_SIZE  2048
+#define CFE_ES_SYSTEM_LOG_SIZE  3072
 
 
 /**
@@ -1007,7 +1022,6 @@
 */
 #define CFE_ES_DEFAULT_CDS_REG_DUMP_FILE     "/ram/cfe_cds_reg.log"
 
-
 /**
 **  \cfeescfg Define Default System Log Mode
 **
@@ -1054,27 +1068,125 @@
 */
 #define CFE_ES_PERF_DATA_BUFFER_SIZE           10000
 
+
+/**
+**  \cfeescfg Define Filter Mask Setting for Disabling All Performance Entries
+**
+**  \par Description:
+**       Defines the filter mask for disabling all performance entries. The value is a
+**       bit mask.  For each bit, 0 means the corresponding entry is disabled and 
+**       1 means it is enabled.
+*/
+#define CFE_ES_PERF_FILTMASK_NONE              0
+
+/**
+**  \cfeescfg Define Filter Mask Setting for Enabling All Performance Entries
+**
+**  \par Description:
+**       Defines the filter mask for enabling all performance entries. The value is a
+**       bit mask.  For each bit, 0 means the corresponding entry is disabled and 
+**       1 means it is enabled.
+*/
+#define CFE_ES_PERF_FILTMASK_ALL               ~CFE_ES_PERF_FILTMASK_NONE
+
 /**
 **  \cfeescfg Define Default Filter Mask Setting for Performance Data Buffer
 **
 **  \par Description:
 **       Defines the default filter mask for the performance data buffer. The value is a
-**       32-bit mask.  For each bit, 0 means the corresponding entry is disabled and 1 means it is enabled.
+**       bit mask.  For each bit, 0 means the corresponding entry is disabled and 1 
+**       means it is enabled.
 **
 */
 #define CFE_ES_PERF_FILTMASK_INIT              CFE_ES_PERF_FILTMASK_ALL
+
+
+/**
+**  \cfeescfg Define Default Filter Trigger Setting for Disabling All Performance Entries
+**
+**  \par Description:
+**       Defines the default trigger mask for disabling all performance data entries. The value 
+**       is a bit mask.  For each bit, 0 means the trigger for the corresponding entry is 
+**       disabled and 1 means it is enabled.
+**
+*/
+#define CFE_ES_PERF_TRIGMASK_NONE              0
+
+/**
+**  \cfeescfg Define Filter Trigger Setting for Enabling All Performance Entries
+**
+**  \par Description:
+**       Defines the trigger mask for enabling all performance data entries. The value is 
+**       a bit mask.  For each bit, 0 means the trigger for the corresponding entry is 
+**       disabled and 1 means it is enabled.
+**
+*/
+#define CFE_ES_PERF_TRIGMASK_ALL               ~CFE_ES_PERF_TRIGMASK_NONE
 
 /**
 **  \cfeescfg Define Default Filter Trigger Setting for Performance Data Buffer
 **
 **  \par Description:
 **       Defines the default trigger mask for the performance data buffer. The value is a
-**       32-bit mask.  For each bit, 0 means the trigger for the corresponding entry is disabled and
-**       1 means it is enabled.
+**       32-bit mask.  For each bit, 0 means the trigger for the corresponding entry is 
+**       disabled and 1 means it is enabled.
 **
 */
 #define CFE_ES_PERF_TRIGMASK_INIT              CFE_ES_PERF_TRIGMASK_NONE
 
+/**
+**  \cfeescfg Define Performance Analyzer Child Task Priority
+**
+**  \par Description:
+**       This parameter defines the priority of the child task spawed by the
+**       Executive Services to write performance data to a file.  Lower numbers 
+**       are higher priority, with 1 being the highest priority in the case of a 
+**       child task. 
+**
+**  \par Limits
+**       Valid range for a child task is 1 to 255 however, the priority cannot
+**       be higher (lower number) than the ES parent application priority.
+*/
+#define CFE_ES_PERF_CHILD_PRIORITY                200
+
+/**
+**  \cfeescfg Define Performance Analyzer Child Task Stack Size
+**
+**  \par Description:
+**       This parameter defines the stack size of the child task spawed by the
+**       Executive Services to write performance data to a file.  
+**
+**  \par Limits
+**       It is recommended this parameter be greater than or equal to 4KB. This parameter
+**       is limited by the maximum value allowed by the data type. In this case, the data
+**       type is an unsigned 32-bit integer, so the valid range is 0 to 0xFFFFFFFF.
+*/
+#define CFE_ES_PERF_CHILD_STACK_SIZE              4096
+
+/**
+**  \cfeescfg Define Performance Analyzer Child Task Delay
+**
+**  \par Description:
+**       This parameter defines the delay time (in milliseconds) between performance
+**       data file writes performed by the Executive Services Performace Analyzer
+**       Child Task.   
+**
+**  \par Limits
+**       It is recommended this parameter be greater than or equal to 20ms. This parameter
+**       is limited by the maximum value allowed by the data type. In this case, the data
+**       type is an unsigned 32-bit integer, so the valid range is 0 to 0xFFFFFFFF.
+*/
+#define CFE_ES_PERF_CHILD_MS_DELAY                20
+
+/**
+**  \cfeescfg Define Performance Analyzer Child Task Number of Entries Between Delay
+**
+**  \par Description:
+**       This parameter defines the number of performace analyzer entries the Performace 
+**       Analyzer Child Task will write to the file between delays.  
+**
+*/
+#define CFE_ES_PERF_ENTRIES_BTWN_DLYS             50
 
 /**
 **  \cfeescfg Define Default Stack Size for an Application
@@ -1089,7 +1201,6 @@
 */
 #define CFE_ES_DEFAULT_STACK_SIZE 8192
 
-
 /**
 **  \cfeescfg Define cFE Core Exception Function
 **
@@ -1101,7 +1212,6 @@
 **       Must be a valid function name.
 */
 #define CFE_ES_EXCEPTION_FUNCTION CFE_ES_ProcessCoreException
-
 
 /**
 **  \cfeescfg Define EVS Task Priority
@@ -1678,5 +1788,70 @@
 **       or equal to zero.
 */
 #define CFE_MISSION_REV                  0
+
+/** \cfeescfg Poll timer for startup sync delay
+**
+**  \par Description:
+**      During startup, some tasks may need to synchronize their own initialization
+**      with the initialization of other applications in the system.
+**
+**      CFE ES implements an API to accomplish this, that performs a task delay (sleep)
+**      while polling the overall system state until other tasks are ready.
+**
+**      This value controls the amount of time that the CFE_ES_ApplicationSyncDelay
+**      will sleep between each check of the system state.  This should be large enough
+**      to allow other tasks to run, but not so large as to noticeably delay the startup
+**      completion.
+**
+**      Units are in milliseconds
+**
+**  \par Limits:
+**       Must be defined as an integer value that is greater than
+**       or equal to zero.
+*/
+#define CFE_ES_STARTUP_SYNC_POLL_MSEC       50
+
+/** \cfeescfg CFE core application startup timeout
+**
+**  \par Description:
+**      The upper limit for the amount of time that the cFE core applications
+**      (ES, SB, EVS, TIME, TBL) are each alloted to reach their respective
+**      "ready" states.
+**
+**      The CFE "main" thread starts individual tasks for each of the core applications
+**      (except FS).  Each of these must perform some initialization work before the
+**      next core application can be started, so the main thread waits to ensure that the
+**      application has reached the "ready" state before starting the next application.
+**
+**      If any core application fails to start, then it indicates a major problem with
+**      the system and startup is aborted.
+**
+**      Units are in milliseconds
+**
+**  \par Limits:
+**       Must be defined as an integer value that is greater than
+**       or equal to zero.
+**
+*/
+#define CFE_CORE_MAX_STARTUP_MSEC       30000
+
+/** \cfeescfg Startup script timeout
+**
+**  \par Description:
+**      The upper limit for the total amount of time that all apps listed in the CFE ES startup
+**      script may take to all become ready.
+**
+**      Unlike the "core" app timeout, this is a soft limit; if the alloted time is exceeded,
+**      it probably indicates an issue with one of the apps, but does not cause CFE ES to take
+**      any additional action other than logging the event to the syslog.
+**
+**      Units are in milliseconds
+**
+**  \par Limits:
+**       Must be defined as an integer value that is greater than
+**       or equal to zero.
+ */
+#define CFE_ES_STARTUP_SCRIPT_TIMEOUT_MSEC  30000
+
 
 #endif

@@ -41,7 +41,7 @@ LOCAL_COPTS = -pg -fprofile-arcs -ftest-coverage $(OSCFLAGS)
 ##
 UT_OBJS = ut_stubs.o \
 ut_bsp_stubs.o \
-ut_osapi_stubs.o \
+ut_osprintf_stubs.o \
 ut_es_stubs.o \
 ut_sb_stubs.o \
 ut_fs_stubs.o \
@@ -52,7 +52,15 @@ evs_UT.o
 ##
 ## The cFE Subsystem Objects needed
 ##
-SUBSYS_OBJS = cfe_evs.o cfe_evs_task.o cfe_evs_log.o cfe_evs_utils.o osprintf.o
+SUBSYS_OBJS = cfe_evs.o cfe_evs_task.o cfe_evs_log.o cfe_evs_utils.o
+
+##
+## The cFE unit test object libraries needed
+##
+SUBSYS_LIBS = \
+		../libut_osapi_stubs/libut_osapi_stubs.a \
+		../libut_bsp/libut_bsp.a \
+		../libut_assert/libut_assert.a
 
 ##
 ## Include all necessary cFE make rules
@@ -83,6 +91,7 @@ OBJS = $(SUBSYS_OBJS) $(UT_OBJS)
 ##
 INCLUDE_PATH = \
 -I$(OSAL_SRC)/inc \
+-I$(OSAL)/ut_assert/inc \
 -I$(CFE_CORE_SRC)/$(SUBSYS) \
 -I$(CFE_CORE_SRC)/inc \
 -I$(CFE_CORE_SRC)/es \
@@ -111,8 +120,8 @@ include $(CFE_CORE_SRC)/make/make-rules.mak
 ##
 ## Subsystem Link rule -- Overrides the default rule
 ##
-$(TARGET): $(OBJS)
-	$(COMPILER) -o $(TARGET) $(OBJS) -pg -fprofile-arcs -ftest-coverage $(ARCH_OPTS)
+$(TARGET): $(OBJS) $(SUBSYS_LIBS)
+	$(COMPILER) -o $(TARGET) $(OBJS) -pg -fprofile-arcs -ftest-coverage $(ARCH_OPTS) $(SUBSYS_LIBS)
 
 ##
 ## gcov rule

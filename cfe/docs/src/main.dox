@@ -6,6 +6,7 @@
     <UL>
        <LI> \subpage cfebackground <BR>
        <LI> \subpage cfeappdocs <BR>
+       <LI> \subpage cfedependencies <BR>
        <LI> \subpage cfeacronyms <BR>
        <LI> \subpage cfeglossary <BR>
     </UL>
@@ -85,8 +86,8 @@
        <li> Table Builder </li>
        <li> Command and Telemetry utilities </li> </ul>
 
-   The cFE is one of the components of the Core Flight System (CFS), a platform and project independent reusable 
-   software framework and set of reusable software applications. There are three key aspects to the CFS architecture: 
+   The cFE is one of the components of the Core Flight System (cFS), a platform and project independent reusable 
+   software framework and set of reusable software applications. There are three key aspects to the cFS architecture: 
    a dynamic run-time environment, layered software, and a component based design. The combination of these key aspects 
    along with an implementation targeted to the embedded software domain makes it suitable for reuse on any number of 
    NASA flight projects and/or embedded software systems. <BR> 
@@ -153,7 +154,7 @@
         <TD> cFE Application Developers Guide
      <TR>
         <TD> 582-2008-012
-        <TD> CFS Deployment Guide
+        <TD> cFS Deployment Guide
      <TR>
         <TD> 
         <TD> OS Abstraction Layer (OSAL) Library API
@@ -161,6 +162,19 @@
         <TD> 582-2007-00
         <TD> OS Abstraction Layer (OSAL) Configuraion Guide
   </TABLE>
+**/
+
+/**
+  \page cfedependencies Dependencies
+
+  The Core Flight Executive (cFE) is required to be built with the Operating System Abstraction Layer (OSAL) and Platform Support Package (PSP) 
+  componenets of the Core Flight System (cFS).  It is always recommended to build with the latest versions of each of the components as 
+  backward compatability may not be supported. <BR>
+  
+  Several internal data structures within the cFE use the "char" data type.  This data type is typically 1 byte in storage size with a value 
+  range -128 to 127 or 0 to 255.  The size of the "char" data type and whether or not the type is signed or unsigned can change across 
+  platforms.  The cFE assumes use of the "char" data type as an <B> 8-bit type. </B>         
+
 **/
 
 /**

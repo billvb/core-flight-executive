@@ -1,5 +1,8 @@
-        -:    0:Source:/home/acudmore/Projects/cFE-6.4-development/cfe/fsw/cfe-core/src/es/cfe_es_shell.c
-        -:    0:Programs:10
+        -:    0:Source:/home/wmoleski/CFS/mission_2014/cfe/fsw/cfe-core/src/es/cfe_es_shell.c
+        -:    0:Graph:cfe_es_shell.gcno
+        -:    0:Data:cfe_es_shell.gcda
+        -:    0:Runs:1
+        -:    0:Programs:9
         -:    1:/* File:
         -:    2:** cfe_es_shell.c
         -:    3:** $Id:
@@ -21,8 +24,8 @@
         -:   19:**     cFE Flight Software Application Developers Guide
         -:   20:**
         -:   21:**  $Log: cfe_es_shell.c.gcov  $
-        -:   21:**  Revision 1.5 2014/09/23 15:04:43GMT-05:00 acudmore 
-        -:   21:**  Updated ES unit test results for cFE build 6.4.0
+        -:   21:**  Revision 1.6 2015/06/24 12:19:45EDT wmoleski 
+        -:   21:**  Checking in the unit-test results for cFE 6.4.2.0
         -:   22:**  Revision 1.10 2014/08/22 15:50:03GMT-05:00 lwalling 
         -:   23:**  Changed signed loop counters to unsigned
         -:   24:**  Revision 1.9 2014/04/23 16:29:04EDT acudmore 
@@ -82,8 +85,8 @@
         -:   78:/* CFE_ES_ShellOutputCommand() -- Pass thru string to O/S shell or to ES */
         -:   79:/*                                                                       */
         -:   80:/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-       11:   81:int32 CFE_ES_ShellOutputCommand(char * CmdString, char *Filename)
-        -:   82:{
+        -:   81:int32 CFE_ES_ShellOutputCommand(char * CmdString, char *Filename)
+       11:   82:{
         -:   83:    int32 Result;
        11:   84:    int32 ReturnCode = CFE_SUCCESS;
         -:   85:    int32 fd;
@@ -285,8 +288,8 @@
         -:  281:/* CFE_ES_ListApplications() -- List All ES Applications,put in fd */
         -:  282:/*                                                                 */
         -:  283:/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-        2:  284:int32 CFE_ES_ListApplications(int32 fd)
-        -:  285:{
+        -:  284:int32 CFE_ES_ListApplications(int32 fd)
+        2:  285:{
         -:  286:    uint32 i;
         -:  287:    char Line [OS_MAX_API_NAME +2];
         2:  288:    int32 Result = CFE_SUCCESS;
@@ -320,8 +323,8 @@
         -:  316:/* CFE_ES_ListTasks() -- List All ES Tasks,put in fd               */
         -:  317:/*                                                                 */
         -:  318:/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-        1:  319:int32 CFE_ES_ListTasks(int32 fd)
-        -:  320:{
+        -:  319:int32 CFE_ES_ListTasks(int32 fd)
+        1:  320:{
         -:  321:    uint32                i;
         -:  322:    char                 Line [128];
         1:  323:    int32                Result = CFE_SUCCESS;
@@ -375,8 +378,8 @@
         -:  371:/* CFE_ES_ListResources() -- List All OS Resources, put in fd      */
         -:  372:/*                                                                 */
         -:  373:/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-        1:  374:int32 CFE_ES_ListResources(int32 fd)
-        -:  375:{
+        -:  374:int32 CFE_ES_ListResources(int32 fd)
+        1:  375:{
         -:  376:    OS_task_prop_t          TaskProp;
         -:  377:    OS_queue_prop_t         QueueProp;
         -:  378:    OS_bin_sem_prop_t       SemProp;

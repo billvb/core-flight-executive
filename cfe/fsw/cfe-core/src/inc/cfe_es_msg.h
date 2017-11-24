@@ -1172,10 +1172,14 @@ typedef struct
 **/
 typedef struct
 {
-  uint8                 CmdHeader[CFE_SB_CMD_HDR_SIZE];    /**< \brief cFE Software Bus Command Message Header */
-  
   uint16                RestartType;                       /**< \brief #CFE_ES_PROCESSOR_RESET=Processor Reset
                                                                 or #CFE_ES_POWERON_RESET=Power-On Reset        */
+} CFE_ES_RestartCmd_Payload_t;
+
+typedef struct
+{
+    uint8                 CmdHeader[CFE_SB_CMD_HDR_SIZE];    /**< \brief cFE Software Bus Command Message Header */
+    CFE_ES_RestartCmd_Payload_t Payload;
 } CFE_ES_RestartCmd_t;
 
 /**
@@ -1186,11 +1190,16 @@ typedef struct
 **/
 typedef struct
 {
-  uint8                 CmdHeader[CFE_SB_CMD_HDR_SIZE];    /**< \brief cFE Software Bus Command Message Header */
-  uint8                 CmdString[CFE_ES_MAX_SHELL_CMD];   /**< \brief ASCII text string containing shell command
+  char                  CmdString[CFE_ES_MAX_SHELL_CMD];   /**< \brief ASCII text string containing shell command
                                                                 to be executed */
-  uint8                 OutputFilename[OS_MAX_PATH_LEN];   /**< \brief Filename where shell command output is to
+  char                  OutputFilename[OS_MAX_PATH_LEN];   /**< \brief Filename where shell command output is to
                                                                 be written */
+} CFE_ES_ShellCmd_Payload_t;
+
+typedef struct
+{
+    uint8                       CmdHeader[CFE_SB_CMD_HDR_SIZE];    /**< \brief cFE Software Bus Command Message Header */
+    CFE_ES_ShellCmd_Payload_t   Payload;
 } CFE_ES_ShellCmd_t;
 
 /**
@@ -1201,11 +1210,14 @@ typedef struct
 **/
 typedef struct
 {
-  uint8                 CmdHeader[CFE_SB_CMD_HDR_SIZE];    /**< \brief cFE Software Bus Command Message Header */
-
-  uint8                 QueryAllFileName[OS_MAX_PATH_LEN]; /**< \brief ASCII text string containing full path and
+  char                  QueryAllFileName[OS_MAX_PATH_LEN]; /**< \brief ASCII text string containing full path and
                                                                 filename of file in which Application data is to be dumped */
+} CFE_ES_QueryAllCmd_Payload_t;
 
+typedef struct
+{
+    uint8                           CmdHeader[CFE_SB_CMD_HDR_SIZE];    /**< \brief cFE Software Bus Command Message Header */
+    CFE_ES_QueryAllCmd_Payload_t    Payload;
 } CFE_ES_QueryAllCmd_t;
 
 /**
@@ -1216,11 +1228,15 @@ typedef struct
 **/
 typedef struct
 {
-  uint8                 CmdHeader[CFE_SB_CMD_HDR_SIZE];    /**< \brief cFE Software Bus Command Message Header */
-
-  uint8                 QueryAllFileName[OS_MAX_PATH_LEN]; /**< \brief ASCII text string containing full path and
+  char                  QueryAllFileName[OS_MAX_PATH_LEN]; /**< \brief ASCII text string containing full path and
                                                                 filename of file in which Application data is to be dumped */
 
+} CFE_ES_QueryAllTasksCmd_Payload_t;
+
+typedef struct
+{
+    uint8                               CmdHeader[CFE_SB_CMD_HDR_SIZE];    /**< \brief cFE Software Bus Command Message Header */
+    CFE_ES_QueryAllTasksCmd_Payload_t   Payload;
 } CFE_ES_QueryAllTasksCmd_t;
 
 
@@ -1232,11 +1248,14 @@ typedef struct
 **/
 typedef struct
 {
-  uint8                 CmdHeader[CFE_SB_CMD_HDR_SIZE];   /**< \brief cFE Software Bus Command Message Header */
-
   char                  SysLogFileName[OS_MAX_PATH_LEN];  /**< \brief ASCII text string containing full path and
                                                                 filename of file in which System Log is to be dumped */
+} CFE_ES_WriteSyslogCmd_Payload_t;
 
+typedef struct
+{
+    uint8                           CmdHeader[CFE_SB_CMD_HDR_SIZE];    /**< \brief cFE Software Bus Command Message Header */
+    CFE_ES_WriteSyslogCmd_Payload_t Payload;
 } CFE_ES_WriteSyslogCmd_t;
 
 /**
@@ -1247,11 +1266,14 @@ typedef struct
 **/
 typedef struct
 {
-  uint8                 CmdHeader[CFE_SB_CMD_HDR_SIZE];   /**< \brief cFE Software Bus Command Message Header */
-
   char                  ERLogFileName[OS_MAX_PATH_LEN];   /**< \brief ASCII text string containing full path and
                                                                 filename of file in which ER Log is to be dumped */
+} CFE_ES_WriteERlogCmd_Payload_t;
 
+typedef struct
+{
+    uint8                 CmdHeader[CFE_SB_CMD_HDR_SIZE];    /**< \brief cFE Software Bus Command Message Header */
+    CFE_ES_WriteERlogCmd_Payload_t Payload;
 } CFE_ES_WriteERlogCmd_t;
 
 /**
@@ -1262,11 +1284,15 @@ typedef struct
 **/
 typedef struct 
 {
-   uint8                CmdHeader[CFE_SB_CMD_HDR_SIZE];  /**< \brief cFE Software Bus Command Message Header */
-
    uint32               Mode;                            /**< \brief #CFE_ES_LOG_DISCARD=Throw away most recent messages,
                                                                      #CFE_ES_LOG_OVERWRITE=Overwrite oldest with most recent */
 
+} CFE_ES_OverWriteSysLogCmd_Payload_t;
+
+typedef struct
+{
+    uint8                               CmdHeader[CFE_SB_CMD_HDR_SIZE];    /**< \brief cFE Software Bus Command Message Header */
+    CFE_ES_OverWriteSysLogCmd_Payload_t Payload;
 } CFE_ES_OverWriteSysLogCmd_t;
 
 /**
@@ -1277,11 +1303,9 @@ typedef struct
 **/
 typedef struct
 {
-  uint8                 CmdHeader[CFE_SB_CMD_HDR_SIZE];  /**< \brief cFE Software Bus Command Message Header */
-
-  uint8                 Application[OS_MAX_API_NAME];    /**< \brief Name of Application to be started */
-  uint8                 AppEntryPoint[OS_MAX_API_NAME];  /**< \brief Symbolic name of Application's entry point */
-  uint8                 AppFileName[OS_MAX_PATH_LEN];    /**< \brief Full path and filename of Application's 
+  char                  Application[OS_MAX_API_NAME];    /**< \brief Name of Application to be started */
+  char                  AppEntryPoint[OS_MAX_API_NAME];  /**< \brief Symbolic name of Application's entry point */
+  char                  AppFileName[OS_MAX_PATH_LEN];    /**< \brief Full path and filename of Application's 
                                                                      executable image */
 
   uint32                StackSize;                       /**< \brief Desired stack size for the new application */
@@ -1292,7 +1316,12 @@ typedef struct
                                                                      perform a Processor Reset */
   uint16                Priority;                        /**< \brief The new Applications runtime priority. */
 
+} CFE_ES_StartAppCmd_Payload_t;
 
+typedef struct
+{
+    uint8                           CmdHeader[CFE_SB_CMD_HDR_SIZE];    /**< \brief cFE Software Bus Command Message Header */
+    CFE_ES_StartAppCmd_Payload_t    Payload;
 } CFE_ES_StartAppCmd_t;
 
 /**
@@ -1303,10 +1332,13 @@ typedef struct
 **/
 typedef struct
 {
-  uint8                 CmdHeader[CFE_SB_CMD_HDR_SIZE];  /**< \brief cFE Software Bus Command Message Header */
+  char                  Application[OS_MAX_API_NAME];    /**< \brief ASCII text string containing Application Name */
+} CFE_ES_AppNameCmd_Payload_t;
 
-  uint8                 Application[OS_MAX_API_NAME];    /**< \brief ASCII text string containing Application Name */
-
+typedef struct
+{
+    uint8                       CmdHeader[CFE_SB_CMD_HDR_SIZE];    /**< \brief cFE Software Bus Command Message Header */
+    CFE_ES_AppNameCmd_Payload_t Payload;
 } CFE_ES_AppNameCmd_t;
 
 /**
@@ -1317,12 +1349,15 @@ typedef struct
 **/
 typedef struct
 {
-  uint8                 CmdHeader[CFE_SB_CMD_HDR_SIZE]; /**< \brief cFE Software Bus Command Message Header */
-
-  uint8                 Application[OS_MAX_API_NAME];   /**< \brief ASCII text string containing Application Name */
-  uint8                 AppFileName[OS_MAX_PATH_LEN];   /**< \brief Full path and filename of Application's 
+  char                  Application[OS_MAX_API_NAME];   /**< \brief ASCII text string containing Application Name */
+  char                  AppFileName[OS_MAX_PATH_LEN];   /**< \brief Full path and filename of Application's 
                                                                     executable image */
-   
+} CFE_ES_AppReloadCmd_Payload_t;
+
+typedef struct
+{
+    uint8                           CmdHeader[CFE_SB_CMD_HDR_SIZE];    /**< \brief cFE Software Bus Command Message Header */
+    CFE_ES_AppReloadCmd_Payload_t   Payload;
 } CFE_ES_AppReloadCmd_t;
 
 /**
@@ -1333,11 +1368,14 @@ typedef struct
 **/
 typedef struct
 {
-  uint8                 CmdHeader[CFE_SB_CMD_HDR_SIZE]; /**< \brief cFE Software Bus Command Message Header */
-  
   uint16                MaxPRCount;                     /**< \brief New maximum number of Processor Resets before
                                                                     an automatic Power-On Reset is performed */
+} CFE_ES_SetMaxPRCountCmd_Payload_t;
 
+typedef struct
+{
+    uint8                               CmdHeader[CFE_SB_CMD_HDR_SIZE];    /**< \brief cFE Software Bus Command Message Header */
+    CFE_ES_SetMaxPRCountCmd_Payload_t   Payload;
 } CFE_ES_SetMaxPRCountCmd_t;
 
 /**
@@ -1348,10 +1386,14 @@ typedef struct
 **/
 typedef struct
 {
-  uint8                 CmdHeader[CFE_SB_CMD_HDR_SIZE];  /**< \brief cFE Software Bus Command Message Header */
-
   char                  CdsName[CFE_ES_CDS_MAX_FULL_NAME_LEN]; /**< \brief ASCII text string containing name of CDS to delete */
 
+} CFE_ES_DeleteCDSCmd_Payload_t;
+
+typedef struct
+{
+    uint8                           CmdHeader[CFE_SB_CMD_HDR_SIZE];    /**< \brief cFE Software Bus Command Message Header */
+    CFE_ES_DeleteCDSCmd_Payload_t   Payload;
 } CFE_ES_DeleteCDSCmd_t;
 
 /**
@@ -1362,9 +1404,13 @@ typedef struct
 **/
 typedef struct
 {
-  uint8                 CmdHeader[CFE_SB_CMD_HDR_SIZE]; /**< \brief cFE Software Bus Command Message Header */
   uint32                TriggerMode;                    /**< \brief Desired trigger position (Start, Center, End) */
+} CFE_ES_PerfStartCmd_Payload_t;
 
+typedef struct
+{
+    uint8                           CmdHeader[CFE_SB_CMD_HDR_SIZE];    /**< \brief cFE Software Bus Command Message Header */
+    CFE_ES_PerfStartCmd_Payload_t   Payload;
 } CFE_ES_PerfStartCmd_t;
 
 /**
@@ -1375,11 +1421,14 @@ typedef struct
 **/
 typedef struct
 {
-  uint8                 CmdHeader[CFE_SB_CMD_HDR_SIZE]; /**< \brief cFE Software Bus Command Message Header */
-
   char                  DataFileName[OS_MAX_PATH_LEN];  /**< \brief ASCII text string of full path and filename 
                                                                     of file Performance Analyzer data is to be written */
+} CFE_ES_PerfStopCmd_Payload_t;
 
+typedef struct
+{
+    uint8                           CmdHeader[CFE_SB_CMD_HDR_SIZE];    /**< \brief cFE Software Bus Command Message Header */
+    CFE_ES_PerfStopCmd_Payload_t    Payload;
 } CFE_ES_PerfStopCmd_t;
 
 
@@ -1391,10 +1440,15 @@ typedef struct
 **/
 typedef struct
 {
-  uint8                 CmdHeader[CFE_SB_CMD_HDR_SIZE];  /**< \brief cFE Software Bus Command Message Header */
   uint32                FilterMaskNum;                   /**< \brief Index into array of Filter Masks */
   uint32                FilterMask;                      /**< \brief New Mask for specified entry in array of Filter Masks */
 
+} CFE_ES_PerfSetFilterMaskCmd_Payload_t;
+
+typedef struct
+{
+    uint8                 CmdHeader[CFE_SB_CMD_HDR_SIZE];    /**< \brief cFE Software Bus Command Message Header */
+    CFE_ES_PerfSetFilterMaskCmd_Payload_t Payload;
 } CFE_ES_PerfSetFilterMaskCmd_t;
 
 /**
@@ -1405,10 +1459,15 @@ typedef struct
 **/
 typedef struct
 {
-  uint8                 CmdHeader[CFE_SB_CMD_HDR_SIZE]; /**< \brief cFE Software Bus Command Message Header */
   uint32                TriggerMaskNum;                 /**< \brief Index into array of Trigger Masks */
   uint32                TriggerMask;                    /**< \brief New Mask for specified entry in array of Trigger Masks */
 
+} CFE_ES_PerfSetTrigMaskCmd_Payload_t;
+
+typedef struct
+{
+    uint8                               CmdHeader[CFE_SB_CMD_HDR_SIZE];    /**< \brief cFE Software Bus Command Message Header */
+    CFE_ES_PerfSetTrigMaskCmd_Payload_t Payload;
 } CFE_ES_PerfSetTrigMaskCmd_t;
 
 /**
@@ -1419,10 +1478,15 @@ typedef struct
 **/
 typedef struct
 {
-  uint8                 CmdHeader[CFE_SB_CMD_HDR_SIZE]; /**< \brief cFE Software Bus Command Message Header */
-  uint8                 Application[OS_MAX_API_NAME];   /**< \brief - RESERVED - should be all zeroes */
-  uint32                PoolHandle;                     /**< \brief Handle of Pool whose statistics are to be telemetered */
+  char                  Application[OS_MAX_API_NAME];   /**< \brief - RESERVED - should be all zeroes */
+  CFE_ES_MemHandle_t    PoolHandle;                     /**< \brief Handle of Pool whose statistics are to be telemetered */
 
+} CFE_ES_TlmPoolStatsCmd_Payload_t;
+
+typedef struct
+{
+    uint8                               CmdHeader[CFE_SB_CMD_HDR_SIZE];    /**< \brief cFE Software Bus Command Message Header */
+    CFE_ES_TlmPoolStatsCmd_Payload_t    Payload;
 } CFE_ES_TlmPoolStatsCmd_t;
 
 /**
@@ -1433,10 +1497,14 @@ typedef struct
 **/
 typedef struct
 {
-  uint8                 CmdHeader[CFE_SB_CMD_HDR_SIZE]; /**< \brief cFE Software Bus Command Message Header */
-
   char                  DumpFilename[OS_MAX_PATH_LEN];  /**< \brief ASCII text string of full path and filename 
                                                                     of file CDS Registry is to be written */
+} CFE_ES_DumpCDSRegCmd_Payload_t;
+
+typedef struct
+{
+    uint8                           CmdHeader[CFE_SB_CMD_HDR_SIZE];    /**< \brief cFE Software Bus Command Message Header */
+    CFE_ES_DumpCDSRegCmd_Payload_t  Payload;
 
 } CFE_ES_DumpCDSRegCmd_t;
 
@@ -1449,10 +1517,14 @@ typedef struct
 **/
 typedef struct
 {
-  uint8                 TlmHeader[CFE_SB_TLM_HDR_SIZE]; /**< \brief cFE Software Bus Telemetry Message Header */
-
   CFE_ES_AppInfo_t      AppInfo;                        /**< \brief For more information, see #CFE_ES_AppInfo_t */
   
+} CFE_ES_OneAppTlm_Payload_t;
+
+typedef struct
+{
+    uint8                       TlmHeader[CFE_SB_TLM_HDR_SIZE]; /**< \brief cFE Software Bus Telemetry Message Header */
+    CFE_ES_OneAppTlm_Payload_t  Payload;
 } CFE_ES_OneAppTlm_t;
 
 /** 
@@ -1460,11 +1532,15 @@ typedef struct
 **/
 typedef struct
 {
-  uint8                 TlmHeader[CFE_SB_TLM_HDR_SIZE]; /**< \brief cFE Software Bus Telemetry Message Header */
-
   CFE_ES_MemHandle_t    PoolHandle;                     /**< \cfetlmmnemonic \ES_POOLHANDLE
                                                              \brief Handle of memory pool whose stats are being telemetered */
   CFE_ES_MemPoolStats_t PoolStats;                      /**< \brief For more info, see #CFE_ES_MemPoolStats_t */
+} CFE_ES_PoolStatsTlm_Payload_t;
+
+typedef struct
+{
+    uint8                           TlmHeader[CFE_SB_TLM_HDR_SIZE]; /**< \brief cFE Software Bus Telemetry Message Header */
+    CFE_ES_PoolStatsTlm_Payload_t   Payload;
 } CFE_ES_PoolStatsTlm_t;
 
 /*************************************************************************/
@@ -1474,8 +1550,6 @@ typedef struct
 **/
 typedef struct
 {
-  uint8                 TlmHeader[CFE_SB_TLM_HDR_SIZE]; /**< \brief cFE Software Bus Telemetry Message Header */
-
   uint8                 CmdCounter;  /**< \cfetlmmnemonic \ES_CMDPC 
                                           \brief The ES Application Command Counter */
   uint8                 ErrCounter;  /**< \cfetlmmnemonic \ES_CMDEC 
@@ -1558,6 +1632,12 @@ typedef struct
                                               \brief Number of free blocks remaining in the OS heap */
   uint32                HeapMaxBlockSize;  /**< \cfetlmmnemonic \ES_HEAPMAXBLK
                                               \brief Number of bytes in the largest free block */
+} CFE_ES_HkPacket_Payload_t;
+
+typedef struct
+{
+    uint8                       TlmHeader[CFE_SB_TLM_HDR_SIZE]; /**< \brief cFE Software Bus Telemetry Message Header */
+    CFE_ES_HkPacket_Payload_t   Payload;
   
 } CFE_ES_HkPacket_t;
 
@@ -1566,9 +1646,14 @@ typedef struct
 **/
 typedef struct
 {
-  uint8                 TlmHeader[CFE_SB_TLM_HDR_SIZE];     /**< \brief cFE Software Bus Telemetry Message Header */
-  uint8                 ShellOutput[CFE_ES_MAX_SHELL_PKT];  /**< \brief ASCII text string containing output from OS Shell
+  char                  ShellOutput[CFE_ES_MAX_SHELL_PKT];  /**< \brief ASCII text string containing output from OS Shell
                                                                  that was received in response to an OS Shell Command */
+} CFE_ES_ShellPacket_Payload_t;
+
+typedef struct
+{
+    uint8                           TlmHeader[CFE_SB_TLM_HDR_SIZE]; /**< \brief cFE Software Bus Telemetry Message Header */
+    CFE_ES_ShellPacket_Payload_t    Payload;
 }CFE_ES_ShellPacket_t;
 
 /*************************************************************************/

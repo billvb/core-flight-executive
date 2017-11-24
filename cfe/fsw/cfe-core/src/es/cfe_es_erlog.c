@@ -49,7 +49,7 @@
 /*
 ** Required header files.
 */
-#include "cfe.h"
+#include "private/cfe_private.h"
 #include "cfe_es.h"
 #include "cfe_es_apps.h"
 #include "cfe_es_global.h"
@@ -61,13 +61,23 @@
 #include <stdarg.h>
 
 /*
+ * Confirm the size of the error log context buffer is at least what the user asked for.
+ *
+ * This is to catch errors such as if the CFE_ES_ER_LOG_MAX_CONTEXT_SIZE was set to a value
+ * that is _not_ a multiple of sizeof(uint32) -- in this case the final size of the context
+ * buffer would end up being less than what the macro was set to.
+ */
+CompileTimeAssert(sizeof(CFE_ES_ResetDataPtr->ERLog[0].Context) == CFE_ES_ER_LOG_MAX_CONTEXT_SIZE,  CfeEsErLogContextSizeError);
+
+
+/*
 ** Function: CFE_ES_WriteToERLog
 **
 ** Purpose:  Create an entry in the ES Exception and Reset Log. 
 **
 */
 int32 CFE_ES_WriteToERLog( uint32 EntryType,   uint32  ResetType, uint32 ResetSubtype,
-                           char  *Description, uint32 *Context,   uint32 ContextSize )
+                           const char  *Description, const uint32 *Context,   uint32 ContextSize )
 {
    uint32 LogIdx;
 
@@ -139,14 +149,14 @@ int32 CFE_ES_WriteToERLog( uint32 EntryType,   uint32  ResetType, uint32 ResetSu
    /*
    ** In the case of an exception, copy the processor context data to the log.
    */
-   if (Context != NULL )
+   if (Context != NULL && ContextSize > 0)
    {
       /*
       ** Copy the processor context data (i.e. register dump).  Make sure that
       ** the passed-in context_size is not greater than the declared size in
       ** the ER Log log entry.
       */
-      if ( ContextSize <= CFE_PSP_CPU_CONTEXT_SIZE )
+      if ( ContextSize <= CFE_ES_ER_LOG_MAX_CONTEXT_SIZE )
       {
          CFE_PSP_MemCpy ( (void *)(CFE_ES_ResetDataPtr->ERLog[LogIdx].Context),
                   (void *)Context,
@@ -156,19 +166,21 @@ int32 CFE_ES_WriteToERLog( uint32 EntryType,   uint32  ResetType, uint32 ResetSu
       {
          CFE_PSP_MemCpy ( (void *)(CFE_ES_ResetDataPtr->ERLog[LogIdx].Context),
                   (void *)Context,
-                  CFE_PSP_CPU_CONTEXT_SIZE);
+                  CFE_ES_ER_LOG_MAX_CONTEXT_SIZE);
       }   
       /*
       ** Indicate that context is valid.
+      ** Using the original context size (not the truncated size) so it will be
+      ** evident if the context information was truncated.
       */
-      CFE_ES_ResetDataPtr->ERLog[LogIdx].ContextIsPresent = TRUE;
+      CFE_ES_ResetDataPtr->ERLog[LogIdx].ContextSize = ContextSize;
    }
    else
    {
       /*
       ** Context is not valid
       */
-      CFE_ES_ResetDataPtr->ERLog[LogIdx].ContextIsPresent = FALSE;
+      CFE_ES_ResetDataPtr->ERLog[LogIdx].ContextSize = 0;
    } /* end if */
 
    /*

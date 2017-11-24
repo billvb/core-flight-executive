@@ -42,7 +42,7 @@
 ** Required header files
 */
 #include "osapi.h"
-#include "cfe.h"
+#include "private/cfe_private.h"
 #include "cfe_es.h"
 #include "cfe_fs.h"
 #include "cfe_fs_priv.h"
@@ -76,7 +76,7 @@ int32 CFE_FS_EarlyInit (void)
     Stat = OS_MutSemCreate(&CFE_FS.SharedDataMutexId, "CFE_FS_SharedMutex", 0);
     if( Stat != OS_SUCCESS )
     {
-      CFE_ES_WriteToSysLog("FS Shared Data Mutex creation failed! RC=0x%08x\n",Stat);
+      CFE_ES_WriteToSysLog("FS Shared Data Mutex creation failed! RC=0x%08x\n",(unsigned int)Stat);
       return Stat;
     }/* end if */
 
@@ -108,7 +108,7 @@ void CFE_FS_LockSharedData(const char *FunctionName)
         CFE_ES_GetAppID(&AppId);
 
         CFE_ES_WriteToSysLog("FS SharedData Mutex Take Err Stat=0x%x,App=%d,Function=%s\n",
-                 Status,AppId,FunctionName);
+                (unsigned int)Status,(int)AppId,FunctionName);
 
     }/* end if */
 
@@ -139,7 +139,7 @@ void CFE_FS_UnlockSharedData(const char *FunctionName)
    {
        CFE_ES_GetAppID(&AppId);
        CFE_ES_WriteToSysLog("FS SharedData Mutex Give Err Stat=0x%x,App=%d,Function=%s\n",
-                                Status,AppId,FunctionName);
+               (unsigned int)Status,(int)AppId,FunctionName);
 
    }/* end if */
    return;

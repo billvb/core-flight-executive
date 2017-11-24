@@ -40,7 +40,7 @@ LOCAL_COPTS = -pg -fprofile-arcs -ftest-coverage $(OSCFLAGS)
 ifneq ($(CFE_VERSION), ARINC653)
 UT_OBJS = ut_stubs.o \
 ut_bsp_stubs.o \
-ut_osapi_stubs.o \
+ut_osprintf_stubs.o \
 ut_evs_stubs.o \
 ut_sb_stubs.o \
 ut_fs_stubs.o \
@@ -51,7 +51,7 @@ endif
 ifeq ($(CFE_VERSION), ARINC653)
 UT_OBJS = ut_stubs.o \
 ut_bsp_stubs.o \
-ut_osapi_stubs.o \
+ut_osprintf_stubs.o \
 ut_evs_stubs.o \
 ut_sb_stubs.o \
 ut_fs_stubs.o \
@@ -67,13 +67,21 @@ endif
 ifneq ($(CFE_VERSION), ARINC653)
 SUBSYS_OBJS = cfe_es_start.o cfe_es_api.o cfe_es_objtab.o cfe_es_apps.o cfe_esmempool.o \
 cfe_es_perf.o cfe_es_shell.o cfe_es_cds_mempool.o cfe_es_cds.o cfe_es_erlog.o \
-cfe_es_task.o osprintf.o
+cfe_es_task.o
 endif
 ifeq ($(CFE_VERSION), ARINC653)
 SUBSYS_OBJS = cfe_es_start.o cfe_es_api.o cfe_es_objtab.o cfe_es_apps.o cfe_esmempool.o \
 cfe_es_perf.o cfe_es_shell.o cfe_es_cds_mempool.o cfe_es_cds.o cfe_es_erlog.o \
-cfe_es_task.o osprintf.o $(CFS_STATIC_STARTUP_TBL)/cfe_es_static_startup_tbl.o
+cfe_es_task.o $(CFS_STATIC_STARTUP_TBL)/cfe_es_static_startup_tbl.o
 endif
+
+##
+## The cFE unit test object libraries needed
+##
+SUBSYS_LIBS = \
+		../libut_osapi_stubs/libut_osapi_stubs.a \
+		../libut_bsp/libut_bsp.a \
+		../libut_assert/libut_assert.a
 
 ##
 ## Include all necessary cFE make rules
@@ -104,6 +112,7 @@ OBJS = $(SUBSYS_OBJS) $(UT_OBJS)
 ##
 INCLUDE_PATH = \
 -I$(OSAL_SRC)/inc \
+-I$(OSAL)/ut_assert/inc \
 -I$(CFE_CORE_SRC)/$(SUBSYS) \
 -I$(CFE_CORE_SRC)/inc \
 -I$(CFE_CORE_SRC)/evs \
@@ -131,8 +140,8 @@ include $(CFE_CORE_SRC)/make/make-rules.mak
 ##
 ## Subsystem Link rule -- Overrides the default rule
 ##
-$(TARGET): $(OBJS)
-	$(COMPILER) -o $(TARGET) $(OBJS) -pg -fprofile-arcs -ftest-coverage $(ARCH_OPTS)
+$(TARGET): $(OBJS) $(SUBSYS_LIBS)
+	$(COMPILER) -o $(TARGET) $(OBJS) -pg -fprofile-arcs -ftest-coverage $(ARCH_OPTS) $(SUBSYS_LIBS)
 
 ##
 ## gcov rule
@@ -150,3 +159,4 @@ gcov:
 		            sed 's/ Lines executed:/ /; s/File/gcov:/; s/of//'
 	@echo
 
+	

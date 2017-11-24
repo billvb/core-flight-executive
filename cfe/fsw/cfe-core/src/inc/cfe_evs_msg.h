@@ -957,9 +957,12 @@
 **
 **/
 typedef struct {
-   uint8                     CmdHeader[CFE_SB_CMD_HDR_SIZE];
-   uint8                     LogFilename[OS_MAX_PATH_LEN];      /**< \brief Filename where log data is to be written */
+    char LogFilename[OS_MAX_PATH_LEN];      /**< \brief Filename where log data is to be written */
+} CFE_EVS_LogFileCmd_Payload_t;
 
+typedef struct {
+   uint8                        CmdHeader[CFE_SB_CMD_HDR_SIZE];
+   CFE_EVS_LogFileCmd_Payload_t Payload;
 } CFE_EVS_LogFileCmd_t;
 
 /**
@@ -969,9 +972,12 @@ typedef struct {
 **
 **/
 typedef struct {
-   uint8                     CmdHeader[CFE_SB_CMD_HDR_SIZE];
-   uint8                     AppDataFilename[OS_MAX_PATH_LEN];  /**< \brief Filename where applicaton data is to be written */
+   char AppDataFilename[OS_MAX_PATH_LEN];  /**< \brief Filename where applicaton data is to be written */
+} CFE_EVS_AppDataCmd_Payload_t;
 
+typedef struct {
+   uint8                        CmdHeader[CFE_SB_CMD_HDR_SIZE];
+   CFE_EVS_AppDataCmd_Payload_t Payload;
 } CFE_EVS_AppDataCmd_t;
 
 /**
@@ -981,10 +987,13 @@ typedef struct {
 **
 **/
 typedef struct {
-   uint8                     CmdHeader[CFE_SB_CMD_HDR_SIZE];
    uint8                     Mode;                              /**< \brief Mode to use in the command*/
    uint8                     Spare;                             /**< \brief Pad to even byte*/
+} CFE_EVS_ModeCmd_Payload_t;
 
+typedef struct {
+   uint8                     CmdHeader[CFE_SB_CMD_HDR_SIZE];
+   CFE_EVS_ModeCmd_Payload_t Payload;
 } CFE_EVS_ModeCmd_t;
 
 /**
@@ -995,10 +1004,13 @@ typedef struct {
 **
 **/
 typedef struct {
-   uint8                     CmdHeader[CFE_SB_CMD_HDR_SIZE];
    uint8                     BitMask;           /**< \brief BitMask to use in the command */
    uint8                     Spare;                             /**< \brief Pad to even byte*/
+} CFE_EVS_BitMaskCmd_Payload_t;
 
+typedef struct {
+   uint8                        CmdHeader[CFE_SB_CMD_HDR_SIZE];
+   CFE_EVS_BitMaskCmd_Payload_t Payload;
 } CFE_EVS_BitMaskCmd_t;
 
 /**
@@ -1009,9 +1021,12 @@ typedef struct {
 **
 **/
 typedef struct {
-   uint8                     CmdHeader[CFE_SB_CMD_HDR_SIZE];
-   uint8                     AppName[OS_MAX_API_NAME];          /**< \brief Application name to use in the command*/
+   char                     AppName[OS_MAX_API_NAME];          /**< \brief Application name to use in the command*/
+} CFE_EVS_AppNameCmd_Payload_t;
 
+typedef struct {
+   uint8                        CmdHeader[CFE_SB_CMD_HDR_SIZE];
+   CFE_EVS_AppNameCmd_Payload_t Payload;
 } CFE_EVS_AppNameCmd_t;
 
 /**
@@ -1021,10 +1036,13 @@ typedef struct {
 **
 **/
 typedef struct {
-   uint8                     CmdHeader[CFE_SB_CMD_HDR_SIZE];
-   uint8                     AppName[OS_MAX_API_NAME];          /**< \brief Application name to use in the command*/
+   char                      AppName[OS_MAX_API_NAME];          /**< \brief Application name to use in the command*/
    uint16                    EventID;                           /**< \brief Event ID  to use in the command*/
+} CFE_EVS_AppNameEventIDCmd_Payload_t;
 
+typedef struct {
+   uint8                                CmdHeader[CFE_SB_CMD_HDR_SIZE];
+   CFE_EVS_AppNameEventIDCmd_Payload_t  Payload;
 } CFE_EVS_AppNameEventIDCmd_t;
 
 /**
@@ -1034,11 +1052,14 @@ typedef struct {
 **
 **/
 typedef struct {
-   uint8                     CmdHeader[CFE_SB_CMD_HDR_SIZE];
-   uint8                     AppName[OS_MAX_API_NAME];          /**< \brief Application name to use in the command*/
+   char                      AppName[OS_MAX_API_NAME];          /**< \brief Application name to use in the command*/
    uint8                     BitMask;                           /**< \brief BitMask to use in the command*/
    uint8                     Spare;                             /**< \brief Pad to even byte*/
+} CFE_EVS_AppNameBitMaskCmd_Payload_t;
 
+typedef struct {
+   uint8                     CmdHeader[CFE_SB_CMD_HDR_SIZE];
+   CFE_EVS_AppNameBitMaskCmd_Payload_t Payload;
 } CFE_EVS_AppNameBitMaskCmd_t;
 
 /**
@@ -1049,11 +1070,14 @@ typedef struct {
 **
 **/
 typedef struct {
-   uint8                     CmdHeader[CFE_SB_CMD_HDR_SIZE];
-   uint8                     AppName[OS_MAX_API_NAME];          /**< \brief Application name to use in the command*/
+   char                      AppName[OS_MAX_API_NAME];          /**< \brief Application name to use in the command*/
    uint16                    EventID;                           /**< \brief Event ID  to use in the command*/
    uint16                    Mask;                              /**< \brief Mask to use in the command */
+} CFE_EVS_AppNameEventIDMaskCmd_Payload_t;
 
+typedef struct {
+   uint8                                    CmdHeader[CFE_SB_CMD_HDR_SIZE];
+   CFE_EVS_AppNameEventIDMaskCmd_Payload_t  Payload;
 } CFE_EVS_AppNameEventIDMaskCmd_t;
 
 /*************************************************************************/
@@ -1077,8 +1101,6 @@ typedef struct {
 **  \cfeevstlm Event Services Housekeeping Telemetry Packet
 **/
 typedef struct {
-   uint8                 TlmHeader[CFE_SB_TLM_HDR_SIZE];
-
    uint8                 CommandCounter;                    /**< \cfetlmmnemonic \EVS_CMDPC
                                                                  \brief EVS Command Counter */
    uint8                 CommandErrCounter;                 /**< \cfetlmmnemonic \EVS_CMDEC
@@ -1114,6 +1136,11 @@ typedef struct {
    CFE_EVS_AppTlmData_t  AppData[CFE_ES_MAX_APPLICATIONS];  /**< \cfetlmmnemonic \EVS_APP
                                                                  \brief Array of registered application table data */
 
+} CFE_EVS_TlmPkt_Payload_t;
+
+typedef struct {
+   uint8                    TlmHeader[CFE_SB_TLM_HDR_SIZE];
+   CFE_EVS_TlmPkt_Payload_t Payload;
 } CFE_EVS_TlmPkt_t;
 
 /** Telemetry packet structures */
@@ -1137,7 +1164,6 @@ typedef struct {
 **  \cfeevstlm Event Message Telemetry Packet
 **/
 typedef struct {
-   uint8                     TlmHeader[CFE_SB_TLM_HDR_SIZE];
    CFE_EVS_PacketID_t        PacketID;                              /**< \brief Event packet information */
    char                      Message[CFE_EVS_MAX_MESSAGE_LENGTH];   /**< \cfetlmmnemonic \EVS_EVENT
                                                                          \brief Event message string */
@@ -1145,7 +1171,11 @@ typedef struct {
                                                                          \brief Structure padding */
    uint8                     Spare2;		                        /**< \cfetlmmnemonic \EVS_SPARE2
                                                                          \brief Structure padding */
+} CFE_EVS_Packet_Payload_t;
 
+typedef struct {
+   uint8                    TlmHeader[CFE_SB_TLM_HDR_SIZE];
+   CFE_EVS_Packet_Payload_t Payload;
 } CFE_EVS_Packet_t;
 
 

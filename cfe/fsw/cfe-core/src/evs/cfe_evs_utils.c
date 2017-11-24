@@ -94,11 +94,6 @@
 #include "cfe_sb.h"          /* Software Bus library function definitions */
 #include "cfe_es.h"
 
-
-/* External Data */
-extern CFE_EVS_GlobalData_t   CFE_EVS_GlobalData;
-
-
 /* Local Function Prototypes */
 void EVS_SendViaPorts (CFE_EVS_Packet_t *EVS_PktPtr);
 void EVS_OutputPort1 (char *Message);
@@ -151,7 +146,7 @@ int32 EVS_GetAppID (uint32 *AppIdPtr)
 ** Assumptions and Notes:
 **
 */
-int32 EVS_GetApplicationInfo (uint32 *pAppID, char *pAppName)
+int32 EVS_GetApplicationInfo (uint32 *pAppID, const char *pAppName)
 {
    int32 Status = CFE_SUCCESS;
 
@@ -199,7 +194,7 @@ int32 EVS_NotRegistered (uint32 AppID)
    if (CFE_EVS_GlobalData.AppData[AppID].EventCount == 0) 
    { 
       /* Increment count of "not registered" applications */
-      CFE_EVS_GlobalData.EVS_TlmPkt.UnregisteredAppCounter++;
+      CFE_EVS_GlobalData.EVS_TlmPkt.Payload.UnregisteredAppCounter++;
 
       /* Indicate that "not registered" event has been sent for this app */
       CFE_EVS_GlobalData.AppData[AppID].EventCount++;
@@ -413,9 +408,10 @@ void EVS_SendPacket (uint32 AppID, CFE_TIME_SysTime_t Time, CFE_EVS_Packet_t *EV
 {
 
    /* Obtain task and system information */
-   CFE_ES_GetAppName(EVS_PktPtr->PacketID.AppName, AppID, OS_MAX_API_NAME);
-   EVS_PktPtr->PacketID.SpacecraftID = CFE_PSP_GetSpacecraftId();
-   EVS_PktPtr->PacketID.ProcessorID  = CFE_PSP_GetProcessorId();
+   CFE_ES_GetAppName((char *)EVS_PktPtr->Payload.PacketID.AppName, AppID,
+           sizeof(EVS_PktPtr->Payload.PacketID.AppName));
+   EVS_PktPtr->Payload.PacketID.SpacecraftID = CFE_PSP_GetSpacecraftId();
+   EVS_PktPtr->Payload.PacketID.ProcessorID  = CFE_PSP_GetProcessorId();
 
    /* Set the packet timestamp */
    CFE_SB_SetMsgTime((CFE_SB_Msg_t *) EVS_PktPtr, Time);
@@ -425,10 +421,10 @@ void EVS_SendPacket (uint32 AppID, CFE_TIME_SysTime_t Time, CFE_EVS_Packet_t *EV
 
 /* (LSW) Is the intent to write the event text to the log but not the SB msg ??? */
 
-   if (CFE_EVS_GlobalData.EVS_TlmPkt.MessageFormatMode == CFE_EVS_SHORT_FORMAT)
+   if (CFE_EVS_GlobalData.EVS_TlmPkt.Payload.MessageFormatMode == CFE_EVS_SHORT_FORMAT)
    {
       /* Send an empty message if short format is enabled */
-      EVS_PktPtr->Message[0] = '\0';
+      EVS_PktPtr->Payload.Message[0] = '\0';
 
 /* (LSW) This is pointless -- why bother to send a buffer with an empty string ??? */
 
@@ -441,9 +437,9 @@ void EVS_SendPacket (uint32 AppID, CFE_TIME_SysTime_t Time, CFE_EVS_Packet_t *EV
    EVS_SendViaPorts(EVS_PktPtr);
 
    /* Increment message send counters (prevent rollover) */
-   if (CFE_EVS_GlobalData.EVS_TlmPkt.MessageSendCounter < CFE_EVS_MAX_EVENT_SEND_COUNT)
+   if (CFE_EVS_GlobalData.EVS_TlmPkt.Payload.MessageSendCounter < CFE_EVS_MAX_EVENT_SEND_COUNT)
    {
-      CFE_EVS_GlobalData.EVS_TlmPkt.MessageSendCounter++;
+      CFE_EVS_GlobalData.EVS_TlmPkt.Payload.MessageSendCounter++;
    }
 
    if (CFE_EVS_GlobalData.AppData[AppID].EventCount < CFE_EVS_MAX_EVENT_SEND_COUNT)
@@ -470,50 +466,50 @@ void EVS_SendViaPorts (CFE_EVS_Packet_t *EVS_PktPtr)
 {
    char PortMessage[CFE_EVS_MAX_PORT_MSG_LENGTH];
 
-   if (((CFE_EVS_GlobalData.EVS_TlmPkt.OutputPort & CFE_EVS_PORT1_BIT) >> 0) == TRUE)
+   if (((CFE_EVS_GlobalData.EVS_TlmPkt.Payload.OutputPort & CFE_EVS_PORT1_BIT) >> 0) == TRUE)
    {
       /* Copy event message to string format */
-      sprintf(PortMessage, "EVS Port1 %d/%d/%s %d: %s", (uint16) EVS_PktPtr->PacketID.SpacecraftID,
-                                                        (uint16) EVS_PktPtr->PacketID.ProcessorID,
-                                                        EVS_PktPtr->PacketID.AppName,
-                                                        EVS_PktPtr->PacketID.EventID,
-                                                        EVS_PktPtr->Message);
+      snprintf(PortMessage, CFE_EVS_MAX_PORT_MSG_LENGTH, "EVS Port1 %u/%u/%s %u: %s", (unsigned int) EVS_PktPtr->Payload.PacketID.SpacecraftID,
+                                                        (unsigned int) EVS_PktPtr->Payload.PacketID.ProcessorID,
+                                                        EVS_PktPtr->Payload.PacketID.AppName,
+                                                        (unsigned int) EVS_PktPtr->Payload.PacketID.EventID,
+                                                        EVS_PktPtr->Payload.Message);
       /* Send string event out port #1 */
       EVS_OutputPort1(PortMessage);
    }
 
-   if (((CFE_EVS_GlobalData.EVS_TlmPkt.OutputPort & CFE_EVS_PORT2_BIT) >> 1) == TRUE)
+   if (((CFE_EVS_GlobalData.EVS_TlmPkt.Payload.OutputPort & CFE_EVS_PORT2_BIT) >> 1) == TRUE)
    {
       /* Copy event message to string format */
-      sprintf(PortMessage, "EVS Port2 %d/%d/%s %d: %s", (uint16) EVS_PktPtr->PacketID.SpacecraftID,
-                                                        (uint16) EVS_PktPtr->PacketID.ProcessorID,
-                                                        EVS_PktPtr->PacketID.AppName,
-                                                        EVS_PktPtr->PacketID.EventID,
-                                                        EVS_PktPtr->Message);
+      snprintf(PortMessage, CFE_EVS_MAX_PORT_MSG_LENGTH, "EVS Port2 %u/%u/%s %u: %s", (unsigned int) EVS_PktPtr->Payload.PacketID.SpacecraftID,
+                                                        (unsigned int) EVS_PktPtr->Payload.PacketID.ProcessorID,
+                                                        EVS_PktPtr->Payload.PacketID.AppName,
+                                                        (unsigned int) EVS_PktPtr->Payload.PacketID.EventID,
+                                                        EVS_PktPtr->Payload.Message);
       /* Send string event out port #2 */
       EVS_OutputPort2(PortMessage);
    }
 
-   if (((CFE_EVS_GlobalData.EVS_TlmPkt.OutputPort & CFE_EVS_PORT3_BIT) >> 2) == TRUE)
+   if (((CFE_EVS_GlobalData.EVS_TlmPkt.Payload.OutputPort & CFE_EVS_PORT3_BIT) >> 2) == TRUE)
    {
       /* Copy event message to string format */
-      sprintf(PortMessage, "EVS Port3 %d/%d/%s %d: %s", (uint16) EVS_PktPtr->PacketID.SpacecraftID,
-                                                        (uint16) EVS_PktPtr->PacketID.ProcessorID,
-                                                        EVS_PktPtr->PacketID.AppName,
-                                                        EVS_PktPtr->PacketID.EventID,
-                                                        EVS_PktPtr->Message);
+      snprintf(PortMessage, CFE_EVS_MAX_PORT_MSG_LENGTH, "EVS Port3 %u/%u/%s %u: %s", (unsigned int) EVS_PktPtr->Payload.PacketID.SpacecraftID,
+                                                        (unsigned int) EVS_PktPtr->Payload.PacketID.ProcessorID,
+                                                        EVS_PktPtr->Payload.PacketID.AppName,
+                                                        (unsigned int) EVS_PktPtr->Payload.PacketID.EventID,
+                                                        EVS_PktPtr->Payload.Message);
       /* Send string event out port #3 */
       EVS_OutputPort3(PortMessage);
    }
 
-   if (((CFE_EVS_GlobalData.EVS_TlmPkt.OutputPort & CFE_EVS_PORT4_BIT) >> 3) == TRUE)
+   if (((CFE_EVS_GlobalData.EVS_TlmPkt.Payload.OutputPort & CFE_EVS_PORT4_BIT) >> 3) == TRUE)
    {
       /* Copy event message to string format */
-      sprintf(PortMessage, "EVS Port4 %d/%d/%s %d: %s", (uint16) EVS_PktPtr->PacketID.SpacecraftID,
-                                                        (uint16) EVS_PktPtr->PacketID.ProcessorID,
-                                                        EVS_PktPtr->PacketID.AppName,
-                                                        EVS_PktPtr->PacketID.EventID,
-                                                        EVS_PktPtr->Message);
+      snprintf(PortMessage, CFE_EVS_MAX_PORT_MSG_LENGTH, "EVS Port4 %u/%u/%s %u: %s", (unsigned int) EVS_PktPtr->Payload.PacketID.SpacecraftID,
+                                                        (unsigned int) EVS_PktPtr->Payload.PacketID.ProcessorID,
+                                                        EVS_PktPtr->Payload.PacketID.AppName,
+                                                        (unsigned int) EVS_PktPtr->Payload.PacketID.EventID,
+                                                        EVS_PktPtr->Payload.Message);
       /* Send string event out port #4 */
       EVS_OutputPort4(PortMessage);
    }
@@ -612,26 +608,31 @@ int32 EVS_SendEvent (uint16 EventID, uint16 EventType, const char *Spec, ... )
    CFE_TIME_SysTime_t Time;
    va_list            Ptr;
 
+   /*
+    * Must check that EVS_AppID is valid, which can happen if this is called
+    * by some other thread before CFE_EVS_TaskInit() runs
+    */
    /* Unlikely, but possible that an EVS event filter was added by command */
-   if (EVS_IsFiltered(CFE_EVS_GlobalData.EVS_AppID, EventID, EventType) == FALSE)
+   if (CFE_EVS_GlobalData.EVS_AppID < CFE_ES_MAX_APPLICATIONS &&
+           EVS_IsFiltered(CFE_EVS_GlobalData.EVS_AppID, EventID, EventType) == FALSE)
    {
       /* Initialize EVS event packet */
       CFE_SB_InitMsg(&EVS_Packet, CFE_EVS_EVENT_MSG_MID, sizeof(CFE_EVS_Packet_t), TRUE);
-      EVS_Packet.PacketID.EventID   = EventID;
-      EVS_Packet.PacketID.EventType = EventType;
+      EVS_Packet.Payload.PacketID.EventID   = EventID;
+      EVS_Packet.Payload.PacketID.EventType = EventType;
 
       /* vsnprintf() returns the total expanded length of the formatted string */
       /* vsnprintf() copies and zero terminates portion that fits in the buffer */
       va_start(Ptr, Spec);
-      ExpandedLength = vsnprintf(EVS_Packet.Message, CFE_EVS_MAX_MESSAGE_LENGTH, Spec, Ptr);
+      ExpandedLength = vsnprintf((char *)EVS_Packet.Payload.Message, sizeof(EVS_Packet.Payload.Message), Spec, Ptr);
       va_end(Ptr);
 
       /* Were any characters truncated in the buffer? */
-      if (ExpandedLength >= CFE_EVS_MAX_MESSAGE_LENGTH)
+      if (ExpandedLength >= sizeof(EVS_Packet.Payload.Message))
       {
          /* Mark character before zero terminator to indicate truncation */
-         EVS_Packet.Message[CFE_EVS_MAX_MESSAGE_LENGTH - 2] = CFE_EVS_MSG_TRUNCATED;
-         CFE_EVS_GlobalData.EVS_TlmPkt.MessageTruncCounter++;
+         EVS_Packet.Payload.Message[sizeof(EVS_Packet.Payload.Message) - 2] = CFE_EVS_MSG_TRUNCATED;
+         CFE_EVS_GlobalData.EVS_TlmPkt.Payload.MessageTruncCounter++;
       }
 
       /* Get current spacecraft time */

@@ -228,6 +228,10 @@ PROC $sc_$cpu_es_appctrl
 ;	02/06/12	W. Moleski	Added variable for ram disk.
 ;	02/21/12	W. Moleski	Replaced setupevt with setupevents.
 ;	09/09/14	W. Moleski	Reformatted the requirements text.
+;	05/04/16	W. Moleski      Updated for 6.5.0 testing using CPU1 for
+;                               	commanding and added a hostCPU variable
+;					for the utility procs that connect to
+;					the host IP.
 ;
 ;  Arguments
 ;	None 
@@ -360,6 +364,7 @@ local cfe_requirements[0 .. ut_req_array_size] = ["ES_1005","ES_1005.1","ES_1005
 local work_dir = %env("WORK")
 local filename
 local ramDir = "RAM:0"
+local hostCPU = "$CPU"
 
 write ";*********************************************************************"
 write "; Step 1.0: Application Control Command Test"
@@ -370,7 +375,7 @@ write ";*********************************************************************"
 wait 10
 
 close_data_center
-wait 75
+wait 60
 
 cfe_startup $CPU
 wait 5
@@ -403,7 +408,7 @@ wait 5
 
 ;  Dump the properties of all running apps
 ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ALL_APPS_EID, "DEBUG", 1
-s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log","$CPU")
+s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log",hostCPU)
 wait 5
 
 if ($SC_$CPU_find_event[1].num_found_messages = 1) then
@@ -515,7 +520,7 @@ ut_setupevents $SC, $CPU, CFE_SB, CFE_SB_SUBSCRIPTION_RCVD_EID, DEBUG, 4
 
 ;; Start the TST_ES app
 write "; Starting the TST_ES application. "
-s load_start_app ("TST_ES", "$CPU")
+s load_start_app ("TST_ES", hostCPU)
 wait 5
 
 ;; Look for expected event #1
@@ -571,9 +576,9 @@ if ($SC_$CPU_find_event[4].num_found_messages > 0) then
 endif
 
 ;; Upload the TST_ES2 table load data files to /ram
-s ftp_file (ramDir,"firsttbldef.dat","FirstTblDef.dat","$CPU","P")
+s ftp_file (ramDir,"firsttbldef.dat","FirstTblDef.dat",hostCPU,"P")
 wait 5
-s ftp_file (ramDir,"secondtbldef.dat","SecondTblDef.dat","$CPU","P")
+s ftp_file (ramDir,"secondtbldef.dat","SecondTblDef.dat",hostCPU,"P")
 wait 5
 
 ;; Setup events to capture for TST_ES2 start
@@ -584,7 +589,7 @@ ut_setupevents $SC, $CPU, CFE_SB, CFE_SB_SUBSCRIPTION_RCVD_EID, DEBUG, 4
 
 ;; Start the TST_ES2 app
 write "; Starting the TST_ES2 application. "
-s load_start_app ("TST_ES2", "$CPU")
+s load_start_app ("TST_ES2", hostCPU)
 wait 5
 
 ;; Look for expected event #1
@@ -630,7 +635,7 @@ ut_setupevents $SC, $CPU, CFE_SB, CFE_SB_SUBSCRIPTION_RCVD_EID, DEBUG, 4
 ut_setupevents $SC, $CPU, CFE_ES, CFE_ES_START_ERR_EID, ERROR, 5
 
 ;; Load the TST_ES3 app into non-volatile memory
-s load_app ("CF:0/apps","TST_ES3", "$CPU")
+s load_app ("CF:0/apps","TST_ES3", hostCPU)
 wait 5
 
 ;; Start the TST_ES3 app
@@ -642,7 +647,7 @@ wait 5
 ;; If the Start Error event was received, try to load the app again
 if ($SC_$CPU_find_event[5].num_found_messages = 1) then
   ;; Load the TST_ES3 app into non-volatile memory
-  s load_app ("CF:0/apps","TST_ES3", "$CPU")
+  s load_app ("CF:0/apps","TST_ES3", hostCPU)
   wait 5
 
   /$SC_$CPU_ES_STARTAPP APPLICATION="TST_ES3" APP_ENTRY_PT="TST_ES3_TaskMain" APP_FILE_NAME="/cf/apps/tst_es3.o" STACKSIZE=x'2000' PRIORITY=x'c8' RESTARTCPU
@@ -697,7 +702,7 @@ endif
 
 ;; Dump all running apps again to verify that the TST_ES app is running
 ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ALL_APPS_EID, "DEBUG", 1
-s get_file_to_cvt (ramDir,"","$sc_$cpu_es_app_info.log","$CPU","ES_INFO")
+s get_file_to_cvt (ramDir,"","$sc_$cpu_es_app_info.log",hostCPU,"ES_INFO")
 wait 5
 
 if ($SC_$CPU_find_event[1].num_found_messages = 1) then
@@ -849,7 +854,8 @@ else
 endif
 
 ;; Check if the event was rcv'd
-if ($SC_$CPU_find_event[1].num_found_messages = 1) then
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1
+if (UT_TW_Status = UT_Success) then
   write "<*> Passed (1006) - Event message ",$SC_$CPU_find_event[1].eventid, " received"
   ut_setrequirements ES_1006, "P"
 else
@@ -858,7 +864,8 @@ else
 endif
 
 ;; Check if the second event was rcv'd (may need to wait for this one)
-if ($SC_$CPU_find_event[2].num_found_messages = 1) then
+ut_tlmwait $SC_$CPU_find_event[2].num_found_messages, 1
+if (UT_TW_Status = UT_Success) then
   write "<*> Passed (1006) - Event Msg ",$SC_$CPU_find_event[2].eventid," Found!"
   ut_setrequirements ES_1006, "P"
 else
@@ -868,7 +875,7 @@ endif
 
 ;; Dump all running apps again to verify that the TST_ES app is running
 ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ALL_APPS_EID, "DEBUG", 1
-s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log","$CPU")
+s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log",hostCPU)
 wait 5
 
 if ($SC_$CPU_find_event[1].num_found_messages = 1) then
@@ -1020,7 +1027,7 @@ write "; Step 1.14: Try to restart an application whose original startup file"
 write "; 	    is missing."
 write ";*********************************************************************"
 ;; Need to delete the original startup file on $CPU and then issue the command
-s ftp_file (ramDir,"na","tst_es2.o","$CPU","R")
+s ftp_file (ramDir,"na","tst_es2.o",hostCPU,"R")
 
 ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_RESTART_APP_DBG_EID, "DEBUG" 1
 ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_RESTART_APP_ERR3_EID, "ERROR" 2
@@ -1045,13 +1052,23 @@ if ($SC_$CPU_find_event[1].num_found_messages = 1) then
   write "<*> Passed (1007.2) - Event message ",$SC_$CPU_find_event[1].eventid, " received"
   ut_setrequirements ES_10072, "P"
 else
-  write "<!> Failed (1007.2) - Expected Event message ",CFE_ES_RESTART_APP_ERR2_EID, " was not received"
+  write "<!> Failed (1007.2) - Expected Event message ",CFE_ES_RESTART_APP_DBG_EID, " was not received"
+  ut_setrequirements ES_10072, "F"
+endif
+
+;; Wait for the error event
+ut_tlmwait $SC_$CPU_find_event[2].num_found_messages, 1
+if (UT_TW_Status = UT_Success) then
+  write "<*> Passed (1007.2) - Event message ",$SC_$CPU_find_event[2].eventid, " received"
+  ut_setrequirements ES_10072, "P"
+else
+  write "<!> Failed (1007.2) - Expected Event message ",CFE_ES_RESTART_APP_ERR3_EID, " was not received"
   ut_setrequirements ES_10072, "F"
 endif
 
 ;; Dump all running apps again to verify that the TST_ES2 app is not running
 ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ALL_APPS_EID, "DEBUG", 1
-s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log","$CPU")
+s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log",hostCPU)
 wait 5
 
 if ($SC_$CPU_find_event[1].num_found_messages = 1) then
@@ -1088,7 +1105,7 @@ ut_setupevents $SC, $CPU, CFE_SB, CFE_SB_SUBSCRIPTION_RCVD_EID, DEBUG, 4
 
 ;; Start the TST_ES4 app
 write "; Starting the TST_ES4 application. "
-s load_start_app ("TST_ES4", "$CPU")
+s load_start_app ("TST_ES4", hostCPU)
 wait 5
 
 ;; Look for expected event #1
@@ -1128,7 +1145,7 @@ endif
 
 ;; Dump all running apps again to verify that the TST_ES4 app is running
 ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ALL_APPS_EID, "DEBUG", 1
-s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log","$CPU")
+s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log",hostCPU)
 wait 5
 
 if ($SC_$CPU_find_event[1].num_found_messages = 1) then
@@ -1148,7 +1165,7 @@ for app_index = 1 to CFE_ES_MAX_APPLICATIONS do
 enddo
 
 ;; Load a bad .o file for the app that you are going to restart
-s ftp_file (ramDir,"secondtbldef.dat","tst_es4.o","$CPU","P")
+s ftp_file (ramDir,"secondtbldef.dat","tst_es4.o",hostCPU,"P")
 wait 5
 
 ;; Restart TST_ES4 with a bad startup file
@@ -1191,7 +1208,7 @@ endif
 
 ;; Dump all running apps again to verify that the TST_ES4 app is not running
 ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ALL_APPS_EID, "DEBUG", 1
-s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log","$CPU")
+s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log",hostCPU)
 wait 5
 
 if ($SC_$CPU_find_event[1].num_found_messages = 1) then
@@ -1252,7 +1269,7 @@ ut_setupevents $SC, $CPU, CFE_SB, CFE_SB_SUBSCRIPTION_RCVD_EID, DEBUG, 4
 
 ;; Start the TST_ES2 app
 write "; Starting the TST_ES2 application. "
-s load_start_app ("TST_ES2", "$CPU")
+s load_start_app ("TST_ES2", hostCPU)
 wait 5
 
 ;; Look for expected event #1
@@ -1408,7 +1425,7 @@ ut_setupevents $SC, $CPU, CFE_SB, CFE_SB_SUBSCRIPTION_RCVD_EID, DEBUG, 4
 
 ;; Start the TST_ES2 app AGAIN
 write "; Starting the TST_ES2 application. "
-s load_start_app ("TST_ES2", "$CPU")
+s load_start_app ("TST_ES2", hostCPU)
 wait 5
 
 ;; Look for expected event #1
@@ -1520,7 +1537,7 @@ ut_setupevents $SC, $CPU, CFE_SB, CFE_SB_SUBSCRIPTION_RCVD_EID, DEBUG, 4
 
 ;; Start the TST_ES2 app
 write "; Starting the TST_ES2 application. "
-s load_start_app ("TST_ES2", "$CPU")
+s load_start_app ("TST_ES2", hostCPU)
 wait 5
 
 ;; Look for expected event #1
@@ -1622,7 +1639,7 @@ write "; 	   then start it."
 write ";*********************************************************************"
 ;; Dump all running apps again to verify that the TST_ES app is running
 ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ALL_APPS_EID, "DEBUG", 1
-s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log","$CPU")
+s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log",hostCPU)
 wait 5
 
 if ($SC_$CPU_find_event[1].num_found_messages = 1) then
@@ -1650,7 +1667,7 @@ if (found_app1 = FALSE) then
   ut_setupevents $SC, $CPU, CFE_SB, CFE_SB_SUBSCRIPTION_RCVD_EID, DEBUG, 4
 
   write "; Starting the TST_ES application. "
-  s load_start_app ("TST_ES", "$CPU")
+  s load_start_app ("TST_ES", hostCPU)
   wait 5
 
   ;; Look for expected event #1
@@ -1940,7 +1957,7 @@ ut_setupevents $SC, $CPU, CFE_SB, CFE_SB_SUBSCRIPTION_RCVD_EID, DEBUG, 4
 
 ;; Start the TST_ES4 app
 write "; Starting the TST_ES4 application. "
-s load_start_app ("TST_ES4", "$CPU")
+s load_start_app ("TST_ES4", hostCPU)
 wait 5
 
 ;; Look for expected event #1
@@ -2003,6 +2020,7 @@ write "AppId = ",$SC_$CPU_ES_APPID
 
 ;; Send the TST_ES command to delete the app
 ut_setupevents "$SC", "$CPU", "TST_ES", TST_ES_DELETEAPP_INF_EID, "INFO", 1
+ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_STOP_INF_EID, "INFO", 2
 cmdcnt = $SC_$CPU_TST_ES_CMDPC + 1
 
 /$SC_$CPU_TST_ES_DELETEAPP APPID=$SC_$CPU_ES_APPID
@@ -2027,9 +2045,19 @@ else
   ut_setrequirements ES_1309, "F"
 endif
 
+;; Wait until you get the event that indicates the stop app has completed
+ut_tlmwait $SC_$CPU_find_event[2].num_found_messages, 1
+if (UT_TW_Status = UT_Success) then
+  write "<*> Passed (1309) - Delete App event message ",$SC_$CPU_find_event[2].eventid, " received."
+  ut_setrequirements ES_1309, "P"
+else
+  write "<!> Failed (1309) - Expected Event message ",CFE_ES_STOP_INF_EID, " was not received"
+  ut_setrequirements ES_1309, "F"
+endif
+
 ;; Dump all running apps again to verify that the TST_ES4 app was deleted
 ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ALL_APPS_EID, "DEBUG", 1
-s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log","$CPU")
+s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log",hostCPU)
 wait 5
 
 if ($SC_$CPU_find_event[1].num_found_messages = 1) then
@@ -2050,9 +2078,11 @@ enddo
 
 ;; Verify that the app was deleted
 if (found_app1 = FALSE) then
+  write "<*> Passed (1309;1319) - TST_ES4 not found in App List"
   ut_setrequirements ES_1309, "P"
   ut_setrequirements ES_1319, "P"
 else
+  write "<!> Failed (1309;1319) - TST_ES4 still exists in App List"
   ut_setrequirements ES_1309, "F"
   ut_setrequirements ES_1319, "F"
 endif
@@ -2127,7 +2157,7 @@ endif
 
 ;; Dump all running apps again to verify that the TST_ES4 app was deleted
 ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ALL_APPS_EID, "DEBUG", 1
-s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log","$CPU")
+s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log",hostCPU)
 wait 5
 
 if ($SC_$CPU_find_event[1].num_found_messages = 1) then
@@ -2187,7 +2217,7 @@ write "; 	    startup file is missing."
 write ";*********************************************************************"
 ;;;; TST_ES2 needs to be running for this step to work
 ;; Need to delete the original startup file on $CPU and then issue the command
-s ftp_file (ramDir,"na","tst_es2.o","$CPU","R")
+s ftp_file (ramDir,"na","tst_es2.o",hostCPU,"R")
 
 ut_setupevents "$SC", "$CPU", "TST_ES", TST_ES_RESTARTAPPPASS_INF_EID, "INFO", 1
 ut_setupevents "$SC", "$CPU", "TST_ES", TST_ES_RESTARTAPP_INF_EID, "INFO", 2
@@ -2249,7 +2279,7 @@ ut_setupevents $SC, $CPU, CFE_SB, CFE_SB_SUBSCRIPTION_RCVD_EID, DEBUG, 4
 
 ;; Start the TST_ES4 app
 write "; Starting the TST_ES4 application. "
-s load_start_app ("TST_ES4", "$CPU")
+s load_start_app ("TST_ES4", hostCPU)
 wait 5
 
 ;; Look for expected event #1
@@ -2288,7 +2318,7 @@ if ($SC_$CPU_find_event[4].num_found_messages > 0) then
 endif
 
 ;; Load a bad .o file for the app that you are going to restart
-s ftp_file (ramDir,"secondtbldef.dat","tst_es4.o","$CPU","P")
+s ftp_file (ramDir,"secondtbldef.dat","tst_es4.o",hostCPU,"P")
 wait 5
 
 ut_setupevents "$SC", "$CPU", "TST_ES", TST_ES_RESTARTAPPPASS_INF_EID, "INFO", 1
@@ -2327,7 +2357,8 @@ else
 endif
 
 ;; Look for expected event #3
-if ($SC_$CPU_find_event[3].num_found_messages = 1) then
+ut_tlmwait $SC_$CPU_find_event[3].num_found_messages, 1
+if (UT_TW_Status = UT_Success) then
   write "<*> Passed (1310.3) - Delete App event message ",$SC_$CPU_find_event[3].eventid, " received."
   ut_setrequirements ES_13103, "P"
 else
@@ -2452,7 +2483,7 @@ page $SC_$CPU_ES_TASK_INFO
 wait 5
 
 ;  Dump the properties of all running Tasks
-s get_file_to_cvt (ramDir,"cfe_es_task_info.log","$sc_$cpu_es_task_info.log","$CPU")
+s get_file_to_cvt (ramDir,"cfe_es_task_info.log","$sc_$cpu_es_task_info.log",hostCPU)
 wait 5
 
 ;; Send a QueryApp command for TST_ES application to get the # of child tasks
@@ -2592,7 +2623,7 @@ if (UT_SC_Status = UT_SC_Success) then
   endif
                                                                                 
   ;; Get the file to the ground whether or not the event msg was rcv'd
-  s ftp_file (ramDir,"cfe_es_syslog.log","$sc_$cpu_es_app33syslog.log","$CPU","G")
+  s ftp_file (ramDir,"cfe_es_syslog.log","$sc_$cpu_es_app33syslog.log",hostCPU,"G")
   wait 5
 
   ;; Check if the file above exists and pass the requirement if it does
@@ -2612,7 +2643,7 @@ write "; 	   Step 3.1 above."
 write ";*********************************************************************"
 ;  Dump the properties of all running Tasks
 ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_TASKINFO_EID, "DEBUG", 1
-s get_file_to_cvt (ramDir,"cfe_es_task_info.log","$sc_$cpu_es_task_info.log","$CPU")
+s get_file_to_cvt (ramDir,"cfe_es_task_info.log","$sc_$cpu_es_task_info.log",hostCPU)
 wait 5
 
 ;; Check if the event was generated
@@ -2660,7 +2691,7 @@ endif
 
 wait 10
 ;  Dump the properties of all running Tasks
-s get_file_to_cvt (ramDir,"cfe_es_task_info.log","$sc_$cpu_es_task_info.log","$CPU")
+s get_file_to_cvt (ramDir,"cfe_es_task_info.log","$sc_$cpu_es_task_info.log",hostCPU)
 wait 10
 
 ;; Verify that the ES_Child1 task no longer exists
@@ -2764,7 +2795,7 @@ if (UT_SC_Status = UT_SC_Success) then
   endif
                                                                                 
   ;; Get the file to the ground whether or not the event msg was rcv'd
-  s ftp_file (ramDir,"cfe_es_syslog.log","$sc_$cpu_es_app36syslog.log","$CPU","G")
+  s ftp_file (ramDir,"cfe_es_syslog.log","$sc_$cpu_es_app36syslog.log",hostCPU,"G")
   wait 5
 
   ;; Check if the file above exists and pass the requirement if it does
@@ -3156,7 +3187,7 @@ if (UT_SC_Status = UT_SC_Success) then
   endif
 
   ;; Get the file to the ground whether or not the event msg was rcv'd
-  s ftp_file (ramDir,"cfe_es_syslog.log","$sc_$cpu_es_app48syslog.log","$CPU","G")
+  s ftp_file (ramDir,"cfe_es_syslog.log","$sc_$cpu_es_app48syslog.log",hostCPU,"G")
   wait 5
 
   ;; Check if the file above exists and pass the requirement if it does
@@ -3322,7 +3353,7 @@ write ";*********************************************************************"
 wait 10
 
 close_data_center
-wait 75
+wait 60
 
 cfe_startup $CPU
 wait 5
@@ -3346,7 +3377,7 @@ endif
 
 ;  Dump the properties of all running apps
 ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ALL_APPS_EID, "DEBUG", 1
-s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log","$CPU")
+s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log",hostCPU)
 wait 5
 
 if ($SC_$CPU_find_event[1].num_found_messages = 1) then
@@ -3369,9 +3400,9 @@ write "; current Apps running = ", currentApps
 write "; Apps to start = ", appsToStart
 
 ;; Upload the TST_ES2 table load data files to /ram
-s ftp_file (ramDir,"firsttbldef.dat","FirstTblDef.dat","$CPU","P")
+s ftp_file (ramDir,"firsttbldef.dat","FirstTblDef.dat",hostCPU,"P")
 wait 5
-s ftp_file (ramDir,"secondtbldef.dat","SecondTblDef.dat","$CPU","P")
+s ftp_file (ramDir,"secondtbldef.dat","SecondTblDef.dat",hostCPU,"P")
 wait 5
 
 local newAppName
@@ -3389,7 +3420,7 @@ for i = 1 to appsToStart do
   ut_setupevents $SC, $CPU, CFE_ES, CFE_ES_START_INF_EID, INFO, 1
   ut_setupevents $SC, $CPU, {newAppName}, TST_ES_INIT_INF_EID, INFO, 2
 
-  s load_start_app (newAppName, "$CPU")
+  s load_start_app (newAppName, hostCPU)
   wait 5
 
   ;; Look for expected event #1
@@ -3435,7 +3466,7 @@ write "; 	   maximum number of applications have been started."
 write ";*********************************************************************"
 ;  Dump the properties of all running apps
 ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ALL_APPS_EID, "DEBUG", 1
-s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log","$CPU")
+s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log",hostCPU)
 wait 5
 
 if ($SC_$CPU_find_event[1].num_found_messages = 1) then
@@ -3454,7 +3485,7 @@ write "; Attempting to start App 'TST_TBL"
 ;; Setup error event to capture
 ut_setupevents $SC, $CPU, CFE_ES, CFE_ES_START_ERR_EID, ERROR, 1
 
-s load_start_app ("TST_TBL", "$CPU")
+s load_start_app ("TST_TBL", hostCPU)
 wait 5
 
 ;; Look for expected error event
@@ -3502,7 +3533,7 @@ endif
 
 ;; Dump the CDS Registry in order to verify that the CDS above was not created
 ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_CDS_REG_DUMP_INF_EID, "DEBUG", 1
-s get_file_to_cvt (ramDir,"cfe_cds_reg.log","$sc_$cpu_cds_reg.log","$CPU")
+s get_file_to_cvt (ramDir,"cfe_cds_reg.log","$sc_$cpu_cds_reg.log",hostCPU)
 wait 5
 
 if ($SC_$CPU_find_event[1].num_found_messages = 1) then
@@ -3563,7 +3594,7 @@ endif
 
 ;; Dump the CDS Registry in order to verify that the CDS above was not created
 ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_CDS_REG_DUMP_INF_EID, "DEBUG", 1
-s get_file_to_cvt (ramDir,"cfe_cds_reg.log","$sc_$cpu_cds_reg.log","$CPU")
+s get_file_to_cvt (ramDir,"cfe_cds_reg.log","$sc_$cpu_cds_reg.log",hostCPU)
 wait 5
 
 if ($SC_$CPU_find_event[1].num_found_messages = 1) then
@@ -3634,7 +3665,7 @@ endif
 
 ;; Dump the CDS Registry in order to verify that the CDS above was not created
 ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_CDS_REG_DUMP_INF_EID, "DEBUG", 1
-s get_file_to_cvt (ramDir,"cfe_cds_reg.log","$sc_$cpu_cds_reg.log","$CPU")
+s get_file_to_cvt (ramDir,"cfe_cds_reg.log","$sc_$cpu_cds_reg.log",hostCPU)
 wait 5
 
 if ($SC_$CPU_find_event[1].num_found_messages = 1) then
@@ -3968,7 +3999,7 @@ endif
 
 ;; Dump the CDS Registry in order to verify that the CDS above exists
 ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_CDS_REG_DUMP_INF_EID, "DEBUG", 1
-s get_file_to_cvt (ramDir,"cfe_cds_reg.log","$sc_$cpu_cds_reg.log","$CPU")
+s get_file_to_cvt (ramDir,"cfe_cds_reg.log","$sc_$cpu_cds_reg.log",hostCPU)
 wait 5
 
 if ($SC_$CPU_find_event[1].num_found_messages = 1) then
@@ -4173,7 +4204,7 @@ endif
 
 ;; Dump all running apps again to verify that the TST_ES app is running
 ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ALL_APPS_EID, "DEBUG", 1
-s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log","$CPU")
+s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log",hostCPU)
 wait 5
 
 if ($SC_$CPU_find_event[1].num_found_messages = 1) then
@@ -4230,7 +4261,7 @@ endif
 
 ;; Dump the CDS Registry in order to verify that the CDS above was deleted
 ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_CDS_REG_DUMP_INF_EID, "DEBUG", 1
-s get_file_to_cvt (ramDir,"cfe_cds_reg.log","$sc_$cpu_cds_reg.log","$CPU")
+s get_file_to_cvt (ramDir,"cfe_cds_reg.log","$sc_$cpu_cds_reg.log",hostCPU)
 wait 5
 
 if ($SC_$CPU_find_event[1].num_found_messages = 1) then
@@ -4264,7 +4295,7 @@ write ";*********************************************************************"
 ;; Setup error event to capture
 ut_setupevents $SC, $CPU, CFE_ES, CFE_ES_START_INF_EID, INFO, 1
 
-s load_start_app ("TST_TBL", "$CPU")
+s load_start_app ("TST_TBL", hostCPU)
 wait 5
 
 ;; Look for expected event
@@ -4333,7 +4364,7 @@ write "; Step 8.0: Shell Test "
 write ";*********************************************************************"
 write "; Step 8.1: Invoke the cfe_shell procedure. Invoke some shell commands."
 write ";*********************************************************************"
-;;s cfe_shell("$CPU")
+;;s cfe_shell(hostCPU)
 ;; Setup the ES_Shell Event capture
 ;;ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_SHELL_INF_EID, "INFO", 1
 ;;write " Invoke several shell commands in the window that displays."
@@ -4429,18 +4460,13 @@ write "; Step 9.0: Test Clean-up "
 write ";*********************************************************************"
 write "; Step 9.1: Save the UART log "
 write ";*********************************************************************"
-write "Save the UART log to a file now."
-write " Type 'g' or 'go' in the ASIST command input field to continue."
-wait
-
-write ";*********************************************************************"
-write "; Step 9.2: Command a POWER-ON Reset to reset everything."
+write "; Step 9.1: Command a POWER-ON Reset to reset everything."
 write ";*********************************************************************"
 /$SC_$CPU_ES_POWERONRESET
 wait 10
 
 close_data_center
-wait 75
+wait 60
 
 cfe_startup $CPU
 wait 5

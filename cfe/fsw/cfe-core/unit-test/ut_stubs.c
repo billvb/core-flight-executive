@@ -20,7 +20,7 @@
 ** $Data:$
 ** $Revision: 1.11 $
 ** $Log: ut_stubs.c  $
-** Revision 1.11 2014/07/10 09:30:58GMT-05:00 rmcgraw 
+** Revision 1.11 2014/07/10 09:30:58GMT-05:00 rmcgraw
 ** DCR9772:2 Fix unit tests that broke when main files were checked in
 ** Revision 1.10 2014/05/28 10:21:44EDT wmoleski
 ** Overwriting cFE Unit Test files with the updated JSC files.
@@ -99,23 +99,13 @@
 #include <string.h>
 #include "ut_stubs.h"
 
-#ifdef SOCKET_QUEUE
-#include <unistd.h>
-#endif
-
 /*
 ** Global variables
 */
-#ifdef CFE_LINUX
-FILE *UT_logfile;
-#endif
-
-int     UT_lognum;
 char    UT_appname[80];
 char    UT_subsys[5];
 char    cMsg[UT_MAX_MESSAGE_LENGTH];
 uint8   UT_CDS[UT_CDS_SIZE];
-uint32  UT_OS_Fail = 0x0000;
 uint32  UT_BSP_Fail = 0x0000;
 uint16  UT_RcvMsgCode = 0;
 uint32  UT_PutPool_Fail = 0;
@@ -124,43 +114,29 @@ uint32  UT_StatusCDS = 0;
 uint32  UT_SignatureCDS = 0;
 uint32  UT_LocTimeSec = 0;
 uint32  UT_LocTimeMSec = 0;
-uint32  UT_BinSemFail = 0;
 boolean UT_CDS_GoodEnd = TRUE;
 boolean UT_BSPCheckValidity = FALSE;
+boolean UT_CDS_Rebuild = FALSE;
 boolean UT_CDSReadBlock = FALSE;
 uint16  UT_EventHistory[UT_EVENT_HISTORY_SIZE];
 uint32  UT_EventHistoryCtr = 0;
 int32   UT_StatusBSP = OS_SUCCESS;
 uint8   UT_Endianess = 0;
 uint32  poolBufIndex = 0;
-char    UT_ReadBuf[100000];
 char    UT_ReadHdr[10000];
 int32   UT_DummyFuncRtn;
 int32   UT_SizeofESResetArea;
-int32   UT_ReadBufOffset;
 int32   UT_ReadHdrOffset;
 int32   UT_CDS_Size;
 int32   UT_SB_TotalMsgLen;
 
-UT_Queue_t            UT_Queue[OS_MAX_QUEUES];
 UT_CDS_Map_t          UT_CDS_Map;
 OS_time_t             BSP_Time;
 CFE_SB_MsgId_t        UT_RcvMsgId = 0;
-CFE_ES_CDSBlockDesc_t UT_CDSBlock;
 CFE_EVS_GlobalData_t  CFE_EVS_GlobalData;
 CFE_ES_ResetData_t    UT_CFE_ES_ResetData;
 CFE_ES_ResetData_t    *UT_CFE_ES_ResetDataPtr;
 
-UT_SetRtn_t MutSemCreateRtn;
-UT_SetRtn_t MutSemGiveRtn;
-UT_SetRtn_t MutSemTakeRtn;
-UT_SetRtn_t QueueCreateRtn;
-UT_SetRtn_t QueueDelRtn;
-UT_SetRtn_t QueueGetRtn;
-UT_SetRtn_t QueuePutRtn;
-UT_SetRtn_t FileWriteRtn;
-UT_SetRtn_t OSReadRtn;
-UT_SetRtn_t OSReadRtn2;
 UT_SetRtn_t SBSendMsgRtn;
 UT_SetRtn_t FSSetTimestampRtn;
 UT_SetRtn_t FSWriteHdrRtn;
@@ -172,21 +148,16 @@ UT_SetRtn_t GetPoolRtn;
 UT_SetRtn_t GetPoolInfoRtn;
 UT_SetRtn_t BSPWriteCDSRtn;
 UT_SetRtn_t BSPReadCDSRtn;
-UT_SetRtn_t OS_BinSemCreateRtn;
 UT_SetRtn_t ES_DeleteCDSRtn;
 UT_SetRtn_t ES_RegisterCDSRtn;
 UT_SetRtn_t ES_CopyToCDSRtn;
 UT_SetRtn_t ES_RestoreFromCDSRtn;
-UT_SetRtn_t BlocksFreeRtn;
-UT_SetRtn_t UnmountRtn;
-UT_SetRtn_t RmfsRtn;
 UT_SetRtn_t BSPUnloadAppFileRtn;
 UT_SetRtn_t GetAppIDRtn;
 UT_SetRtn_t BSPGetCFETextRtn;
 UT_SetRtn_t FSIsGzFileRtn;
 UT_SetRtn_t FSDecompressRtn;
 UT_SetRtn_t FSExtractRtn;
-UT_SetRtn_t HeapGetInfoRtn;
 UT_SetRtn_t ES_ExitAppRtn;
 UT_SetRtn_t ES_RegisterRtn;
 UT_SetRtn_t ES_CreateChildRtn;
@@ -196,34 +167,27 @@ UT_SetRtn_t SB_SubscribeExRtn;
 UT_SetRtn_t SB_CreatePipeRtn;
 UT_SetRtn_t EVS_SendEventRtn;
 UT_SetRtn_t EVS_RegisterRtn;
-UT_SetRtn_t OSlseekRtn;
-UT_SetRtn_t CountSemDelRtn;
-UT_SetRtn_t MutSemDelRtn;
-UT_SetRtn_t BinSemDelRtn;
 UT_SetRtn_t SBCleanUpRtn;
 UT_SetRtn_t EVSCleanUpRtn;
-UT_SetRtn_t ModuleLoadRtn;
-UT_SetRtn_t ModuleUnloadRtn;
-UT_SetRtn_t ModuleInfoRtn;
-UT_SetRtn_t SymbolLookupRtn;
 UT_SetRtn_t TIMECleanUpRtn;
 UT_SetRtn_t WriteSysLogRtn;
 UT_SetRtn_t GetResetTypeRtn;
+UT_SetRtn_t ES_GetTaskInfoRtn;
 UT_SetRtn_t SendMsgEventIDRtn;
 UT_SetRtn_t OSPrintRtn;
 UT_SetRtn_t SetMsgIdRtn;
-UT_SetRtn_t OSTaskExitRtn;
 UT_SetRtn_t PSPRestartRtn;
-UT_SetRtn_t OSBinSemTimedWaitRtn;
-UT_SetRtn_t OSBinSemFlushRtn;
 UT_SetRtn_t PSPPanicRtn;
 UT_SetRtn_t TBLEarlyInitRtn;
-UT_SetRtn_t OSCloseRtn;
 UT_SetRtn_t PSPMemValRangeRtn;
-UT_SetRtn_t OSTimerGetInfoRtn;
 
-static int UT_passed = 0;
-static int UT_failed = 0;
+/*
+ * Globals for controlling the OSAL UT stubs (deprecated, but still frequently used)
+ */
+uint32  UT_OS_Fail = 0;
+uint32  UT_BinSemFail = 0;
+
+extern  int32 dummy_function(void);
 
 /*
 ** Functions
@@ -237,7 +201,7 @@ void UT_Init(char *subsys)
 
     /* Copy the application name for later use */
     strncpy(UT_subsys, subsys, 5);
-    SNPRINTF(UT_appname, 80, "ut_cfe_%s", subsys);
+    snprintf(UT_appname, 80, "ut_cfe_%s", subsys);
 
     /* Convert to upper case */
     for (i = 0; i < strlen(UT_subsys); ++i)
@@ -248,11 +212,6 @@ void UT_Init(char *subsys)
         }
     }
 
-#ifdef CFE_LINUX
-    SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH, "%s_log.txt", UT_appname);
-    UT_logfile = fopen(cMsg, "w");
-#endif
-
     UT_InitData();
     UT_EndianCheck();
 }
@@ -262,19 +221,20 @@ void UT_Init(char *subsys)
 */
 void UT_InitData(void)
 {
-    int i;
+    /*
+     * Purge all entries in the entire stub table
+     */
+    UT_ResetState(0);
 
-    /* Initialize queue */
-    for (i = 0; i < OS_MAX_QUEUES; i++)
-    {
-        UT_Queue[i].free = TRUE;
-        UT_Queue[i].size = 0;
-    }
+    /*
+     * Reset the OSAL stubs to the default state
+     */
+    OS_API_Init();
 
     UT_ClearEventHistory();
     UT_ResetPoolBufferIndex();
-    UT_SetOSFail(OS_NO_FAIL);
     UT_SetBSPFail(0);
+    UT_SetOSFail(0);
 
     /* Initialize values and counters used for forcing return values
      * from stubs
@@ -283,18 +243,8 @@ void UT_InitData(void)
     UT_SetRtnCode(&PoolCreateExRtn, 0, 0);
     UT_SetRtnCode(&PutPoolRtn, 0, 0);
     UT_SetRtnCode(&GetPoolRtn, 0, 0);
-    UT_SetRtnCode(&QueuePutRtn, 0, 0);
-    UT_SetRtnCode(&MutSemGiveRtn, 0, 0);
-    UT_SetRtnCode(&MutSemTakeRtn, 0, 0);
-    UT_SetRtnCode(&QueueCreateRtn, 0, 0);
     UT_SetRtnCode(&BSPWriteCDSRtn, 0, 0);
     UT_SetRtnCode(&BSPReadCDSRtn, 0, 0);
-    UT_SetRtnCode(&QueueDelRtn, 0, 0);
-    UT_SetRtnCode(&QueueGetRtn, 0, 0);
-    UT_SetRtnCode(&QueuePutRtn, 0, 0);
-    UT_SetRtnCode(&FileWriteRtn, 0, 0);
-    UT_SetRtnCode(&OSReadRtn, 0, 0);
-    UT_SetRtnCode(&OSReadRtn2, 0, 0);
     UT_SetRtnCode(&SBSendMsgRtn, 0, 0);
     UT_SetRtnCode(&FSSetTimestampRtn, 0, 0);
     UT_SetRtnCode(&FSWriteHdrRtn, 0, 0);
@@ -304,48 +254,30 @@ void UT_InitData(void)
     UT_SetRtnCode(&SB_SubscribeRtn, 0, 0);
     UT_SetRtnCode(&SB_SubscribeLocalRtn, 0, 0);
     UT_SetRtnCode(&SB_CreatePipeRtn, 0, 0);
-    UT_SetRtnCode(&OS_BinSemCreateRtn, 0, 0);
     UT_SetRtnCode(&EVS_SendEventRtn, 0, 0);
     UT_SetRtnCode(&EVS_RegisterRtn, 0, 0);
     UT_SetRtnCode(&SB_SubscribeExRtn, 0, 0);
-    UT_SetRtnCode(&MutSemCreateRtn, 0, 0);
-    UT_SetRtnCode(&OSlseekRtn, 0, 0);
-    UT_SetRtnCode(&CountSemDelRtn, 0, 0);
-    UT_SetRtnCode(&MutSemDelRtn, 0, 0);
-    UT_SetRtnCode(&BinSemDelRtn, 0, 0);
-    UT_SetRtnCode(&BlocksFreeRtn, 0, 0);
-    UT_SetRtnCode(&UnmountRtn, 0, 0);
-    UT_SetRtnCode(&RmfsRtn, 0, 0);
     UT_SetRtnCode(&BSPUnloadAppFileRtn, 0, 0);
     UT_SetRtnCode(&SBCleanUpRtn, 0, 0);
     UT_SetRtnCode(&EVSCleanUpRtn, 0, 0);
     UT_SetRtnCode(&GetAppIDRtn, 0, 0);
     UT_SetRtnCode(&BSPGetCFETextRtn, 0, 0);
     UT_SetRtnCode(&FSIsGzFileRtn, 0, 0);
-    UT_SetRtnCode(&ModuleLoadRtn, 0, 0);
-    UT_SetRtnCode(&ModuleUnloadRtn, 0, 0);
-    UT_SetRtnCode(&ModuleInfoRtn, 0, 0);
     UT_SetRtnCode(&FSDecompressRtn, 0, 0);
     UT_SetRtnCode(&FSExtractRtn, 0, 0);
-    UT_SetRtnCode(&SymbolLookupRtn, 0, 0);
     UT_SetRtnCode(&TIMECleanUpRtn, 0, 0);
-    UT_SetRtnCode(&HeapGetInfoRtn, 0, 0);
     UT_SetRtnCode(&GetPoolInfoRtn, 0, 0);
     UT_SetRtnCode(&WriteSysLogRtn, -1, 0);
     UT_SetRtnCode(&GetResetTypeRtn, 0, 0);
+    UT_SetRtnCode(&ES_GetTaskInfoRtn, 0, 0);
     UT_SetRtnCode(&SendMsgEventIDRtn, -1, 0);
     UT_SetRtnCode(&OSPrintRtn, 0, -1);
     UT_SetRtnCode(&SetMsgIdRtn, 0, 0);
-    UT_SetRtnCode(&OSTaskExitRtn, 0, 0);
     UT_SetRtnCode(&PSPRestartRtn, 0, 0);
-    UT_SetRtnCode(&OSBinSemTimedWaitRtn, -1, 0);
-    UT_SetRtnCode(&OSBinSemFlushRtn, -1, 0);
     UT_SetRtnCode(&PSPPanicRtn, 0, 0);
     UT_SetRtnCode(&TBLEarlyInitRtn, 0, 0);
-    UT_SetRtnCode(&OSCloseRtn, 0, 0);
     UT_SetRtnCode(&PSPMemValRangeRtn, 0, 0);
     UT_SetRtnCode(&ES_ExitAppRtn, 0, 0);
-    UT_SetRtnCode(&OSTimerGetInfoRtn, 0, 0);
 
     UT_ResetCDS();
 }
@@ -363,67 +295,17 @@ void UT_ResetPoolBufferIndex(void)
 */
 void UT_Text(char *text)
 {
-#ifdef CFE_LINUX
-    fprintf(UT_logfile, "%s\n", text);
-    fflush(UT_logfile);
-#else
-    /* Call GHS printf() replacement */
-    TUTF_print(text);
-    TUTF_print("\n");
-#endif
+    UtPrintf("%s\n", text);
 }
 
 /*
 ** Output single test's pass/fail status
 */
-void UT_Report(boolean test, char *fun_name, char *info, char *test_num)
+void UT_Report(const char *file, uint32 line, boolean test, char *fun_name,
+		       char *info)
 {
-    if (test)
-    {
-#ifdef UT_SHOW_PASS
-        SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
-                 "PASSED  [cFE.%s.%s] %s - %s\n-----",
-                 UT_subsys, test_num, fun_name, info);
-        UT_Text(cMsg);
-#endif
-        UT_passed++;
-    }
-    else
-    {
-        SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
-                 "FAILED  [cFE.%s.%s] %s - %s\n-----",
-                 UT_subsys, test_num, fun_name, info);
-        UT_Text(cMsg);
-#ifdef CFE_LINUX
-#ifdef UT_VERBOSE
-        printf("FAILED [cFE.%s.%s] %s - %s\n",
-               UT_subsys, test_num, fun_name, info);
-#endif
-#endif
-        UT_failed++;
-    }
-}
-
-/*
-** Test pass/fail summary
-*/
-void UT_ReportFailures(void)
-{
-    SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
-             "\n%s PASSED %d tests.", UT_appname, UT_passed);
-    UT_Text(cMsg);
-    SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
-             "%s FAILED %d tests.", UT_appname, UT_failed);
-    UT_Text(cMsg);
-
-#ifdef CFE_LINUX
-    printf("\n%s PASSED %d tests.\n%s FAILED %d tests.\n\n",
-            UT_appname, UT_passed, UT_appname, UT_failed);
-
-    /* Ensure everything gets written */
-    fflush(stdout);
-    fclose(UT_logfile);
-#endif
+    UtAssertEx(test, UtAssert_GetContext(), file, line, "%s - %s", fun_name,
+    		   info);
 }
 
 /*
@@ -445,19 +327,73 @@ void UT_SetAppID(int32 AppID_in)
 }
 
 /*
-** Set the OS fail flag
-*/
-void UT_SetOSFail(uint32 fail)
-{
-    UT_OS_Fail = fail;
-}
-
-/*
 ** Set the PutPool fail flag
 */
 void UT_SetPutPoolFail(uint32 fail)
 {
     UT_PutPool_Fail = fail;
+}
+
+
+/*
+ * NOTE - The UT_SetOSFail(), UT_SetRtnCode(), and UT_SetBinSemFail() functions
+ * are replaced by implementations within UT assert generic stub library.
+ *
+ * These are now wrappers to make the tests work until all the test code can
+ * be updated to call the functions directly and not use these anymore.
+ */
+
+/*
+** Set the OS fail flag
+*/
+void UT_SetOSFail(uint32 fail)
+{
+    /*
+     * This table MUST be in the SAME ORDER as the bitmaps in the header file.
+     * This is a translation layer for use until calls to UT_SetOSFail() in
+     * the CFE unit tests can be updated.
+     */
+    static const UT_EntryKey_t FAIL_BITMAPS[] =
+    {
+            UT_KEY(OS_creat),       /* OS_CREAT_FAIL        0x0001 */
+            UT_KEY(OS_write),       /* OS_WRITE_FAIL        0x0002 */
+            UT_KEY(OS_close),       /* OS_CLOSE_FAIL        0x0004 */
+            UT_KEY(OS_mkfs),        /* OS_MKFS_FAIL         0x0008 */
+            UT_KEY(OS_initfs),      /* OS_INITFS_FAIL       0x0010 */
+            UT_KEY(OS_mount),       /* OS_MOUNT_FAIL        0x0020 */
+            UT_KEY(OS_TaskCreate),  /* OS_TASKCREATE_FAIL   0x0040 */
+            UT_KEY(OS_BinSemCreate),/* OS_SEMCREATE_FAIL    0x0080 */
+            UT_KEY(OS_MutSemCreate),/* OS_MUTCREATE_FAIL    0x0100 */
+            UT_KEY(OS_open),        /* OS_OPEN_FAIL         0x0200 */
+            UT_KEY(OS_TaskDelay),   /* OS_TASKDELAY_FAIL    0x0400 */
+            UT_KEY(OS_TaskRegister),/* OS_TASKREGISTER_FAIL 0x0800 */
+            UT_KEY(OS_read),        /* OS_READ_FAIL         0x1000 */
+            UT_KEY(OS_lseek),       /* OS_LSEEK_FAIL        0x2000 */
+            UT_KEY(OS_TaskDelete),  /* OS_TASKDELETE_FAIL   0x4000 */
+            UT_KEY(OS_rmfs),        /* OS_RMFS_FAIL         0x8000 */
+            0                       /* End of table */
+    };
+
+    const UT_EntryKey_t *KeyPtr;
+    uint32 BitMask;
+
+    BitMask = fail;
+    KeyPtr = FAIL_BITMAPS;
+    while (*KeyPtr != 0)
+    {
+        if (BitMask & 0x1)
+        {
+            UT_SetForceFail(*KeyPtr, OS_ERROR);
+        }
+        else
+        {
+            UT_ClearForceFail(*KeyPtr);
+        }
+        ++KeyPtr;
+        BitMask >>= 1;
+    }
+
+    UT_OS_Fail = fail;
 }
 
 /*
@@ -466,6 +402,7 @@ void UT_SetPutPoolFail(uint32 fail)
 */
 void UT_SetRtnCode(UT_SetRtn_t *varPtr, int32 rtnVal, int32 cnt)
 {
+    UT_Compat_SetRtnCode(varPtr, rtnVal, cnt);
     varPtr->value = rtnVal;
     varPtr->count = cnt;
 }
@@ -475,6 +412,7 @@ void UT_SetRtnCode(UT_SetRtn_t *varPtr, int32 rtnVal, int32 cnt)
 */
 void UT_SetBinSemFail(uint32 fail)
 {
+    UT_SetDeferredRetcode(UT_KEY(OS_BinSemTake), fail, OS_ERROR);
     UT_BinSemFail = fail;
 }
 
@@ -494,8 +432,7 @@ void UT_SetStatusBSPResetArea(int32 status, uint32 Signature, uint32 ClockSignal
 */
 void UT_SetReadBuffer(void *Buff, int NumBytes)
 {
-    UT_ReadBufOffset = 0;
-    memcpy(&UT_ReadBuf, Buff, NumBytes);
+    UT_SetDataBuffer(UT_KEY(OS_read), Buff, NumBytes, TRUE);
 }
 
 /*
@@ -512,7 +449,7 @@ void UT_SetReadHeader(void *Hdr, int NumBytes)
 */
 void UT_SetDummyFuncRtn(int Return)
 {
-    UT_DummyFuncRtn = Return;
+    UT_SetForceFail(UT_KEY(dummy_function), Return);
 }
 
 /*
@@ -564,9 +501,17 @@ void UT_SetCDSBSPCheckValidity(boolean Truth)
 }
 
 /*
+** Set the CDS rebuild flag
+*/
+void UT_SetCDSRebuild(boolean Truth)
+{
+    UT_CDS_Rebuild = Truth;
+}
+
+/*
 ** Set BSP time
 */
-void UT_SetBSP_Time(int seconds, int microsecs)
+void UT_SetBSP_Time(uint32 seconds, uint32 microsecs)
 {
     BSP_Time.seconds = seconds;
     BSP_Time.microsecs = microsecs;
@@ -684,7 +629,7 @@ void UT_DisplayPkt(CFE_SB_MsgPtr_t ptr, uint32 size)
 
     for (i = 0; i < size; i++)
     {
-        SNPRINTF(msgPtr, UT_MAX_MESSAGE_LENGTH, "%02x ", *BytePtr);
+        snprintf(msgPtr, UT_MAX_MESSAGE_LENGTH, "%02x ", *BytePtr);
         msgPtr += 3;
         BytePtr += delta;
     }
@@ -700,7 +645,7 @@ int16 UT_GetActualPktLenField(CFE_SB_MsgPtr_t MsgPtr)
 
     CCSDS_PriHdr_t *Ptr;
 
-    Ptr = (CCSDS_PriHdr_t *)MsgPtr;
+    Ptr = (CCSDS_PriHdr_t *) MsgPtr;
 
     return (Ptr->Length[0] << 8) + Ptr->Length[1];
 
@@ -711,52 +656,90 @@ int16 UT_GetActualPktLenField(CFE_SB_MsgPtr_t MsgPtr)
 */
 uint8 UT_GetActualCmdCodeField(CFE_SB_MsgPtr_t MsgPtr)
 {
-    /* Command code is the 7 LSBs of the 7th byte in the packet */
-    CFE_SB_CmdHdr_t *CmdHdrPtr;
+    /*
+     * CFE 6.4.0 tried to make all headers big-endian.
+     * CFE 6.4.1 made secondary headers native-endian again.
+     *
+     * This function is used to "go around" the structure field
+     * definitions and access macro definitions, to look for the
+     * bits of the function code in the exact spot where we are
+     * expecting to find them.
+     *
+     * The CCSDS Command Function Code is defined as living in
+     * bits 8 through 14 (mask 0x7F00) of the 16-bit unsigned
+     * value encoded in NATIVE endianness in the two bytes
+     * stored at offsets 6 and 7 in the packet.
+     */
 
-    CmdHdrPtr = (CFE_SB_CmdHdr_t *)MsgPtr;
+    uint16 *w = (uint16 *)MsgPtr;
 
-    return CmdHdrPtr->Sec.Fc & 0x7F;
+    return (w[3] & 0x7F00) >> 8;
 }
 
 /*
-** Report and close any sockets found open
+** Compare two strings.  The tilde (~) is used as a wildcard in the second
+** string and is considered to match the associated numeric character(s) in the
+** first string (includes hexadecimal values).  Returns FALSE (0) if the
+** strings do not match; otherwise returns TRUE (1)
 */
-void UT_CheckForOpenSockets(void)
+uint8 UT_strcmp(char *str1, char *str2)
 {
-    int i;
-    int InUse = 0;
+    char *ptr1, *ptr2;
+    int stringsMismatch = TRUE;
 
-    for (i = 0; i < OS_MAX_QUEUES; i++)
+    /* Step through each character in both strings */
+    for (ptr1 = str1, ptr2 = str2;
+         *ptr1 != '\0' && *ptr2 != '\0';
+         ptr1++, ptr2++)
     {
-        if (UT_Queue[i].free == FALSE)
+        /* Check if the characters don't match */
+        if (*ptr1 != *ptr2)
         {
-            InUse++;
-#ifdef UT_VERBOSE
-            SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
-                     "  UT_Queue[%d].%s left open. ID=%d",
-                     i, UT_Queue[i].name, UT_Queue[i].id);
-            UT_Text(cMsg);
-#ifdef SOCKET_QUEUE
-            SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
-                     "   Closing socket ID %d, close returned %d",
-                     UT_Queue[i].id, close(UT_Queue[i].id));
-            UT_Text(cMsg);
-#endif
-#endif
+            /* Check if string 2's character is a wildcard character */
+            if (*ptr2 == '~')
+            {
+                /* Check if string 1's character is a number (including
+                 * hexadecimal)
+                 */
+                if (isHex(*ptr1))
+                {
+                    /* Continue to check if the next character in string 1 is a
+                     * number.  Leave the pointer at the last numeric character
+                     */
+                    while (isHex(*(ptr1 + 1)))
+                    {
+                        /* Increment string 1's pointer */
+                        ptr1++;
+                    }
 
-            /* Clean up same as OS_QueueDelete stub */
-            UT_Queue[i].free = TRUE;
-            strcpy(UT_Queue[i].name, "");
-            UT_Queue[i].id = 0;
+                    /* Skip past consecutive wildcard characters in string 2 */
+                    while (*(ptr2 + 1) == '~')
+                    {
+                        ptr2++;
+                    }
+                }
+                /* No number to match with the wildcard character */
+                else
+                {
+                    /* Exit the loop (indicates a mismatch) */
+                    break;
+                }
+            }
+            /* Not a wildcard character to match to a number */
+            else
+            {
+                /* Exit the loop (indicates a mismatch) */
+                break;
+            }
         }
     }
 
-#ifdef UT_VERBOSE
-    if (InUse > 0)
+    /* Check if the end of both strings was reached */
+    if (*ptr1 == '\0' && *ptr2 == '\0')
     {
-        SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH, "%d socket(s) open", InUse);
-        UT_Text(cMsg);
+        /* Comparison completed without a mismatch */
+        stringsMismatch = FALSE;
     }
-#endif
+
+    return stringsMismatch;
 }

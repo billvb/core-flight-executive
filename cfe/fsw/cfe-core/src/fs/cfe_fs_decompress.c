@@ -67,99 +67,99 @@
 **                real time performance if an application blocks while another is in the API.
 **               
 */
-int        srcFile_fd;
-int        dstFile_fd;
+CFE_FS_Decompress_State_t CFE_FS_Decompress_State_NR;
 
-uint32     gz_bb;
-uint32     gz_bk;
-uint32     gz_outcnt;
-uint32     gz_insize;
-uint32     gz_inptr;
-int32      gz_bytes_in;
-int32      gz_bytes_out;
-
-int32      gGuzError;
-
-uint8      gz_inbuf[ INBUFSIZ_EXTRA ];
-uint8      gz_outbuf[ OUTBUFSIZ_EXTRA ];
-uint8      gz_window[ WSIZE_X2 ];
-uint32     gz_hufts;
-uint32     gz_max_hufts;
-uint32     trace[ 3 ];
-
-HufTable   hufTable[ MAX_HUF_TABLES ];
+static uint32     trace[ 3 ];
 
 /*
 ** Code
 */
 
-int32 CFE_FS_Decompress( char * srcFileName, char * dstFileName )
+/* Main API entry point to decompress a file -
+ * Uses a global state buffer but protects the global by a mutex, so it may block if
+ * more than one thread tries to do this at any given time.
+ */
+int32 CFE_FS_Decompress( const char * srcFileName, const char * dstFileName )
 {
 
-   int32 guzerror;
+   int32 rc;
 
    /*
    ** Lock the API with the FS Mutex
    */
    CFE_FS_LockSharedData(__func__);
 
-   gGuzError = CFE_SUCCESS; /*Initialize this variable.  */
+   rc = CFE_FS_Decompress_Reentrant(&CFE_FS_Decompress_State_NR, srcFileName, dstFileName );
+
+   /*
+   ** Unlock FS Shared data mutex
+   */
+   CFE_FS_UnlockSharedData(__func__);
+
+   return rc;
+}
+
+
+int32 CFE_FS_Decompress_Reentrant(CFE_FS_Decompress_State_t *State, const char * srcFileName, const char * dstFileName )
+{
+
+   int32 guzerror;
+
+   State->Error = CFE_SUCCESS; /*Initialize this variable.  */
 
    /*
    ** initialize max number of Huffman tables allocated to zero 
    */
-   gz_max_hufts = 0;
+   State->max_hufts = 0;
 
    /*  
    ** Open input file 
    */
-   srcFile_fd = OS_open( srcFileName, OS_READ_ONLY, 0 );
+   State->srcFile_fd = OS_open( srcFileName, OS_READ_ONLY, 0 );
 
    /*
    ** if input file could not be opened, return cFE error code 
    */
-   if ( srcFile_fd < 0 ) 
+   if ( State->srcFile_fd < 0 )
    {
       CFE_ES_WriteToSysLog("CFE_FS_Decompress: Cannot open source file: %s\n",
                             srcFileName);
-      CFE_FS_UnlockSharedData(__func__);
       return (CFE_FS_GZIP_OPEN_INPUT);
    }
 
    /*
    ** open output file 
    */
-   dstFile_fd = OS_creat( dstFileName, OS_WRITE_ONLY);
+   State->dstFile_fd = OS_creat( dstFileName, OS_WRITE_ONLY);
 
    /*
    ** if output file could not be opened, return cFE error code
    */ 
-   if ( dstFile_fd < 0 ) 
+   if ( State->dstFile_fd < 0 )
    {
       CFE_ES_WriteToSysLog("CFE_FS_Decompress: Cannot open destination file: %s\n",
                             dstFileName);
 
       /* close the source file before bailing out */
-      OS_close( srcFile_fd );
+      OS_close( State->srcFile_fd );
 
-      CFE_FS_UnlockSharedData(__func__);
       return (CFE_FS_GZIP_OPEN_OUTPUT);
    }
 
-   CFE_PSP_MemSet( hufTable,  0, MAX_HUF_TABLES * sizeof(HufTable) ); 
-   CFE_PSP_MemSet( gz_window, 0, WSIZE_X2 ); 
+   CFE_PSP_MemSet( State->hufTable,  0, MAX_HUF_TABLES * sizeof(HufTable) );
+   CFE_PSP_MemSet( State->window, 0, WSIZE_X2 );
    CFE_PSP_MemSet( trace,     0, 3 * sizeof(uint32) ); 
 		
    /* 
    ** uncompress the file 
    */
-   guzerror = FS_gz_unzip();
+   guzerror = FS_gz_unzip_Reentrant(State);
 
    /* 
    ** close input and output files 
    */
-   OS_close( dstFile_fd );
-   OS_close( srcFile_fd );
+   OS_close( State->dstFile_fd );
+   OS_close( State->srcFile_fd );
 
    /* 
    ** delete output file after error
@@ -169,10 +169,6 @@ int32 CFE_FS_Decompress( char * srcFileName, char * dstFileName )
       OS_remove(dstFileName);
    }
 
-   /*
-   ** Unlock FS Shared data mutex
-   */
-   CFE_FS_UnlockSharedData(__func__);
 
    /* 
    ** return cFE error code
@@ -181,18 +177,18 @@ int32 CFE_FS_Decompress( char * srcFileName, char * dstFileName )
 }
 
 
-void FS_gz_clear_bufs( void )
+void FS_gz_clear_bufs_Reentrant( CFE_FS_Decompress_State_t *State )
 {
-	gz_outcnt = 0;
-	gz_insize = 0;
-	gz_inptr  = 0;
+	State->outcnt = 0;
+	State->insize = 0;
+	State->inptr  = 0;
 
-	gz_bytes_in  = 0L;
-	gz_bytes_out = 0L;
+	State->bytes_in  = 0L;
+	State->bytes_out = 0L;
 }
 
 
-int32 FS_gz_eat_header( void )
+int32 FS_gz_eat_header_Reentrant( CFE_FS_Decompress_State_t *State )
 {
 	uint8   flags;                  /* compression flags */
 	int8    magic[2];               /* magic header      */
@@ -202,50 +198,50 @@ int32 FS_gz_eat_header( void )
 
 	/*  read input buffer (check for read error) */
 	magic[0] = (int8)NEXTBYTE();
-	if( gGuzError != CFE_SUCCESS ) return CFE_FS_GZIP_READ_ERROR_HEADER;
+	if( State->Error != CFE_SUCCESS ) return CFE_FS_GZIP_READ_ERROR_HEADER;
 
 	magic[1] = (int8)NEXTBYTE();
-	if ( gGuzError != CFE_SUCCESS ) return CFE_FS_GZIP_READ_ERROR_HEADER;
+	if ( State->Error != CFE_SUCCESS ) return CFE_FS_GZIP_READ_ERROR_HEADER;
 
 	if ( memcmp( magic, GZIP_MAGIC, 2 ) == 0 || memcmp( magic, OLD_GZIP_MAGIC, 2 ) == 0 ) 
    {
 		
 		NEXTBYTE();
-		if ( gGuzError != CFE_SUCCESS ) return CFE_FS_GZIP_READ_ERROR_HEADER;
+		if ( State->Error != CFE_SUCCESS ) return CFE_FS_GZIP_READ_ERROR_HEADER;
 		
 		flags = NEXTBYTE();
-		if ( gGuzError != CFE_SUCCESS ) return CFE_FS_GZIP_READ_ERROR_HEADER;
+		if ( State->Error != CFE_SUCCESS ) return CFE_FS_GZIP_READ_ERROR_HEADER;
 		
 		stamp  = (uint32)NEXTBYTE();
-		if( gGuzError != CFE_SUCCESS ) return CFE_FS_GZIP_READ_ERROR_HEADER;
+		if( State->Error != CFE_SUCCESS ) return CFE_FS_GZIP_READ_ERROR_HEADER;
 		stamp |= (uint32)NEXTBYTE() <<  8;
-		if( gGuzError != CFE_SUCCESS ) return CFE_FS_GZIP_READ_ERROR_HEADER;
+		if( State->Error != CFE_SUCCESS ) return CFE_FS_GZIP_READ_ERROR_HEADER;
 		stamp |= (uint32)NEXTBYTE() << 16;
-		if( gGuzError != CFE_SUCCESS ) return CFE_FS_GZIP_READ_ERROR_HEADER;
+		if( State->Error != CFE_SUCCESS ) return CFE_FS_GZIP_READ_ERROR_HEADER;
 		stamp |= (uint32)NEXTBYTE() << 24;
-		if( gGuzError != CFE_SUCCESS ) return CFE_FS_GZIP_READ_ERROR_HEADER;
+		if( State->Error != CFE_SUCCESS ) return CFE_FS_GZIP_READ_ERROR_HEADER;
 		
 		NEXTBYTE();		/* Ignore extra flags for the moment */
-		if( gGuzError != CFE_SUCCESS ) return CFE_FS_GZIP_READ_ERROR_HEADER;
+		if( State->Error != CFE_SUCCESS ) return CFE_FS_GZIP_READ_ERROR_HEADER;
 		NEXTBYTE();		/* Ignore OS type for the moment */ 
-		if( gGuzError != CFE_SUCCESS ) return CFE_FS_GZIP_READ_ERROR_HEADER;
+		if( State->Error != CFE_SUCCESS ) return CFE_FS_GZIP_READ_ERROR_HEADER;
 		
 		if ( (flags & CONTINUATION) != 0 ) {
 			NEXTBYTE();
-			if( gGuzError != CFE_SUCCESS ) return CFE_FS_GZIP_READ_ERROR_HEADER; 
+			if( State->Error != CFE_SUCCESS ) return CFE_FS_GZIP_READ_ERROR_HEADER;
 			NEXTBYTE();
-			if( gGuzError != CFE_SUCCESS ) return CFE_FS_GZIP_READ_ERROR_HEADER;
+			if( State->Error != CFE_SUCCESS ) return CFE_FS_GZIP_READ_ERROR_HEADER;
 		}
 		
 		if ( (flags & EXTRA_FIELD) != 0 ) {
 			uint32 len;
 			len  = NEXTBYTE();
-			if( gGuzError != CFE_SUCCESS ) return CFE_FS_GZIP_READ_ERROR_HEADER;
+			if( State->Error != CFE_SUCCESS ) return CFE_FS_GZIP_READ_ERROR_HEADER;
 			len |= NEXTBYTE() << 8;
-			if( gGuzError != CFE_SUCCESS ) return CFE_FS_GZIP_READ_ERROR_HEADER;
+			if( State->Error != CFE_SUCCESS ) return CFE_FS_GZIP_READ_ERROR_HEADER;
 			while (len--) {
 				NEXTBYTE();
-				if( gGuzError != CFE_SUCCESS ) return CFE_FS_GZIP_READ_ERROR_HEADER;
+				if( State->Error != CFE_SUCCESS ) return CFE_FS_GZIP_READ_ERROR_HEADER;
 			}
 		}
 		
@@ -258,7 +254,7 @@ int32 FS_gz_eat_header( void )
 				thisByte = NEXTBYTE();
 
 				/* Header failure when end of file is reached or a read failure occurs */
-				if ((thisByte == EOF) || (gGuzError != CFE_SUCCESS)) return CFE_FS_GZIP_READ_ERROR_HEADER;
+				if ((thisByte == EOF) || (State->Error != CFE_SUCCESS)) return CFE_FS_GZIP_READ_ERROR_HEADER;
 
 				/* End of string was found */
 				if (thisByte == 0) keep_going = FALSE;
@@ -274,7 +270,7 @@ int32 FS_gz_eat_header( void )
 				thisByte = NEXTBYTE();
 
 				/* Header failure when end of file is reached or a read failure occurs */
-				if ((thisByte == EOF) || (gGuzError != CFE_SUCCESS)) return CFE_FS_GZIP_READ_ERROR_HEADER;
+				if ((thisByte == EOF) || (State->Error != CFE_SUCCESS)) return CFE_FS_GZIP_READ_ERROR_HEADER;
 
 				/* End of string was found */
 				if (thisByte == 0) keep_going = FALSE;
@@ -283,78 +279,78 @@ int32 FS_gz_eat_header( void )
 	}
 	else
 	{
-		gGuzError = CFE_FS_GZIP_NON_ZIP_FILE;
+		State->Error = CFE_FS_GZIP_NON_ZIP_FILE;
 	}
 
-	return gGuzError;
+	return State->Error;
 }
 
 /*
 ** Fill the input buffer. This is called only when the buffer is empty. 
 */
-int16 FS_gz_fill_inbuf( void )
+int16 FS_gz_fill_inbuf_Reentrant( CFE_FS_Decompress_State_t *State )
 {
 	int32 len;
 
 	/*  Read as much as possible */
-	gz_insize = 0;
+	State->insize = 0;
 
 	do 
    {
-		len = OS_read( srcFile_fd, (int8*)gz_inbuf + gz_insize, INBUFSIZ - gz_insize );
+		len = OS_read( State->srcFile_fd, (int8*)State->inbuf + State->insize, INBUFSIZ - State->insize );
 		
 		if ( len == 0 || len == EOF || len == OS_FS_ERROR ) break;
 		
-		gz_insize += len;
+		State->insize += len;
 		
-	} while ( gz_insize < INBUFSIZ );
+	} while ( State->insize < INBUFSIZ );
 
 
-	if ( gz_insize == 0 ) return EOF;
+	if ( State->insize == 0 ) return EOF;
 
 	if ( len == OS_FS_ERROR ) 
    {
-		gGuzError = CFE_FS_GZIP_READ_ERROR;
+		State->Error = CFE_FS_GZIP_READ_ERROR;
 		return EOF;
 	}
 
-	gz_bytes_in += (uint32)gz_insize;
-	gz_inptr = 1;
+	State->bytes_in += (uint32)State->insize;
+	State->inptr = 1;
 
-	return gz_inbuf[0];
+	return State->inbuf[0];
 }
 
 
-/*  Write the output window window[0..gz_outcnt-1] and update crc and */
-/*   gz_bytes_out. (Used for the decompressed data only.) */
-/*  merged original gz_flush_window & gz_write_buf together - glw */
+/*  Write the output window window[0..State->outcnt-1] and update crc and */
+/*   State->bytes_out. (Used for the decompressed data only.) */
+/*  merged original State->flush_window & State->write_buf together - glw */
 /* fix for infinite loop when file store is full -dds */
-void FS_gz_flush_window( void )
+void FS_gz_flush_window_Reentrant( CFE_FS_Decompress_State_t *State )
 {
 
-	int  n;
+	int32  n;
 	uint32  cnt;
 	uint8   *gz_window_position;
 
-	if ( gz_outcnt == 0 ) return;
+	if ( State->outcnt == 0 ) return;
 
-	FS_gz_updcrc( gz_window, gz_outcnt );
+	FS_gz_updcrc( State->window, State->outcnt );
 
-	cnt = gz_outcnt;
-	gz_window_position = gz_window;
+	cnt = State->outcnt;
+	gz_window_position = State->window;
 
-	while ( gGuzError != CFE_FS_GZIP_WRITE_ERROR  &&
-		    ( n = OS_write(dstFile_fd, (int8 *)gz_window_position, cnt) ) != cnt )
+	while ( State->Error != CFE_FS_GZIP_WRITE_ERROR  &&
+		    ( n = OS_write(State->dstFile_fd, (int8 *)gz_window_position, cnt) ) != cnt )
 	{ 
-		if ( n <= 0 ) gGuzError = CFE_FS_GZIP_WRITE_ERROR;
+		if ( n <= 0 ) State->Error = CFE_FS_GZIP_WRITE_ERROR;
 		
 		cnt -= n;
 		gz_window_position += n;
 	}
 
-	gz_bytes_out += (uint32)gz_outcnt;
+	State->bytes_out += (uint32)State->outcnt;
 
-	gz_outcnt = 0;
+	State->outcnt = 0;
 }
 
 
@@ -372,7 +368,7 @@ void FS_gz_flush_window( void )
 /*	uint16    *e;       */            /* list of extra bits for non-simple codes    */
 /*	int32     *m;       */            /* maximum lookup bits, returns actual        */
 
-int32 FS_gz_huft_build( uint32 * b, uint32 n, uint32 s, uint16 * d, uint16 * e, int32 * m )
+int32 FS_gz_huft_build_Reentrant( CFE_FS_Decompress_State_t *State, uint32 * b, uint32 n, uint32 s, uint16 * d, uint16 * e, int32 * m )
 {
 
 	uint32  a;              /* counter for codes of length k        */
@@ -399,6 +395,7 @@ int32 FS_gz_huft_build( uint32 * b, uint32 n, uint32 s, uint16 * d, uint16 * e, 
 	uint32 huft_index_q;
 	uint32 huft_index_t = 0;
 	boolean   not_first_table = FALSE;
+	huft_index_t = 0;
 
 	/*  Generate counts for each bit length  */
 	CFE_PSP_MemSet( (void*)(c), 0, sizeof(c) );
@@ -499,18 +496,18 @@ int32 FS_gz_huft_build( uint32 * b, uint32 n, uint32 s, uint16 * d, uint16 * e, 
 				z = 1 << j;                           /* table entries for j-bit table   */
 				
 				/*        if space remains in the Huffman table memory array, "allocate" and link in new table */
-				if ( gz_hufts + (z + 1) > MAX_HUF_TABLES ) return CFE_FS_GZIP_NO_MEMORY;
+				if ( State->hufts + (z + 1) > MAX_HUF_TABLES ) return CFE_FS_GZIP_NO_MEMORY;
 				
-				q = &hufTable[gz_hufts];
-				huft_index_q = gz_hufts;
-				gz_hufts += z + 1; 
-				if ( gz_hufts > gz_max_hufts ) gz_max_hufts = gz_hufts;
+				q = &State->hufTable[State->hufts];
+				huft_index_q = State->hufts;
+				State->hufts += z + 1;
+				if ( State->hufts > State->max_hufts ) State->max_hufts = State->hufts;
 				
-				if ( not_first_table ) hufTable[huft_index_t].v.t = huft_index_q + 1;
+				if ( not_first_table ) State->hufTable[huft_index_t].v.t = huft_index_q + 1;
 				else                   not_first_table = TRUE;
 				
 				huft_index_t = huft_index_q;
-				hufTable[huft_index_t].v.t = 0xffff;               /* stand-in for NULL */
+				State->hufTable[huft_index_t].v.t = 0xffff;               /* stand-in for NULL */
 				
 				u[h] = ++q;		                        /* table starts after link */
 				huft_index_q++;
@@ -580,32 +577,32 @@ int32 FS_gz_huft_build( uint32 * b, uint32 n, uint32 s, uint16 * d, uint16 * e, 
 
 
 
-int32 FS_gz_inflate( void )
+int32 FS_gz_inflate_Reentrant( CFE_FS_Decompress_State_t *State )
 {
 
 	int32           e;        /* last block flag */
 	int32   r;        /* result code     */
 
 	/*  initialize window, bit buffer */
-	gz_outcnt = 0;
-	gz_bk     = 0;
-	gz_bb     = 0;
+	State->outcnt = 0;
+	State->bk     = 0;
+	State->bb     = 0;
 
 	/*  decompress until the last block */
 	do {
-		r = FS_gz_inflate_block(&e);
+		r = FS_gz_inflate_block_Reentrant( State, &e);
 		if ( r != CFE_SUCCESS ) return r;
 	} while (!e);
 
 	/*  Undo too much lookahead. The next read will be byte aligned so we can */
 	/*  discard unused bits in the last meaningful byte. */
-	while ( gz_bk >= 8 ) {
-		gz_bk -= 8;
-		gz_inptr--;
+	while ( State->bk >= 8 ) {
+		State->bk -= 8;
+		State->inptr--;
 	}
 
 	/*  flush out sliding window */
-	FS_gz_flush_window();
+	FS_gz_flush_window_Reentrant(State);
 
 	/*  return success */
 	return CFE_SUCCESS;
@@ -616,7 +613,7 @@ int32 FS_gz_inflate( void )
 /*  
 ** decompress an inflated block 
 */
-int32 FS_gz_inflate_block( int32 * e )
+int32 FS_gz_inflate_block_Reentrant( CFE_FS_Decompress_State_t *State, int32 * e )
 {
 
 	uint32  t;          /* block type */
@@ -626,8 +623,8 @@ int32 FS_gz_inflate_block( int32 * e )
 	int32 res;
 
 	/*  make local bit buffer */
-	b = gz_bb;
-	k = gz_bk;
+	b = State->bb;
+	k = State->bk;
 
 	/*  read in last block bit */
 	NEEDBITS(1)
@@ -642,14 +639,14 @@ int32 FS_gz_inflate_block( int32 * e )
 
 
 	/*  restore the global bit buffer */
-	gz_bb = b;
-	gz_bk = k;
+	State->bb = b;
+	State->bk = k;
 
 
 	/*  inflate that block type */
-	if      ( t == 0 ) { res = FS_gz_inflate_stored();  trace[0]++; }  
-	else if ( t == 1 ) { res = FS_gz_inflate_fixed();   trace[1]++; }
-	else if ( t == 2 ) { res = FS_gz_inflate_dynamic(); trace[2]++; }
+	if      ( t == 0 ) { res = FS_gz_inflate_stored_Reentrant(State);  trace[0]++; }
+	else if ( t == 1 ) { res = FS_gz_inflate_fixed_Reentrant(State);   trace[1]++; }
+	else if ( t == 2 ) { res = FS_gz_inflate_dynamic_Reentrant(State); trace[2]++; }
 
 	else               res = CFE_FS_GZIP_BAD_CODE_BLOCK;    
 
@@ -659,7 +656,7 @@ int32 FS_gz_inflate_block( int32 * e )
 
 /* Inflate (decompress) the codes in a deflated (compressed) block.  */
 /* Return an error code or zero if it all goes ok. */
-int32 FS_gz_inflate_codes( HufTable * tl, HufTable * td, int32 bl, int32 bd )
+int32 FS_gz_inflate_codes_Reentrant( CFE_FS_Decompress_State_t *State, HufTable * tl, HufTable * td, int32 bl, int32 bd )
 {
 
 	static uint16 mask_bits[] = {
@@ -680,9 +677,9 @@ int32 FS_gz_inflate_codes( HufTable * tl, HufTable * td, int32 bl, int32 bd )
 	uint32 index;
 
 	/*  make local copies of globals  */
-	b = gz_bb;					/* initialize bit buffer */
-	k = gz_bk;
-	w = gz_outcnt;				/* initialize window position */ 
+	b = State->bb;					/* initialize bit buffer */
+	k = State->bk;
+	w = State->outcnt;				/* initialize window position */
 
 	/*  inflate the coded data */
 	ml = mask_bits[bl];			/* precompute masks for speed */
@@ -703,8 +700,8 @@ int32 FS_gz_inflate_codes( HufTable * tl, HufTable * td, int32 bl, int32 bd )
               e -= 16;
 				  NEEDBITS(e);
               index = t->v.t + ( (uint32)b & mask_bits[e] );
-				  if ( index >= 0  &&  index < gz_hufts ) 
-                 t = &( hufTable[index] );
+				  if ( index >= 0  &&  index < State->hufts )
+                 t = &( State->hufTable[index] );
 				  else  
                  return CFE_FS_GZIP_INDEX_ERROR;
 				  e = t->e;
@@ -717,11 +714,11 @@ int32 FS_gz_inflate_codes( HufTable * tl, HufTable * td, int32 bl, int32 bd )
       {                 /* then it's a literal */
 				
          /* gz_window[w++] = (uint8)(t->n); */
-         gz_window[w++] = (uint8)(t->v.n);
+         State->window[w++] = (uint8)(t->v.n);
          if ( w == WSIZE ) 
          {
-            gz_outcnt = w;
-            FS_gz_flush_window();
+            State->outcnt = w;
+            FS_gz_flush_window_Reentrant(State);
             w = 0;
          }
 				
@@ -750,8 +747,8 @@ int32 FS_gz_inflate_codes( HufTable * tl, HufTable * td, int32 bl, int32 bd )
                e -= 16;
                NEEDBITS(e);
                index = t->v.t + ( (uint32)b & mask_bits[e] );
-               if ( index >= 0  &&  index < gz_hufts ) 
-                  t = &( hufTable[index] );
+               if ( index >= 0  &&  index < State->hufts )
+                  t = &( State->hufTable[index] );
                else  
                   return CFE_FS_GZIP_INDEX_ERROR;
                e = t->e;
@@ -775,7 +772,7 @@ int32 FS_gz_inflate_codes( HufTable * tl, HufTable * td, int32 bl, int32 bd )
             if ( w - d >= e ) 
             { /* (this test assumes unsigned comparison) */
 							
-               memcpy( gz_window + w, gz_window + d, e );
+               memcpy( State->window + w, State->window + d, e );
                w += e;
                d += e;
 							
@@ -785,15 +782,15 @@ int32 FS_gz_inflate_codes( HufTable * tl, HufTable * td, int32 bl, int32 bd )
 							
                do 
                {
-                  gz_window[w++] = gz_window[d++];
+                  State->window[w++] = State->window[d++];
                } while (--e);
 							
             }
 						
             if ( w == WSIZE ) 
             {
-               gz_outcnt = w;
-               FS_gz_flush_window();
+               State->outcnt = w;
+               FS_gz_flush_window_Reentrant(State);
                w = 0;
             }
 						
@@ -804,9 +801,9 @@ int32 FS_gz_inflate_codes( HufTable * tl, HufTable * td, int32 bl, int32 bd )
    }
 
 	/*  restore the globals from the locals */
-	gz_outcnt = w;				/* restore global window pointer */
-	gz_bb = b;					/* restore global bit buffer */
-	gz_bk = k;
+	State->outcnt = w;				/* restore global window pointer */
+	State->bb = b;					/* restore global bit buffer */
+	State->bk = k;
 
 	return CFE_SUCCESS;
 }
@@ -815,7 +812,7 @@ int32 FS_gz_inflate_codes( HufTable * tl, HufTable * td, int32 bl, int32 bd )
 ** removed gz_huft_free, no longer needed - glw 
 ** -- decompress an inflated type 2 (dynamic Huffman codes) block. 
 */
-int32 FS_gz_inflate_dynamic( void )
+int32 FS_gz_inflate_dynamic_Reentrant( CFE_FS_Decompress_State_t *State )
 {
 
 	static int32 lbits = 9;      /* bits in base literal/length lookup table */
@@ -878,8 +875,8 @@ int32 FS_gz_inflate_dynamic( void )
 	int32 error_code;
 
 	/*  make local bit buffer */
-	b = gz_bb;
-	k = gz_bk;
+	b = State->bb;
+	k = State->bk;
 
 	/*  read in table lengths */ 
 	NEEDBITS(5);
@@ -906,9 +903,9 @@ int32 FS_gz_inflate_dynamic( void )
 
 	/*  build decoding table for trees--single level, 7 bit lookup  */
 	bl = 7;
-	gz_hufts = 0;             /* initialize Huff Table memory */
-	tl = &hufTable[1];        /* set known position given alloc removed - glw */
-	error_code = FS_gz_huft_build( ll, 19, 19, (uint16 *)NULL, (uint16 *)NULL, &bl );
+	State->hufts = 0;             /* initialize Huff Table memory */
+	tl = &State->hufTable[1];        /* set known position given alloc removed - glw */
+	error_code = FS_gz_huft_build_Reentrant(State, ll, 19, 19, (uint16 *)NULL, (uint16 *)NULL, &bl );
 	if ( error_code != CFE_SUCCESS )  return error_code; 
 
 	/*  read in literal and distance code lengths */
@@ -955,23 +952,23 @@ int32 FS_gz_inflate_dynamic( void )
 	}
 
 	/*  restore the global bit buffer  */
-	gz_bb = b;
-	gz_bk = k;
+	State->bb = b;
+	State->bk = k;
 
 	/*  build the decoding tables for literal/length and distance codes */
 	bl = lbits;
-	gz_hufts = 0;                 /* initialize Huff Table memory */
-	tl = &hufTable[1];            /* set known position given alloc removed - glw */
-	error_code = FS_gz_huft_build( ll, nl, 257, cplens, cplext, &bl );
+	State->hufts = 0;                 /* initialize Huff Table memory */
+	tl = &State->hufTable[1];            /* set known position given alloc removed - glw */
+	error_code = FS_gz_huft_build_Reentrant(State, ll, nl, 257, cplens, cplext, &bl );
 	if ( error_code != CFE_SUCCESS ) return error_code;
 
 	bd = dbits;
-	td = &hufTable[gz_hufts+1];   /* set known position given alloc removed - glw */
-	error_code = FS_gz_huft_build( ll + nl, nd, 0, cpdist, cpdext, &bd );
+	td = &State->hufTable[State->hufts+1];   /* set known position given alloc removed - glw */
+	error_code = FS_gz_huft_build_Reentrant(State, ll + nl, nd, 0, cpdist, cpdext, &bd );
 	if ( error_code != CFE_SUCCESS ) return error_code;
 
 	/*  decompress until an end-of-block code */
-	error_code = FS_gz_inflate_codes( tl, td, bl, bd );
+	error_code = FS_gz_inflate_codes_Reentrant(State, tl, td, bl, bd );
    
 	return error_code;
 }
@@ -982,7 +979,7 @@ int32 FS_gz_inflate_dynamic( void )
 /*  or at least precompute the Huffman tables. */
 
 /* removed gz_huft_free, no longer needed - glw */
-int32 FS_gz_inflate_fixed( void )
+int32 FS_gz_inflate_fixed_Reentrant( CFE_FS_Decompress_State_t *State )
 {
 	/*  Copy lengths for literal codes 257..285 */
 	static uint16 cplens[] = {
@@ -1025,22 +1022,22 @@ int32 FS_gz_inflate_fixed( void )
 	for (; i < 288; i++)      l[i] = 8;       /* make a complete, but wrong code set */
 
 	bl = 7;
-	gz_hufts = 0;              /* initialize huff table "allocation" position  */
-	tl = &hufTable[1];         /* set known position given alloc removed - glw */
-	error_code = FS_gz_huft_build( l, 288, 257, cplens, cplext, &bl );
+	State->hufts = 0;              /* initialize huff table "allocation" position  */
+	tl = &State->hufTable[1];         /* set known position given alloc removed - glw */
+	error_code = FS_gz_huft_build_Reentrant(State, l, 288, 257, cplens, cplext, &bl );
 
 	if ( error_code != CFE_SUCCESS ) return error_code;
 
 	/*  set up distance table */
 	for ( i = 0; i < 30; i++ ) l[i] = 5;      /* make an incomplete code set */
 	bd = 5;
-	td = &hufTable[gz_hufts+1];               /* set known position given alloc removed - glw */
-	error_code = FS_gz_huft_build( l, 30, 0, cpdist, cpdext, &bd );
+	td = &State->hufTable[State->hufts+1];               /* set known position given alloc removed - glw */
+	error_code = FS_gz_huft_build_Reentrant(State, l, 30, 0, cpdist, cpdext, &bd );
 
 	if ( error_code != CFE_SUCCESS && error_code != CFE_FS_GZIP_BAD_DATA ) return error_code;
 	/*  --- seems odd that BAD DATA is let through, but original did so --- */
 	/*  decompress until an end-of-block code  */
-	error_code = FS_gz_inflate_codes( tl, td, bl, bd );
+	error_code = FS_gz_inflate_codes_Reentrant(State, tl, td, bl, bd );
 
 	return error_code;
 
@@ -1049,7 +1046,7 @@ int32 FS_gz_inflate_fixed( void )
 /* 
 ** "decompress" an inflated type 0 (stored) block. 
 */
-int32 FS_gz_inflate_stored( void )
+int32 FS_gz_inflate_stored_Reentrant( CFE_FS_Decompress_State_t *State )
 {
 
 	uint32          n;     /* number of bytes in block */
@@ -1059,9 +1056,9 @@ int32 FS_gz_inflate_stored( void )
 
 
 	/*  make local copies of globals */
-	b = gz_bb;             /* initialize bit buffer */
-	k = gz_bk;
-	w = gz_outcnt;         /* initialize window position */
+	b = State->bb;             /* initialize bit buffer */
+	k = State->bk;
+	w = State->outcnt;         /* initialize window position */
 
 
 	/*  go to byte boundary */
@@ -1082,20 +1079,20 @@ int32 FS_gz_inflate_stored( void )
 	while (n--) 
    {
 		NEEDBITS(8);
-      gz_window[w++] = (uint8)b;
+      State->window[w++] = (uint8)b;
 		if ( w == WSIZE ) 
       {
-	        gz_outcnt = w;
-	        FS_gz_flush_window();
+	        State->outcnt = w;
+	        FS_gz_flush_window_Reentrant(State);
 	        w = 0;
 		}
 		DUMPBITS(8);
 	}
 
 	/*  restore the globals from the locals */
-	gz_outcnt = w;					/* restore global window pointer */
-	gz_bb     = b;					/* restore global bit buffer */
-	gz_bk     = k;
+	State->outcnt = w;					/* restore global window pointer */
+	State->bb     = b;					/* restore global bit buffer */
+	State->bk     = k;
 
 	return CFE_SUCCESS;
 
@@ -1105,13 +1102,13 @@ int32 FS_gz_inflate_stored( void )
 /* > merged original gunzip & unzip into a single routine */
 /* > replaced Read & Write indirection */
 
-int32 FS_gz_unzip( void )
+int32 FS_gz_unzip_Reentrant( CFE_FS_Decompress_State_t *State )
 {
 	/*  -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- */
 	/*  Unzip in to out.  This routine works on both gzip files. */
 
-	/*  IN assertions: the buffer gz_inbuf contains already the beginning of the */
-	/*   compressed data, from offsets gz_inptr to gz_insize-1 included. The magic */
+	/*  IN assertions: the buffer State->inbuf contains already the beginning of the */
+	/*   compressed data, from offsets State->inptr to State->insize-1 included. The magic */
 	/*   header has already been checked. The output buffer is cleared. */
 
 	int32          guzerror;
@@ -1121,16 +1118,16 @@ int32 FS_gz_unzip( void )
 	uint8          buf[EXTHDR];         /* extended local header */
 	int32          res;
 
-	FS_gz_clear_bufs();
+	FS_gz_clear_bufs_Reentrant(State);
 
 	/*  Snarf up the header for the zip file, check for read error */
-	guzerror = FS_gz_eat_header();
+	guzerror = FS_gz_eat_header_Reentrant(State);
 
 	if( guzerror != CFE_SUCCESS ) return guzerror;
 
 	FS_gz_updcrc(NULL, 0);	                /* initialize crc */
 
-	res = FS_gz_inflate();
+	res = FS_gz_inflate_Reentrant(State);
 
 	if ( res != CFE_SUCCESS ) return res;
 
@@ -1139,14 +1136,14 @@ int32 FS_gz_unzip( void )
 	for ( n = 0; n < 8; n++ ) 
    {
 		buf[n] = NEXTBYTE();      
-		if ( gGuzError != CFE_SUCCESS ) return gGuzError;
+		if ( State->Error != CFE_SUCCESS ) return State->Error;
 	}
 	orig_crc = LG(buf);
 	orig_len = LG(buf + 4);
 
 	/*  Validate decompression */
-	if ( orig_crc != FS_gz_updcrc( gz_outbuf, 0 ) ) return CFE_FS_GZIP_CRC_ERROR;
-	if ( orig_len != (uint32)gz_bytes_out )      return CFE_FS_GZIP_LENGTH_ERROR;
+	if ( orig_crc != FS_gz_updcrc( State->outbuf, 0 ) ) return CFE_FS_GZIP_CRC_ERROR;
+	if ( orig_len != (uint32)State->bytes_out )      return CFE_FS_GZIP_LENGTH_ERROR;
 
 	return CFE_SUCCESS;
 

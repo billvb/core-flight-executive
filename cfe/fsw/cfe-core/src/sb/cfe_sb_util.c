@@ -631,3 +631,107 @@ boolean CFE_SB_ValidateChecksum(CFE_SB_MsgPtr_t MsgPtr)
 #endif
 }/* end CFE_SB_ValidateChecksum */
 
+
+/******************************************************************************
+**  Function:  CFE_SB_MessageStringGet()
+**
+**  See function prototype for full description
+**
+**  UNIT TESTING NOTE:
+**    During unit testing, the "stub" version of this function must
+**    also copy the string or all functions that depend on this will break.
+**
+**    Therefore this function is essentially duplicated in the UT code
+**
+*/
+int32 CFE_SB_MessageStringGet(char *DestStringPtr, const char *SourceStringPtr, const char *DefaultString, uint32 DestMaxSize, uint32 SourceMaxSize)
+{
+    int32 Result;
+
+    /*
+     * Error in caller if DestMaxSize == 0.
+     * Cannot terminate the string, since there is no place for the NUL
+     * In this case, do nothing
+     */
+    if (DestMaxSize == 0)
+    {
+        Result = CFE_SB_BAD_ARGUMENT;
+    }
+    else
+    {
+        Result = 0;
+
+        /*
+         * Check if should use the default, which is if
+         * the source string has zero length (first char is NUL).
+         */
+        if (DefaultString != NULL && (SourceMaxSize == 0 || *SourceStringPtr == 0))
+        {
+            SourceStringPtr = DefaultString;
+            SourceMaxSize = DestMaxSize;
+        }
+
+        /* Reserve 1 character for the required NUL */
+        --DestMaxSize;
+
+        while (SourceMaxSize > 0 && *SourceStringPtr != 0 && DestMaxSize > 0)
+        {
+            *DestStringPtr = *SourceStringPtr;
+            ++DestStringPtr;
+            ++SourceStringPtr;
+            --SourceMaxSize;
+            --DestMaxSize;
+
+            ++Result;
+        }
+
+        /* Put the NUL in the last character */
+        *DestStringPtr = 0;
+    }
+
+    return Result;
+}
+
+
+/******************************************************************************
+**  Function:  CFE_SB_MessageStringSet()
+**
+**  See function prototype for full description
+**
+**  UNIT TESTING NOTE:
+**    During unit testing, the "stub" version of this function must
+**    also copy the string or all functions that depend on this will break.
+**
+**    Therefore this function is essentially duplicated in the UT code
+**
+*/
+int32 CFE_SB_MessageStringSet(char *DestStringPtr, const char *SourceStringPtr, uint32 DestMaxSize, uint32 SourceMaxSize)
+{
+    int32 Result;
+
+    Result = 0;
+
+    while (SourceMaxSize > 0 && *SourceStringPtr != 0 && DestMaxSize > 0)
+    {
+        *DestStringPtr = *SourceStringPtr;
+        ++DestStringPtr;
+        ++SourceStringPtr;
+        ++Result;
+        --DestMaxSize;
+        --SourceMaxSize;
+    }
+
+    /*
+     * Pad the remaining space with NUL chars,
+     * but this should NOT be included in the final size
+     */
+    while (DestMaxSize > 0)
+    {
+        /* Put the NUL in the last character */
+        *DestStringPtr = 0;
+        ++DestStringPtr;
+        --DestMaxSize;
+    }
+
+    return Result;
+}

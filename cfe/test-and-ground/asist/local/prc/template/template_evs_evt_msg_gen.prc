@@ -188,6 +188,9 @@ PROC $sc_$cpu_evs_evt_msg_gen
 ;    07/31/07 Walt Moleski     Adding tests for Rqmts 3103.6, 3103.7 & 3100.3
 ;    11/01/11 Walt Moleski     Updating the requirements and proc to conform to
 ;			       other test procs.
+;    05/04/16  W. Moleski      Updated for 6.5.0 testing using CPU1 for
+;                              commanding and added a hostCPU variable for the
+;                              utility procs that connect to the host IP.
 ;*******************************************************************************;
 ;  Procedures/Utilities Called:
 ;         
@@ -307,6 +310,7 @@ global BinFMask = "Msk"
 global EvtBinFCtr = "Ctr"
 
 local ramDir = "RAM:0"
+local hostCPU = "$CPU"
  
 write ";***********************************************************************"
 write "; Step 0: Event Message Generation TEST SETUP"  
@@ -339,6 +343,9 @@ else
   write "<!> Failed - Could not enable Debug events."
 endif
 
+;; Get a list of the apps that are running
+start get_file_to_cvt (ramDir, "cfe_es_app_info.log", "$sc_$cpu_es_app_info.log", hostCPU)
+
 ;; Disable SCH Debug Events if SCH is running
 local SCHisRunning = FALSE
 local cmdexctr
@@ -364,11 +371,11 @@ write ";	   registered applications and no Test application information"
 write ";           since the application is not yet registered"
 write ";***********************************************************************"
 ; Get the current EVS Log 
-start get_file_to_cvt (ramDir, "cfe_evs.log", "011.log", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs.log", "011.log", hostCPU)
 wait 5
 
 ; Get the current EVS App Data
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "011.tst_appdat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "011.tst_appdat", hostCPU)
 wait 5
 
 write ";***********************************************************************"
@@ -401,7 +408,7 @@ write ";***********************************************************************"
 ; Setup the event to capture
 ut_setupevents $sc, $cpu, TST_EVS, TST_EVS_INIT_INF_EID, INFO, 1
 
-start load_start_app ("TST_EVS","$CPU") 
+start load_start_app ("TST_EVS",hostCPU) 
 wait 5
 
 ; Verify that the expected event was received
@@ -424,10 +431,10 @@ write ";***********************************************************************"
  
 EVS_total_msgs_sent = $sc_$cpu_EVS_MSGSENTC + 2
 
-start get_file_to_cvt (ramDir, "cfe_evs.log", "022.log", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs.log", "022.log", hostCPU)
 wait 5
 
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "022.tst_appdat", "$CPU" )
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "022.tst_appdat", hostCPU )
 wait 5
 
 write ";***********************************************************************"
@@ -511,10 +518,10 @@ write "; Step 1.2: Retrieve Local Event Log and Application Data to verify "
 write ";	   generation of event messages and that counters increment"
 write ";	   accordingly"
 write ";***********************************************************************"
-start get_file_to_cvt (ramDir, "cfe_evs.log", "101.log", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs.log", "101.log", hostCPU)
 wait 5
 
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "101.tst_appdat", "$CPU" )
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "101.tst_appdat", hostCPU )
 wait 5
 
 ; Verify increment of EVS evt msg sent ctr
@@ -566,7 +573,7 @@ write "; Step 1.3.5: Retrieve Application Data and verify Event Message Type "
 write ";	     Statuses."
 write ";***********************************************************************"
  
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "1141.tst_appdat", "$CPU" )
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "1141.tst_appdat", hostCPU )
 wait 5
 
 if (p@$SC_$CPU_EVS_AppData[added_app_location].EvtTypeAF.Debug = "DIS") AND ;;
@@ -601,10 +608,10 @@ write ";             verify that no evt msgs appear in the Local Evt Log and "
 write ";             the correct counter values exist."
 write ";***********************************************************************"
  
-start get_file_to_cvt (ramDir, "cfe_evs.log", "1143.log", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs.log", "1143.log", hostCPU)
 wait 5
 
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "1143.tst_appdat", "$CPU" )
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "1143.tst_appdat", hostCPU )
 wait 5
 
 EVS_total_msgs_sent  = EVS_total_msgs_sent + 7
@@ -655,7 +662,7 @@ write "; Step 1.4.4 Retrieve Application Data and verify that all evt msg "
 write ";            types are enabled "
 write ";***********************************************************************"
  
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "1241.tst_appdat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "1241.tst_appdat", hostCPU)
 wait 5
  
 write ";***********************************************************************"
@@ -693,10 +700,10 @@ write ";            that the messages were generated as requested and the "
 write ";	    respective counters increment properly. "
 write ";***********************************************************************"
  
-start get_file_to_cvt (ramDir, "cfe_evs.log", "1243.log", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs.log", "1243.log", hostCPU)
 wait 5
 
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "1243.tst_appdat", "$CPU" )
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "1243.tst_appdat", hostCPU )
 wait 5
  
 test_app_expected_counter = test_app_expected_counter + 8
@@ -734,7 +741,7 @@ write "; Step 2.3: Retrieve Stored Application Data to verify the change of "
 write ";	   binary filter masks"
 write ";***********************************************************************"
  
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "203.tst_appdat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "203.tst_appdat", hostCPU)
 wait 5
  
 write "Evt Msg  |  Bin Fltr  "
@@ -770,10 +777,10 @@ write ";	   is generated because the evt is not registered for filtering"
 write ";	   and therefore has no binary filter mask set."
 write ";***********************************************************************"
  
-start get_file_to_cvt (ramDir, "cfe_evs.log", "211.log", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs.log", "211.log", hostCPU)
 wait 5
 
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "211.tst_appdat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "211.tst_appdat", hostCPU)
 wait 5
 
 test_app_expected_counter = test_app_expected_counter + 20
@@ -810,7 +817,7 @@ write "; Step 2.6.3: Retrieve Stored Application Data to verify correct binary"
 write ";             filter mask changes."
 write ";***********************************************************************"
  
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "223.tst_appdat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "223.tst_appdat", hostCPU)
 wait 5
  
 write ";***********************************************************************"
@@ -843,11 +850,11 @@ write ";***********************************************************************"
 start $sc_$cpu_evs_gen_evts
 
 ; Get the Local Event Log
-start get_file_to_cvt (ramDir, "cfe_evs.log", "224.log", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs.log", "224.log", hostCPU)
 wait 5
 
 ; Get the application data
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "224.tst_appdat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "224.tst_appdat", hostCPU)
 wait 5
  
 test_app_expected_counter = test_app_expected_counter + 8
@@ -877,7 +884,7 @@ write "; Step 3.2: Retrieve the application information to verify that event "
 write ";          message generation has been disabled for TST_EVS."
 write ";***********************************************************************"
  
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "3011.tst_appdat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "3011.tst_appdat", hostCPU)
 wait 5
  
 if (p@$sc_$cpu_EVS_APP[added_app_location].APPENASTAT = "DIS") AND ;;
@@ -902,10 +909,10 @@ write ";	   since evt msg generation is Disabled."
 write ";***********************************************************************"
 start $sc_$cpu_evs_gen_no_evts
 
-start get_file_to_cvt (ramDir, "cfe_evs.log", "302.log", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs.log", "302.log", hostCPU)
 wait 5
 
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "302.tst_appdat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "302.tst_appdat", hostCPU)
 wait 5
  
 EVS_total_msgs_sent  = EVS_total_msgs_sent + 4
@@ -933,10 +940,10 @@ write "; Step 3.5: Retrieve Local Evt Log and Stored Application Data and "
 write ";           verify that event message generation status is correct"
 write ";***********************************************************************"
  
-start get_file_to_cvt (ramDir, "cfe_evs.log", "312.log", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs.log", "312.log", hostCPU)
 wait 5
 
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "312.tst_appdat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "312.tst_appdat", hostCPU)
 wait 5
  
 write ";***********************************************************************"
@@ -971,10 +978,10 @@ write ";***********************************************************************"
  
 start $sc_$cpu_evs_gen_evts   ; request generation of event messages of every evt msg type
  
-start get_file_to_cvt (ramDir, "cfe_evs.log", "313.log", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs.log", "313.log", hostCPU)
 wait 5
 
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "313.tst_appdat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "313.tst_appdat", hostCPU)
 wait 5
  
 ; check the counters
@@ -1023,10 +1030,10 @@ write"             Local Evt log to ensure generation of evt for which the text"
 write"             string gets truncated."
 write ";***********************************************************************"
  
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "322.tst_appdat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "322.tst_appdat", hostCPU)
 wait 5
 
-start get_file_to_cvt (ramDir, "cfe_evs.log", "322.log", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs.log", "322.log", hostCPU)
 wait 5
 
 ; Verify the couters
@@ -1057,7 +1064,7 @@ write "*** EVS Total Msgs sent (EVS)   = ", $SC_$CPU_EVS_MSGSENTC
 write
 
 ; Get the application data
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "401.tst_appdat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "401.tst_appdat", hostCPU)
 wait 5
 EVS_total_msgs_sent = EVS_total_msgs_sent + 1
  
@@ -1133,11 +1140,11 @@ write "*** EVS Total Msgs sent (local) = ", EVS_total_msgs_sent
 write "*** EVS Total Msgs sent (EVS)   = ", $SC_$CPU_EVS_MSGSENTC
 write
  
-start get_file_to_cvt (ramDir, "cfe_evs.log", "411.log", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs.log", "411.log", hostCPU)
 wait 5
 EVS_total_msgs_sent = EVS_total_msgs_sent + 1
 
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "411.tst_appdat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "411.tst_appdat", hostCPU)
 wait 5
 EVS_total_msgs_sent = EVS_total_msgs_sent + 1
  
@@ -1184,7 +1191,7 @@ wait 10
 if ($SC_$CPU_find_event[1].num_found_messages = 1) then
   ut_setrequirements cEVS3100, "P"
   write"<*> Passed (3100) -  Expected event message generated"
-  start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "421.tst_appdat", "$CPU")
+  start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "421.tst_appdat", hostCPU)
   wait 5 
   EVS_total_msgs_sent = EVS_total_msgs_sent + 1
 else
@@ -1251,10 +1258,10 @@ write "; Step 4.9: Retrieve the Local Evt Log and Application Data to verify "
 write ";           the event msg generation as requested"
 write ";***********************************************************************"
  
-start get_file_to_cvt (ramDir, "cfe_evs.log", "4221.log", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs.log", "4221.log", hostCPU)
 wait 5
  
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "4221.tst_appdat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "4221.tst_appdat", hostCPU)
 wait 5
  
 ; Verify the counters
@@ -1389,10 +1396,10 @@ write ";***********************************************************************"
 write "; Step 5.7: Retrieve Log and Stored Application Data" 
 write ";***********************************************************************"
  
-start get_file_to_cvt (ramDir, "cfe_evs.log", "507.log", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs.log", "507.log", hostCPU)
 wait 5
 
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "507.tst_appdat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "507.tst_appdat", hostCPU)
 wait 5
  
 ;; Verify counter incrementation:

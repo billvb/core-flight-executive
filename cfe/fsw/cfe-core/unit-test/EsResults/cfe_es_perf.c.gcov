@@ -1,5 +1,8 @@
-        -:    0:Source:/home/acudmore/Projects/cFE-6.4-development/cfe/fsw/cfe-core/src/es/cfe_es_perf.c
-        -:    0:Programs:10
+        -:    0:Source:/home/wmoleski/CFS/mission_2014/cfe/fsw/cfe-core/src/es/cfe_es_perf.c
+        -:    0:Graph:cfe_es_perf.gcno
+        -:    0:Data:cfe_es_perf.gcda
+        -:    0:Runs:1
+        -:    0:Programs:8
         -:    1:/*
         -:    2:** File: cfe_es_perf.c
         -:    3:**
@@ -15,8 +18,8 @@
         -:   13:**  performance markers.
         -:   14:**
         -:   15:** $Log: cfe_es_perf.c.gcov  $
-        -:   15:** Revision 1.5 2014/09/23 15:04:42GMT-05:00 acudmore 
-        -:   15:** Updated ES unit test results for cFE build 6.4.0
+        -:   15:** Revision 1.6 2015/06/24 12:19:48EDT wmoleski 
+        -:   15:** Checking in the unit-test results for cFE 6.4.2.0
         -:   16:** Revision 1.8 2012/01/13 11:50:03GMT-05:00 acudmore 
         -:   17:** Changed license text to reflect open source
         -:   18:** Revision 1.7 2010/11/05 12:07:55EDT acudmore 
@@ -108,8 +111,8 @@
         -:  104:/* CFE_ES_PerfLogEntry() / CFE_ES_PerfLogExit() functions                        */
         -:  105:/*                                                                               */
         -:  106:/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-        6:  107:void CFE_ES_SetupPerfVariables(uint32 ResetType)
-        -:  108:{
+        -:  107:void CFE_ES_SetupPerfVariables(uint32 ResetType)
+        6:  108:{
         -:  109:
         -:  110:    uint32      i;
         -:  111:
@@ -280,7 +283,7 @@
         2:  276:                  CFE_ES_TaskData.CmdCounter++;
         2:  277:                  CFE_EVS_SendEvent(CFE_ES_PERF_STOPCMD_EID,CFE_EVS_DEBUG,
         -:  278:                                    "Perf Stop Cmd Rcvd,%s will write %d entries.%dmS dly every %d entries",
-        2:  279:                                    CFE_ES_PERF_CHILD_NAME,Perf->MetaData.DataCount,
+        -:  279:                                    CFE_ES_PERF_CHILD_NAME,Perf->MetaData.DataCount,
         -:  280:                                    CFE_ES_PERF_CHILD_MS_DELAY,CFE_ES_PERF_ENTRIES_BTWN_DLYS);
         -:  281:              }
         -:  282:              else
@@ -383,7 +386,7 @@
         2:  379:    CFE_EVS_SendEvent(CFE_ES_PERF_DATAWRITTEN_EID,CFE_EVS_DEBUG,
         -:  380:                      "%s written:Size=%d,EntryCount=%d",
         -:  381:                       &CFE_ES_PerfLogDumpStatus.DataFileName[0],FileSize,
-        2:  382:                       Perf->MetaData.DataCount);
+        -:  382:                       Perf->MetaData.DataCount);
         -:  383:
         2:  384:    CFE_ES_ExitChildTask();
         -:  385:
@@ -485,8 +488,8 @@
         -:  481:/*  faster since the time does not need to be calculated.                        */
         -:  482:/*                                                                               */
         -:  483:/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-       14:  484:void CFE_ES_PerfLogAdd(uint32 Marker, uint32 EntryExit)
-        -:  485:{
+        -:  484:void CFE_ES_PerfLogAdd(uint32 Marker, uint32 EntryExit)
+       14:  485:{
         -:  486:    int32         IntFlags;
         -:  487:
        14:  488:    if (Perf->MetaData.State != CFE_ES_PERF_IDLE) {

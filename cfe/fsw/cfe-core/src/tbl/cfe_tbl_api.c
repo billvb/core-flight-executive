@@ -69,26 +69,12 @@
 ** Required header files...
 */
 #include <string.h>
-#include "cfe.h"
+#include "private/cfe_private.h"
 #include "cfe_es.h"
 #include "cfe_tbl.h"
 #include "cfe_error.h"
 #include "cfe_tbl_internal.h"
 #include "cfe_psp.h"
-
-
-/*
-** External Globals
-*/
-extern CFE_TBL_TaskData_t CFE_TBL_TaskData;
-
-/*******************************************************************
-**
-** CFE_ES_RegisterCDSEx
-**
-** NOTE: For complete prolog information, see 'cfe_es_cds.h'
-********************************************************************/
-int32 CFE_ES_RegisterCDSEx(CFE_ES_CDSHandle_t *HandlePtr, int32 BlockSize, const char *Name, boolean CriticalTbl);
 
 /*
 ** Local Macros
@@ -112,12 +98,11 @@ int32 CFE_TBL_Register( CFE_TBL_Handle_t *TblHandlePtr,
     CFE_TBL_LoadBuff_t         *WorkingBufferPtr;
     CFE_TBL_CritRegRec_t       *CritRegRecPtr = NULL;
     int32                       Status = CFE_SUCCESS;
-    int32                       NameLen = 0;
+    size_t                      NameLen = 0;
     int16                       RegIndx = -1;
     uint32                      ThisAppId;
     char                        AppName[OS_MAX_API_NAME] = {"UNKNOWN"};
     char                        TblName[CFE_TBL_MAX_FULL_NAME_LEN] = {""};
-    char                        LogMsg[128];
     CFE_TBL_Handle_t            AccessIndex;
 
     /* Check to make sure calling application is legit */
@@ -135,20 +120,9 @@ int32 CFE_TBL_Register( CFE_TBL_Handle_t *TblHandlePtr,
             Status = CFE_TBL_ERR_INVALID_NAME;
 
             /* Perform a buffer overrun safe copy of name for debug log message */
-            strncpy(LogMsg, "CFE_TBL:Register-Table Name (", 29);
-            strncpy(&LogMsg[29], Name, 70);
-            if (NameLen == 0)
-            {
-                strcat(LogMsg, ") is zero length\n");
-            }
-            else
-            {
-                strcat(LogMsg, ") is too long\n");
-            }
-            CFE_ES_WriteToSysLog(LogMsg);
-
             strncpy(TblName, Name, CFE_TBL_MAX_NAME_LENGTH);
             TblName[CFE_TBL_MAX_NAME_LENGTH-1] = '\0';
+            CFE_ES_WriteToSysLog("CFE_TBL:Register-Table Name (%s) is bad length (%d)",TblName,(int)NameLen);
         }
         else
         {
@@ -171,7 +145,7 @@ int32 CFE_TBL_Register( CFE_TBL_Handle_t *TblHandlePtr,
                 Status = CFE_TBL_ERR_INVALID_SIZE;
 
                 CFE_ES_WriteToSysLog("CFE_TBL:Register-Single Buffered Table '%s' has size %d > %d\n",
-                                     Name, Size, CFE_TBL_MAX_SNGL_TABLE_SIZE);
+                                     Name, (int)Size, CFE_TBL_MAX_SNGL_TABLE_SIZE);
             }
             else if ((Size > CFE_TBL_MAX_DBL_TABLE_SIZE) &&
                      ((TblOptionFlags & CFE_TBL_OPT_BUFFER_MSK) == CFE_TBL_OPT_DBL_BUFFER))
@@ -179,7 +153,7 @@ int32 CFE_TBL_Register( CFE_TBL_Handle_t *TblHandlePtr,
                 Status = CFE_TBL_ERR_INVALID_SIZE;
 
                 CFE_ES_WriteToSysLog("CFE_TBL:Register-Dbl Buffered Table '%s' has size %d > %d\n",
-                                     Name, Size, CFE_TBL_MAX_DBL_TABLE_SIZE);
+                                     Name, (int)Size, CFE_TBL_MAX_DBL_TABLE_SIZE);
             }
             
             /* Verify Table Option settings are legal */
@@ -212,7 +186,7 @@ int32 CFE_TBL_Register( CFE_TBL_Handle_t *TblHandlePtr,
     }
     else  /* Application ID was invalid */
     {
-        CFE_ES_WriteToSysLog("CFE_TBL:Register-Bad AppId(%d)\n", ThisAppId);
+        CFE_ES_WriteToSysLog("CFE_TBL:Register-Bad AppId(%d)\n", (int)ThisAppId);
     }
 
     /* If input parameters appear acceptable, register the table */
@@ -244,7 +218,7 @@ int32 CFE_TBL_Register( CFE_TBL_Handle_t *TblHandlePtr,
                     Status = CFE_TBL_ERR_DUPLICATE_DIFF_SIZE;
 
                     CFE_ES_WriteToSysLog("CFE_TBL:Register-Attempt to register existing table ('%s') with different size(%d!=%d)\n",
-                                         TblName, Size, RegRecPtr->Size);
+                                         TblName, (int)Size, (int)RegRecPtr->Size);
                 }
                 else
                 {
@@ -274,7 +248,7 @@ int32 CFE_TBL_Register( CFE_TBL_Handle_t *TblHandlePtr,
                 Status = CFE_TBL_ERR_DUPLICATE_NOT_OWNED;
 
                 CFE_ES_WriteToSysLog("CFE_TBL:Register-App(%d) Registering Duplicate Table '%s' owned by App(%d)\n",
-                                     ThisAppId, TblName, RegRecPtr->OwnerAppId);
+                                     (int)ThisAppId, TblName, (int)RegRecPtr->OwnerAppId);
             }
         }
         else  /* Table not already in registry */
@@ -323,8 +297,8 @@ int32 CFE_TBL_Register( CFE_TBL_Handle_t *TblHandlePtr,
                                                Size);
                     if(Status < 0)
                     {
-                        CFE_ES_WriteToSysLog("CFE_TBL:Register-1st Buf Alloc GetPool fail Stat=0x%08X MemPoolHndl=0x%08X\n",
-                                             Status, CFE_TBL_TaskData.Buf.PoolHdl);
+                        CFE_ES_WriteToSysLog("CFE_TBL:Register-1st Buf Alloc GetPool fail Stat=0x%08X MemPoolHndl=0x%08lX\n",
+                                (unsigned int)Status, (unsigned long)CFE_TBL_TaskData.Buf.PoolHdl);
                     }
                     else
                     {
@@ -349,8 +323,8 @@ int32 CFE_TBL_Register( CFE_TBL_Handle_t *TblHandlePtr,
                                                Size);
                     if(Status < 0)
                     {
-                        CFE_ES_WriteToSysLog("CFE_TBL:Register-2nd Buf Alloc GetPool fail Stat=0x%08X MemPoolHndl=0x%08X\n",
-                                             Status, CFE_TBL_TaskData.Buf.PoolHdl);
+                        CFE_ES_WriteToSysLog("CFE_TBL:Register-2nd Buf Alloc GetPool fail Stat=0x%08X MemPoolHndl=0x%08lX\n",
+                                (unsigned int)Status, (unsigned long)CFE_TBL_TaskData.Buf.PoolHdl);
                     }
                     else
                     {
@@ -433,7 +407,7 @@ int32 CFE_TBL_Register( CFE_TBL_Handle_t *TblHandlePtr,
                                 /* call did fail, WorkingBufferPtr would be a NULL pointer. */
                                 CFE_ES_GetAppName(AppName, ThisAppId, OS_MAX_API_NAME);
                                 CFE_ES_WriteToSysLog("CFE_TBL:Register-Failed to get work buffer for '%s.%s' (ErrCode=0x%08X)\n",
-                                                     AppName, Name, Status);
+                                                     AppName, Name, (unsigned int)Status);
                             }
                             else
                             {
@@ -444,7 +418,7 @@ int32 CFE_TBL_Register( CFE_TBL_Handle_t *TblHandlePtr,
                                 {
                                     CFE_ES_GetAppName(AppName, ThisAppId, OS_MAX_API_NAME);
                                     CFE_ES_WriteToSysLog("CFE_TBL:Register-Failed to recover '%s.%s' from CDS (ErrCode=0x%08X)\n",
-                                                     AppName, Name, Status);
+                                                     AppName, Name, (unsigned int)Status);
                                 }
                             }
 
@@ -525,7 +499,7 @@ int32 CFE_TBL_Register( CFE_TBL_Handle_t *TblHandlePtr,
                         else if (Status != CFE_TBL_INFO_RECOVERED_TBL)
                         {
                             CFE_ES_WriteToSysLog("CFE_TBL:Register-Failed to register '%s.%s' as a CDS (ErrCode=0x%08X)\n",
-                                                 AppName, Name, Status);
+                                                 AppName, Name, (unsigned int)Status);
                                                  
                             /* Notify caller that although they asked for it to be critical, it isn't */
                             Status = CFE_TBL_WARN_NOT_CRITICAL;
@@ -558,7 +532,7 @@ int32 CFE_TBL_Register( CFE_TBL_Handle_t *TblHandlePtr,
                                    CFE_EVS_ERROR,
                                    CFE_TBL_TaskData.TableTaskAppId,
                                    "%s Failed to Register '%s', Status=0x%08X",
-                                   AppName, TblName, Status);
+                                   AppName, TblName, (unsigned int)Status);
     }
 
     return Status;
@@ -648,7 +622,7 @@ int32 CFE_TBL_Share( CFE_TBL_Handle_t *TblHandlePtr,
     }
     else  /* Application ID was invalid */
     {
-        CFE_ES_WriteToSysLog("CFE_TBL:Share-Bad AppId(%d)\n", ThisAppId);
+        CFE_ES_WriteToSysLog("CFE_TBL:Share-Bad AppId(%d)\n", (int)ThisAppId);
     }
 
     /* On Error conditions, notify ground of screw up */
@@ -661,7 +635,7 @@ int32 CFE_TBL_Share( CFE_TBL_Handle_t *TblHandlePtr,
                                    CFE_EVS_ERROR,
                                    CFE_TBL_TaskData.TableTaskAppId,
                                    "%s Failed to Share '%s', Status=0x%08X",
-                                   AppName, TblName, Status);
+                                   AppName, TblName, (unsigned int)Status);
     }
 
     return Status;
@@ -717,7 +691,7 @@ int32 CFE_TBL_Unregister ( CFE_TBL_Handle_t TblHandle )
     else
     {
         CFE_ES_WriteToSysLog("CFE_TBL:Unregister-App(%d) does not have access to Tbl Handle=%d\n",
-                             ThisAppId, TblHandle);
+                             (int)ThisAppId, (int)TblHandle);
     }
 
     /* On Error conditions, notify ground of screw up */
@@ -730,7 +704,7 @@ int32 CFE_TBL_Unregister ( CFE_TBL_Handle_t TblHandle )
                                    CFE_EVS_ERROR,
                                    CFE_TBL_TaskData.TableTaskAppId,
                                    "%s Failed to Unregister '?', Status=0x%08X",
-                                   AppName, Status);
+                                   AppName, (unsigned int)Status);
     }
 
     return Status;
@@ -781,7 +755,8 @@ int32 CFE_TBL_Load( CFE_TBL_Handle_t TblHandle,
                 RegRecPtr->Buffers[0].BufferPtr = (void *)SrcDataPtr;
                 RegRecPtr->TableLoadedOnce = TRUE;
                 
-                sprintf(RegRecPtr->Buffers[0].DataSource, "Addr 0x%08X", (int)SrcDataPtr);
+                snprintf(RegRecPtr->Buffers[0].DataSource, sizeof(RegRecPtr->Buffers[0].DataSource), 
+                     "Addr 0x%08lX", (unsigned long)SrcDataPtr);
                 RegRecPtr->Buffers[0].FileCreateTimeSecs = 0;
                 RegRecPtr->Buffers[0].FileCreateTimeSubSecs = 0;
 
@@ -797,7 +772,7 @@ int32 CFE_TBL_Load( CFE_TBL_Handle_t TblHandle,
                 Status = CFE_TBL_ERR_DUMP_ONLY;
 
                 CFE_ES_WriteToSysLog("CFE_TBL:Load-App(%d) attempted to load Dump Only Tbl '%s'\n",
-                                     ThisAppId, RegRecPtr->Name);
+                                     (int)ThisAppId, RegRecPtr->Name);
             }     
         }
         else
@@ -826,7 +801,7 @@ int32 CFE_TBL_Load( CFE_TBL_Handle_t TblHandle,
                         if (Status < 0)
                         {
                             CFE_ES_WriteToSysLog("CFE_TBL:Load-App(%d) Fail to load Tbl '%s' from '%s' (Stat=0x%08X)\n",
-                                                 ThisAppId, RegRecPtr->Name, (const char *)SrcDataPtr, Status);
+                                                 (int)ThisAppId, RegRecPtr->Name, (const char *)SrcDataPtr, (unsigned int)Status);
                         }
                         else if ((Status == CFE_TBL_WARN_PARTIAL_LOAD) && (!RegRecPtr->TableLoadedOnce))
                         {
@@ -842,7 +817,7 @@ int32 CFE_TBL_Load( CFE_TBL_Handle_t TblHandle,
                                   (uint8 *)SrcDataPtr,
                                   RegRecPtr->Size);
 
-                        sprintf(WorkingBufferPtr->DataSource, "Addr 0x%08X", (int)SrcDataPtr);
+                        snprintf(WorkingBufferPtr->DataSource, sizeof(WorkingBufferPtr->DataSource), "Addr 0x%08lX", (unsigned long)SrcDataPtr);
                         WorkingBufferPtr->FileCreateTimeSecs = 0;
                         WorkingBufferPtr->FileCreateTimeSubSecs = 0;
                         
@@ -856,7 +831,7 @@ int32 CFE_TBL_Load( CFE_TBL_Handle_t TblHandle,
                     {
                         Status = CFE_TBL_ERR_ILLEGAL_SRC_TYPE;
                         CFE_ES_WriteToSysLog("CFE_TBL:Load-App(%d) attempt to load from illegal source type=%d\n",
-                                             ThisAppId, SrcType);
+                                             (int)ThisAppId, (int)SrcType);
                     }
 
                     /* If the data was successfully loaded, then validate its contents */
@@ -867,14 +842,14 @@ int32 CFE_TBL_Load( CFE_TBL_Handle_t TblHandle,
                         if (Status > CFE_SUCCESS)
                         {
                             CFE_ES_WriteToSysLog("CFE_TBL:Load-App(%d) Validation func return code invalid (Stat=0x%08X) for '%s'\n",
-                                                 ThisAppId, Status, RegRecPtr->Name);
+                                                 (int)ThisAppId, (unsigned int)Status, RegRecPtr->Name);
                             Status = -1;
                         }
                         
                         if (Status < 0)
                         {
                             CFE_ES_WriteToSysLog("CFE_TBL:Load-App(%d) reports load invalid (Stat=0x%08X) for '%s'\n",
-                                                 ThisAppId, Status, RegRecPtr->Name);
+                                                 (int)ThisAppId, (unsigned int)Status, RegRecPtr->Name);
                                             
                             /* Zero out the buffer to remove any bad data */
                             CFE_PSP_MemSet(WorkingBufferPtr->BufferPtr, 0, RegRecPtr->Size);     
@@ -916,7 +891,7 @@ int32 CFE_TBL_Load( CFE_TBL_Handle_t TblHandle,
                         if (Status != CFE_SUCCESS)
                         {
                             CFE_ES_WriteToSysLog("CFE_TBL:Load-App(%d) fail to update '%s' (Stat=0x%08X)\n",
-                                                 ThisAppId, RegRecPtr->Name, Status);
+                                                 (int)ThisAppId, RegRecPtr->Name, (unsigned int)Status);
                         }
                         else
                         {
@@ -954,7 +929,7 @@ int32 CFE_TBL_Load( CFE_TBL_Handle_t TblHandle,
                 else
                 {
                     CFE_ES_WriteToSysLog("CFE_TBL:Load-App(%d) Failed to get Working Buffer (Stat=0x%08X)\n",
-                                         ThisAppId, Status);
+                                         (int)ThisAppId, (unsigned int)Status);
                 }
             }
         }
@@ -962,7 +937,7 @@ int32 CFE_TBL_Load( CFE_TBL_Handle_t TblHandle,
     else
     {
         CFE_ES_WriteToSysLog("CFE_TBL:Load-App(%d) does not have access to Tbl Handle=%d\n",
-                             ThisAppId, TblHandle);
+                             (int)ThisAppId, (int)TblHandle);
     }
 
     /* On Error conditions, notify ground of screw up */
@@ -977,7 +952,7 @@ int32 CFE_TBL_Load( CFE_TBL_Handle_t TblHandle,
                                        CFE_EVS_ERROR,
                                        CFE_TBL_TaskData.TableTaskAppId,
                                        "%s Failed to Load '?', Status=0x%08X",
-                                       AppName, Status);
+                                       AppName, (unsigned int)Status);
         }
         else
         {
@@ -986,8 +961,8 @@ int32 CFE_TBL_Load( CFE_TBL_Handle_t TblHandle,
                 CFE_EVS_SendEventWithAppID(CFE_TBL_LOAD_ERR_EID,
                                            CFE_EVS_ERROR,
                                            CFE_TBL_TaskData.TableTaskAppId,
-                                           "%s Failed to Load '%s' from Addr 0x%08X, Status=0x%08X",
-                                           AppName, RegRecPtr->Name, SrcDataPtr, Status);
+                                           "%s Failed to Load '%s' from Addr 0x%08lX, Status=0x%08X",
+                                           AppName, RegRecPtr->Name, (unsigned long)SrcDataPtr, (unsigned int)Status);
             }
             else if (SrcType == CFE_TBL_SRC_FILE)
             {
@@ -995,7 +970,7 @@ int32 CFE_TBL_Load( CFE_TBL_Handle_t TblHandle,
                                            CFE_EVS_ERROR,
                                            CFE_TBL_TaskData.TableTaskAppId,
                                            "%s Failed to Load '%s' from '%s', Status=0x%08X",
-                                           AppName, RegRecPtr->Name, (const char *)SrcDataPtr, Status);
+                                           AppName, RegRecPtr->Name, (const char *)SrcDataPtr, (unsigned int)Status);
             }
             else
             {
@@ -1042,12 +1017,12 @@ int32 CFE_TBL_Update( CFE_TBL_Handle_t TblHandle )
         if (Status != CFE_SUCCESS)
         {
             CFE_ES_WriteToSysLog("CFE_TBL:Update-App(%d) fail to update Tbl '%s' (Stat=0x%08X)\n",
-                                 ThisAppId, RegRecPtr->Name, Status);
+                                 (int)ThisAppId, RegRecPtr->Name, (unsigned int)Status);
         }
     }
     else
     {
-        CFE_ES_WriteToSysLog("CFE_TBL:Update-App(%d) does not have access to Tbl Handle=%d\n", ThisAppId, TblHandle);
+        CFE_ES_WriteToSysLog("CFE_TBL:Update-App(%d) does not have access to Tbl Handle=%d\n", (int)ThisAppId, (int)TblHandle);
     }
 
     if (Status != CFE_TBL_ERR_BAD_APP_ID)
@@ -1065,7 +1040,7 @@ int32 CFE_TBL_Update( CFE_TBL_Handle_t TblHandle )
                                        CFE_EVS_ERROR,
                                        CFE_TBL_TaskData.TableTaskAppId,
                                        "%s Failed to Update '%s', Status=0x%08X",
-                                       AppName, RegRecPtr->Name, Status);
+                                       AppName, RegRecPtr->Name, (unsigned int)Status);
         }
         else
         {
@@ -1073,7 +1048,7 @@ int32 CFE_TBL_Update( CFE_TBL_Handle_t TblHandle )
                                        CFE_EVS_ERROR,
                                        CFE_TBL_TaskData.TableTaskAppId,
                                        "%s Failed to Update '?', Status=0x%08X",
-                                       AppName, Status);
+                                       AppName, (unsigned int)Status);
         }
     }
     else
@@ -1126,7 +1101,7 @@ int32 CFE_TBL_GetAddress( void **TblPtr,
     }
     else
     {
-        CFE_ES_WriteToSysLog("CFE_TBL:GetAddress-Bad AppId=%d\n", ThisAppId);
+        CFE_ES_WriteToSysLog("CFE_TBL:GetAddress-Bad AppId=%d\n", (int)ThisAppId);
     }
 
     return Status;
@@ -1163,7 +1138,7 @@ int32 CFE_TBL_ReleaseAddress( CFE_TBL_Handle_t TblHandle )
     else
     {
         CFE_ES_WriteToSysLog("CFE_TBL:ReleaseAddress-App(%d) does not have access to Tbl Handle=%d\n",
-                             ThisAppId, TblHandle);
+                             (int)ThisAppId, (int)TblHandle);
     }
 
     return Status;
@@ -1214,7 +1189,7 @@ int32 CFE_TBL_GetAddresses( void **TblPtrs[],
     }
     else
     {
-        CFE_ES_WriteToSysLog("CFE_TBL:GetAddresses-Bad AppId=%d\n", ThisAppId);
+        CFE_ES_WriteToSysLog("CFE_TBL:GetAddresses-Bad AppId=%d\n", (int)ThisAppId);
     }
 
     return Status;
@@ -1321,12 +1296,12 @@ int32 CFE_TBL_Validate( CFE_TBL_Handle_t TblHandle )
                                            CFE_EVS_ERROR,
                                            CFE_TBL_TaskData.TableTaskAppId,
                                            "%s validation failed for Inactive '%s', Status=0x%08X",
-                                           AppName, RegRecPtr->Name, Status);
+                                           AppName, RegRecPtr->Name, (unsigned int)Status);
                 
                 if (Status > CFE_SUCCESS)
                 {
-                    CFE_ES_WriteToSysLog("CFE_TBL:Validate-App(%d) Validation func return code invalid (Stat=0x%08X) for '%s'\n",
-                                         CFE_TBL_TaskData.TableTaskAppId, Status, RegRecPtr->Name);
+                    CFE_ES_WriteToSysLog("CFE_TBL:Validate-App(%u) Validation func return code invalid (Stat=0x%08X) for '%s'\n",
+                            (unsigned int)CFE_TBL_TaskData.TableTaskAppId, (unsigned int)Status, RegRecPtr->Name);
                 }
             }
 
@@ -1370,12 +1345,12 @@ int32 CFE_TBL_Validate( CFE_TBL_Handle_t TblHandle )
                                            CFE_EVS_ERROR,
                                            CFE_TBL_TaskData.TableTaskAppId,
                                            "%s validation failed for Active '%s', Status=0x%08X",
-                                           AppName, RegRecPtr->Name, Status);
+                                           AppName, RegRecPtr->Name, (unsigned int)Status);
                 
                 if (Status > CFE_SUCCESS)
                 {
-                    CFE_ES_WriteToSysLog("CFE_TBL:Validate-App(%d) Validation func return code invalid (Stat=0x%08X) for '%s'\n",
-                                         CFE_TBL_TaskData.TableTaskAppId, Status, RegRecPtr->Name);
+                    CFE_ES_WriteToSysLog("CFE_TBL:Validate-App(%u) Validation func return code invalid (Stat=0x%08X) for '%s'\n",
+                            (unsigned int)CFE_TBL_TaskData.TableTaskAppId, (unsigned int)Status, RegRecPtr->Name);
                 }
             }
 
@@ -1398,7 +1373,7 @@ int32 CFE_TBL_Validate( CFE_TBL_Handle_t TblHandle )
     else
     {
         CFE_ES_WriteToSysLog("CFE_TBL:Validate-App(%d) does not have access to Tbl Handle=%d\n",
-                             ThisAppId, TblHandle);
+                             (int)ThisAppId, (int)TblHandle);
     }
 
     return Status;
@@ -1507,7 +1482,7 @@ int32 CFE_TBL_GetStatus( CFE_TBL_Handle_t TblHandle )
     else
     {
         CFE_ES_WriteToSysLog("CFE_TBL:GetStatus-App(%d) does not have access to Tbl Handle=%d\n",
-                             ThisAppId, TblHandle);
+                             (int)ThisAppId, (int)TblHandle);
     }
 
     return Status;
@@ -1524,7 +1499,7 @@ int32 CFE_TBL_GetStatus( CFE_TBL_Handle_t TblHandle )
 int32 CFE_TBL_GetInfo( CFE_TBL_Info_t *TblInfoPtr, const char *TblName )
 {
     int32                    Status = CFE_SUCCESS;
-    int16                    RegIndx = CFE_TBL_NOT_FOUND;
+    int16                    RegIndx;
     int32                    NumAccessDescriptors = 0;
     CFE_TBL_RegistryRec_t   *RegRecPtr;
     CFE_TBL_Handle_t         HandleIterator;
@@ -1629,7 +1604,7 @@ int32 CFE_TBL_Modified( CFE_TBL_Handle_t TblHandle )
     CFE_TBL_RegistryRec_t      *RegRecPtr = NULL;
     CFE_TBL_Handle_t            AccessIterator;
     uint32                      ThisAppId;
-    uint32                      FilenameLen = 0;
+    size_t                      FilenameLen = 0;
 
     /* Verify that this application has the right to perform operation */
     Status = CFE_TBL_ValidateAccess(TblHandle, &ThisAppId);
@@ -1682,7 +1657,7 @@ int32 CFE_TBL_Modified( CFE_TBL_Handle_t TblHandle )
     else
     {
         CFE_ES_WriteToSysLog("CFE_TBL:Modified-App(%d) does not have access to Tbl Handle=%d\n",
-                             ThisAppId, TblHandle);
+                             (int)ThisAppId, (int)TblHandle);
     }
 
     
@@ -1727,7 +1702,7 @@ int32 CFE_TBL_NotifyByMessage(CFE_TBL_Handle_t TblHandle, uint32 MsgId, uint16 C
         {
             Status = CFE_TBL_ERR_NO_ACCESS;
             CFE_ES_WriteToSysLog("CFE_TBL:NotifyByMsg-App(%d) does not own Tbl Handle=%d\n",
-                                 ThisAppId, TblHandle);
+                                 (int)ThisAppId, (int)TblHandle);
         }
     }
     

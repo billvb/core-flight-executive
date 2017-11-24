@@ -84,11 +84,6 @@
 */
 #include "cfe_time_utils.h"
 
-/*
-** Time task global data (from "cfe_time_task.c")...
-*/
-extern CFE_TIME_TaskData_t CFE_TIME_TaskData;
-
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /*                                                                 */
@@ -167,14 +162,14 @@ void CFE_TIME_ToneSend(void)
     /*
     ** Remainder of time values are unchanged...
     */
-    CFE_TIME_TaskData.ToneDataCmd.AtToneMET   = NewMET;
-    CFE_TIME_TaskData.ToneDataCmd.AtToneSTCF  = Reference.AtToneSTCF;
-    CFE_TIME_TaskData.ToneDataCmd.AtToneLeaps = Reference.AtToneLeaps;
+    CFE_TIME_Copy(&CFE_TIME_TaskData.ToneDataCmd.Payload.AtToneMET, &NewMET);
+    CFE_TIME_Copy(&CFE_TIME_TaskData.ToneDataCmd.Payload.AtToneSTCF, &Reference.AtToneSTCF);
+    CFE_TIME_TaskData.ToneDataCmd.Payload.AtToneLeaps = Reference.AtToneLeaps;
 
     /*
     ** Current clock state is a combination of factors...
     */
-    CFE_TIME_TaskData.ToneDataCmd.AtToneState = CFE_TIME_CalculateState(&Reference);
+    CFE_TIME_TaskData.ToneDataCmd.Payload.AtToneState = CFE_TIME_CalculateState(&Reference);
 
     /*
     ** Send "time at the tone" command data packet...
@@ -287,10 +282,10 @@ int32 CFE_TIME_ToneSendMET(CFE_TIME_SysTime_t NewMET)
             /*
             ** Set "time at the tone" command data packet arguments...
             */
-            CFE_TIME_TaskData.ToneDataCmd.AtToneMET   = NewMET;
-            CFE_TIME_TaskData.ToneDataCmd.AtToneSTCF  = Reference.AtToneSTCF;
-            CFE_TIME_TaskData.ToneDataCmd.AtToneLeaps = Reference.AtToneLeaps;
-            CFE_TIME_TaskData.ToneDataCmd.AtToneState = ClockState;
+            CFE_TIME_TaskData.ToneDataCmd.Payload.AtToneMET   = NewMET;
+            CFE_TIME_TaskData.ToneDataCmd.Payload.AtToneSTCF  = Reference.AtToneSTCF;
+            CFE_TIME_TaskData.ToneDataCmd.Payload.AtToneLeaps = Reference.AtToneLeaps;
+            CFE_TIME_TaskData.ToneDataCmd.Payload.AtToneState = ClockState;
 
             /*
             ** Send "time at the tone" command data packet...
@@ -418,10 +413,10 @@ int32 CFE_TIME_ToneSendGPS(CFE_TIME_SysTime_t NewTime, int16 NewLeaps)
             /*
             ** Set "time at the tone" command data packet arguments...
             */
-            CFE_TIME_TaskData.ToneDataCmd.AtToneMET   = NewMET;
-            CFE_TIME_TaskData.ToneDataCmd.AtToneSTCF  = NewSTCF;
-            CFE_TIME_TaskData.ToneDataCmd.AtToneLeaps = NewLeaps;
-            CFE_TIME_TaskData.ToneDataCmd.AtToneState = ClockState;
+            CFE_TIME_TaskData.ToneDataCmd.Payload.AtToneMET   = NewMET;
+            CFE_TIME_TaskData.ToneDataCmd.Payload.AtToneSTCF  = NewSTCF;
+            CFE_TIME_TaskData.ToneDataCmd.Payload.AtToneLeaps = NewLeaps;
+            CFE_TIME_TaskData.ToneDataCmd.Payload.AtToneState = ClockState;
 
             /*
             ** Send "time at the tone" command data packet...
@@ -546,10 +541,10 @@ int32 CFE_TIME_ToneSendTime(CFE_TIME_SysTime_t NewTime)
             /*
             ** Set "time at the tone" command data packet arguments...
             */
-            CFE_TIME_TaskData.ToneDataCmd.AtToneMET   = NewMET;
-            CFE_TIME_TaskData.ToneDataCmd.AtToneSTCF  = NewSTCF;
-            CFE_TIME_TaskData.ToneDataCmd.AtToneLeaps = Reference.AtToneLeaps;
-            CFE_TIME_TaskData.ToneDataCmd.AtToneState = ClockState;
+            CFE_TIME_TaskData.ToneDataCmd.Payload.AtToneMET   = NewMET;
+            CFE_TIME_TaskData.ToneDataCmd.Payload.AtToneSTCF  = NewSTCF;
+            CFE_TIME_TaskData.ToneDataCmd.Payload.AtToneLeaps = Reference.AtToneLeaps;
+            CFE_TIME_TaskData.ToneDataCmd.Payload.AtToneState = ClockState;
 
             /*
             ** Send "time at the tone" command data packet...
@@ -575,7 +570,7 @@ int32 CFE_TIME_ToneSendTime(CFE_TIME_SysTime_t NewTime)
 /*                                                                 */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-void CFE_TIME_ToneData(CFE_TIME_ToneDataCmd_t *ToneDataCmd)
+void CFE_TIME_ToneData(CFE_TIME_ToneDataCmd_Payload_t *ToneDataCmd)
 {
     /*
     ** Save the time when the data packet was received...
@@ -585,8 +580,8 @@ void CFE_TIME_ToneData(CFE_TIME_ToneDataCmd_t *ToneDataCmd)
     /*
     ** Save the data packet (may be a while before the data is used)...
     */
-    CFE_TIME_TaskData.PendingMET   = ToneDataCmd->AtToneMET;
-    CFE_TIME_TaskData.PendingSTCF  = ToneDataCmd->AtToneSTCF;
+    CFE_TIME_Copy(&CFE_TIME_TaskData.PendingMET, &ToneDataCmd->AtToneMET);
+    CFE_TIME_Copy(&CFE_TIME_TaskData.PendingSTCF, &ToneDataCmd->AtToneSTCF);
     CFE_TIME_TaskData.PendingLeaps = ToneDataCmd->AtToneLeaps;
     CFE_TIME_TaskData.PendingState = ToneDataCmd->AtToneState;
 
@@ -988,6 +983,22 @@ void CFE_TIME_ToneUpdate(void)
     return;
 
 } /* End of CFE_TIME_ToneUpdate() */
+
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/*                                                                 */
+/* CFE_TIME_Local1HzTimerCallback() -- 1Hz callback routine        */
+/*                                                                 */
+/* This is a wrapper around CFE_TIME_Local1HzISR that conforms to  */
+/* the prototype of an OSAL Timer callback routine.                */
+/*                                                                 */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+void CFE_TIME_Local1HzTimerCallback(uint32 TimerId, void *Arg)
+{
+    CFE_TIME_Local1HzISR();
+}
+
 
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */

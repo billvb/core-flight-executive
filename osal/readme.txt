@@ -3,6 +3,5 @@ sourceforge.net/projects/osal
 or 
 github.com/nasa.osal
 
-The current version as of October 2014 is 4.1.1.
-
+The current version as of March 2016 is 4.2.0.
 

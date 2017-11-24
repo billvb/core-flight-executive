@@ -131,6 +131,7 @@ LOCAL SB_AppName[maxroute,16]
 LOCAL SB_PipeName[maxroute,16]
 
 local ramDir = "RAM:0"
+local hostCPU = "$CPU"
 
 write ";*********************************************************************"
 write ";  Run initialization procedure [ if necessary ]                      "
@@ -176,7 +177,7 @@ write ";********************************************************************"
 ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_START_INF_EID, "INFO", 1
 ut_setupevents "$SC", "$CPU", "TST_SB", TST_SB_INIT_INF_EID, "INFO", 2
 
-s load_start_app ("TST_SB","$CPU")
+s load_start_app ("TST_SB",hostCPU)
 
 ut_tlmwait  $SC_$CPU_find_event[2].num_found_messages, 1
 IF (UT_TW_Status = UT_Success) THEN
@@ -197,15 +198,15 @@ stream_1 = x'900'
 stream_2 = x'901'
 pkt_id = x'101'
 
-if ("$CPU" = "CPU2") then
-  stream_1 = x'A00'
-  stream_2 = x'A01'
-  pkt_id = x'201'
-elseif ("$CPU" = "CPU3") then
-  stream_1 = x'B00'
-  stream_2 = x'B01'
-  pkt_id = x'301'
-endif
+;;if ("$CPU" = "CPU2") then
+;;  stream_1 = x'A00'
+;;  stream_2 = x'A01'
+;;  pkt_id = x'201'
+;;elseif ("$CPU" = "CPU3") then
+;;  stream_1 = x'B00'
+;;  stream_2 = x'B01'
+;;  pkt_id = x'301'
+;;endif
 
 write "Sending command to add subscription for TST_SB HK packet."
 /$SC_$CPU_TO_ADDPACKET Stream=stream_1 Pkt_Size=x'0' Priority=x'0' Reliability=x'1' Buflimit=x'4'
@@ -222,7 +223,7 @@ write ";*********************************************************************"
 stepnum = "1.3"
 outputfilename = "$sc_$cpu_sb_reset_" & stepnum & ".dat"
 
-start get_file_to_cvt(ramDir, "cfe_sb_route.dat", outputfilename, "$CPU")
+start get_file_to_cvt(ramDir, "cfe_sb_route.dat", outputfilename, hostCPU)
 
 %liv (log_procedure) = FALSE
 
@@ -550,7 +551,7 @@ write ";*********************************************************************"
 stepnum = "3.3"
 outputfilename = "$sc_$cpu_sb_reset_" & stepnum & ".dat"
 
-start get_file_to_cvt(ramDir, "cfe_sb_route.dat", outputfilename, "$CPU")
+start get_file_to_cvt(ramDir, "cfe_sb_route.dat", outputfilename, hostCPU)
 
 %liv (log_procedure) = FALSE
 
@@ -601,7 +602,7 @@ WRITE ";**********************************************************************"
 ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_START_INF_EID, "INFO", 1
 ut_setupevents "$SC", "$CPU", "TST_SB", TST_SB_INIT_INF_EID, "INFO", 2
 
-s load_start_app ("TST_SB","$CPU")
+s load_start_app ("TST_SB",hostCPU)
 
 ; Wait for app startup events
 ;wait 10
@@ -702,7 +703,7 @@ write ";*********************************************************************"
 stepnum = "4.2"
 outputfilename = "$sc_$cpu_sb_reset_" & stepnum & ".dat"
 
-start get_file_to_cvt(ramDir, "cfe_sb_route.dat", outputfilename, "$CPU")
+start get_file_to_cvt(ramDir, "cfe_sb_route.dat", outputfilename, hostCPU)
 
 %liv (log_procedure) = FALSE
 
@@ -809,7 +810,7 @@ write ";*********************************************************************"
 stepnum = "4.4"
 outputfilename = "$sc_$cpu_sb_reset_" & stepnum & ".dat"
 
-start get_file_to_cvt(ramDir, "cfe_sb_route.dat", outputfilename, "$CPU")
+start get_file_to_cvt(ramDir, "cfe_sb_route.dat", outputfilename, hostCPU)
 
 %liv (log_procedure) = FALSE
 
@@ -886,7 +887,7 @@ write ";*********************************************************************"
 stepnum = "5.2"
 outputfilename = "$sc_$cpu_sb_reset_" & stepnum & ".dat"
 
-start get_file_to_cvt(ramDir, "cfe_sb_route.dat", outputfilename, "$CPU")
+start get_file_to_cvt(ramDir, "cfe_sb_route.dat", outputfilename, hostCPU)
 
 %liv (log_procedure) = FALSE
 
@@ -968,7 +969,7 @@ write ";*********************************************************************"
 stepnum = "5.4"
 outputfilename = "$sc_$cpu_sb_reset_" & stepnum & ".dat"
 
-start get_file_to_cvt(ramDir, "cfe_sb_route.dat", outputfilename, "$CPU")
+start get_file_to_cvt(ramDir, "cfe_sb_route.dat", outputfilename, hostCPU)
 
 %liv (log_procedure) = FALSE
 
@@ -1220,7 +1221,7 @@ write ";*********************************************************************"
 stepnum = "6.3"
 outputfilename = "$sc_$cpu_sb_reset_" & stepnum & ".dat"
 
-start get_file_to_cvt(ramDir, "cfe_sb_route.dat", outputfilename, "$CPU")
+start get_file_to_cvt(ramDir, "cfe_sb_route.dat", outputfilename, hostCPU)
 
 %liv (log_procedure) = FALSE
 
@@ -1271,7 +1272,7 @@ write "; 	   to delete an application."
 write ";*********************************************************************"
 ;; Start the TST_ES app
 write "; Starting the TST_ES application. "
-s load_start_app ("TST_ES", "$CPU")
+s load_start_app ("TST_ES", hostCPU)
 wait 10
                                                                                 
 ;; Add an Event Filter for the TST_ES HK Request Event in order to
@@ -1285,7 +1286,7 @@ write ";*********************************************************************"
 ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_START_INF_EID, "INFO", 1
 ut_setupevents "$SC", "$CPU", "TST_SB", TST_SB_INIT_INF_EID, "INFO", 2
 
-s load_start_app ("TST_SB","$CPU")
+s load_start_app ("TST_SB",hostCPU)
 
 ut_tlmwait  $SC_$CPU_find_event[2].num_found_messages, 1
 IF (UT_TW_Status = UT_Success) THEN
@@ -1299,7 +1300,7 @@ else
 endif
 
 ;  Dump the running apps
-start get_file_to_cvt (ramDir, "cfe_es_app_info.log", "$sc_$cpu_es_app_info.log", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_es_app_info.log", "$sc_$cpu_es_app_info.log", hostCPU)
                                                                                 
 local tst_sbIndex = 0, app_info_file_index
 ;Loop thru the table looking for the TST_SB app

@@ -1,7 +1,7 @@
-        -:    0:Source:/mnt/hgfs/Projects/Repo_cFE/fsw/cfe-core/src/sb/ccsds.c
+        -:    0:Source:/home/sstrege/cFE650/cfe/fsw/cfe-core/src/sb/ccsds.c
         -:    0:Graph:ccsds.gcno
         -:    0:Data:ccsds.gcda
-        -:    0:Runs:6
+        -:    0:Runs:1
         -:    0:Programs:1
         -:    1:/******************************************************************************
         -:    2:** File:  ccsds.c
@@ -19,10 +19,8 @@
         -:   14:** Purpose:
         -:   15:**      Functions for working with CCSDS headers.
         -:   16:**
-        -:   17:** $Log: ccsds.c.gcov  $
-        -:   17:** Revision 1.3 2014/09/05 15:24:07GMT-05:00 rmcgraw 
-        -:   17:** DCR22107:22 Baseline Results for cFE6.4
-        -:   18:** Revision 1.5 2012/01/13 12:15:11EST acudmore 
+        -:   17:** $Log: ccsds.c  $
+        -:   18:** Revision 1.5 2012/01/13 12:15:11GMT-05:00 acudmore 
         -:   19:** Changed license text to reflect open source
         -:   20:** Revision 1.4 2010/10/25 15:00:51EDT jmdagost 
         -:   21:** Corrected bad apostrophe in prologue.
@@ -72,30 +70,30 @@
         -:   65:**    (none)
         -:   66:*/
         -:   67:
-     1356:   68:void CCSDS_InitPkt (CCSDS_PriHdr_t  *PktPtr,
+        -:   68:void CCSDS_InitPkt (CCSDS_PriHdr_t  *PktPtr,
         -:   69:                    uint16           StreamId,
         -:   70:                    uint16           Length,
         -:   71:                    boolean          Clear )
-        -:   72:{
+      243:   72:{
         -:   73:   uint16     SeqCount;
         -:   74:
         -:   75:   /* Save the sequence count in case it must be preserved. */
-     1356:   76:   SeqCount = CCSDS_RD_SEQ(*PktPtr);
+      243:   76:   SeqCount = CCSDS_RD_SEQ(*PktPtr);
         -:   77:
         -:   78:   /* Zero the entire packet if needed. */
-     1356:   79:   if (Clear)  CFE_PSP_MemSet((void *)PktPtr, 0, Length);
+      243:   79:   if (Clear)  CFE_PSP_MemSet((void *)PktPtr, 0, Length);
         -:   80:
         -:   81:   /* Clear the primary header. */
-     1356:   82:   CCSDS_CLR_PRI_HDR(*PktPtr);
+      243:   82:   CCSDS_CLR_PRI_HDR(*PktPtr);
         -:   83:
         -:   84:   /* Set the stream ID and length fields in the primary header. */
-     1356:   85:   CCSDS_WR_SID(*PktPtr, StreamId);
-     1356:   86:   CCSDS_WR_LEN(*PktPtr, Length);
+      243:   85:   CCSDS_WR_SID(*PktPtr, StreamId);
+      243:   86:   CCSDS_WR_LEN(*PktPtr, Length);
         -:   87:
         -:   88:   /* Restore the sequence count if needed. */
-     1356:   89:   if (!Clear)  CCSDS_WR_SEQ(*PktPtr, SeqCount);
+      243:   89:   if (!Clear)  CCSDS_WR_SEQ(*PktPtr, SeqCount);
         -:   90:
-     1356:   91:} /* END CCSDS_InitPkt() */
+      243:   91:} /* END CCSDS_InitPkt() */
         -:   92:
         -:   93:
         -:   94:/******************************************************************************
@@ -115,18 +113,18 @@
         -:  108:**    (none)
         -:  109:*/
         -:  110:
-        6:  111:void CCSDS_LoadCheckSum (CCSDS_CmdPkt_t *PktPtr)
-        -:  112:{
+        -:  111:void CCSDS_LoadCheckSum (CCSDS_CmdPkt_t *PktPtr)
+        1:  112:{
         -:  113:   uint8    CheckSum;
         -:  114:
         -:  115:   /* Clear the checksum field so the new checksum is correct. */
-        6:  116:   CCSDS_WR_CHECKSUM(PktPtr->SecHdr, 0);
+        1:  116:   CCSDS_WR_CHECKSUM(PktPtr->SecHdr, 0);
         -:  117:
         -:  118:   /* Compute and load new checksum. */
-        6:  119:   CheckSum = CCSDS_ComputeCheckSum(PktPtr);
-        6:  120:   CCSDS_WR_CHECKSUM(PktPtr->SecHdr, CheckSum);
+        1:  119:   CheckSum = CCSDS_ComputeCheckSum(PktPtr);
+        1:  120:   CCSDS_WR_CHECKSUM(PktPtr->SecHdr, CheckSum);
         -:  121:
-        6:  122:} /* END CCSDS_LoadCheckSum() */
+        1:  122:} /* END CCSDS_LoadCheckSum() */
         -:  123:
         -:  124:
         -:  125:/******************************************************************************
@@ -145,10 +143,10 @@
         -:  138:**    A valid checksum is 0.
         -:  139:*/
         -:  140:
-       18:  141:boolean CCSDS_ValidCheckSum (CCSDS_CmdPkt_t *PktPtr)
-        -:  142:{
+        -:  141:boolean CCSDS_ValidCheckSum (CCSDS_CmdPkt_t *PktPtr)
+        3:  142:{
         -:  143:
-       18:  144:   return (CCSDS_ComputeCheckSum(PktPtr) == 0);
+        3:  144:   return (CCSDS_ComputeCheckSum(PktPtr) == 0);
         -:  145:
         -:  146:} /* END CCSDS_ValidCheckSum() */
         -:  147:
@@ -169,16 +167,16 @@
         -:  162:**    TRUE if checksum of packet is valid; FALSE if not.
         -:  163:*/
         -:  164:
-       24:  165:uint8 CCSDS_ComputeCheckSum (CCSDS_CmdPkt_t *PktPtr)
-        -:  166:{
-       24:  167:   uint16   PktLen   = CCSDS_RD_LEN(PktPtr->PriHdr);
-       24:  168:   uint8   *BytePtr  = (uint8 *)PktPtr;
+        -:  165:uint8 CCSDS_ComputeCheckSum (CCSDS_CmdPkt_t *PktPtr)
+        4:  166:{
+        4:  167:   uint16   PktLen   = CCSDS_RD_LEN(PktPtr->PriHdr);
+        4:  168:   uint8   *BytePtr  = (uint8 *)PktPtr;
         -:  169:   uint8    CheckSum;
         -:  170:
-       24:  171:   CheckSum = 0xFF;
-       24:  172:   while (PktLen--)  CheckSum ^= *(BytePtr++);
+        4:  171:   CheckSum = 0xFF;
+        4:  172:   while (PktLen--)  CheckSum ^= *(BytePtr++);
         -:  173:
-       24:  174:   return CheckSum;
+        4:  174:   return CheckSum;
         -:  175:
         -:  176:} /* END CCSDS_ComputeCheckSum() */
         -:  177:

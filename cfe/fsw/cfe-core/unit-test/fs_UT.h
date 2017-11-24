@@ -41,17 +41,6 @@
 #include "ut_stubs.h"
 #include "ut_fs_zipfile.h"
 
-/*
-** Function Prototypes
-*/
-/* cFE functions */
-void CFE_FS_ByteSwapCFEHeader(CFE_FS_Header_t *Hdr);
-void CFE_FS_ByteSwapUint32(uint32 *Uint32ToSwapPtr);
-int32 FS_gz_inflate_fixed(void);
-int32 FS_gz_inflate_stored(void);
-int16 FS_gz_fill_inbuf(void);
-void FS_gz_flush_window(void);
-
 /* FS unit test functions */
 /*****************************************************************************/
 /**
@@ -70,6 +59,24 @@ void FS_gz_flush_window(void);
 **
 ******************************************************************************/
 void Test_CFE_FS_API(void);
+
+/*****************************************************************************/
+/**
+** \brief Test FS API initialize header function
+**
+** \par Description
+**        This function tests the initialize header function.
+**
+** \par Assumptions, External Events, and Notes:
+**        None
+**
+** \returns
+**        This function does not return a value.
+**
+** \sa #UT_Report, #CFE_FS_InitHeader
+**
+******************************************************************************/
+void Test_CFE_FS_InitHeader(void);
 
 /*****************************************************************************/
 /**

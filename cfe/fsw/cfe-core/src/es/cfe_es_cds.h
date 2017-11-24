@@ -226,59 +226,77 @@ int32   CFE_ES_UnlockCDSRegistry(void);
 
 /*****************************************************************************/
 /**
-** \brief Reserve space (or re-obtain previously reserved space) in the Critical Data Store (CDS)
+** \brief Rebuilds memory pool for CDS and recovers existing registry
 **
 ** \par Description
-**        This routine is identical to #CFE_ES_RegisterCDS except it identifies the contents
-**        of the CDS as a critical table.  This is crucial because a critical table CDS must
-**        only be deleted by cFE Table Services, not via an ES delete CDS command.  Otherwise,
-**        Table Services may be out of sync with the contents of the CDS. 
+**        Scans memory for existing CDS and initializes memory pool and registry
+**        settings accordingly
 **
 ** \par Assumptions, External Events, and Notes:
-**        -# This function assumes input parameters are error free and have met size/value restrictions.
-**        -# The calling function is responsible for issuing any event messages associated with errors.
+**        -# Assumes the validity of the CDS has already been determined
 **
-** \param[in]   HandlePtr   Pointer Application's variable that will contain the CDS Memory Block Handle.
-**
-** \param[in]   BlockSize   The number of bytes needed in the CDS.
-**
-** \param[in]   Name        Pointer to character string containing the Application's local name for
-**                          the CDS.
-**
-** \param[in]   CriticalTbl   Indicates whether the CDS is to be used as a Critical Table or not
-**
-** \param[out]  *HandlePtr  The handle of the CDS block that can be used in #CFE_ES_CopyToCDS and #CFE_ES_RestoreFromCDS.
-**
-** \return See return codes for #CFE_ES_RegisterCDS
+** \return #CFE_SUCCESS         \copydoc CFE_SUCCESS
+** \return Any of the return values from #CFE_PSP_ReadFromCDS
 **
 ******************************************************************************/
-int32 CFE_ES_RegisterCDSEx(CFE_ES_CDSHandle_t *HandlePtr, int32 BlockSize, const char *Name, boolean CriticalTbl);
+int32 CFE_ES_RebuildCDS(void);
 
 /*****************************************************************************/
 /**
-** \brief Deletes the specified CDS from the CDS Registry and frees CDS Memory
+** \brief Initializes the CDS Registry
 **
 ** \par Description
-**        Removes the record of the specified CDS from the CDS Registry and
-**        frees the associated CDS memory for future use.
+**        Initializes the data structure used to keep track of CDS blocks and
+**        who they belong to.
 **
 ** \par Assumptions, External Events, and Notes:
 **          None
 **
-** \param[in]  CDSName - Pointer to character string containing complete
-**                       CDS Name (of the format "AppName.CDSName").
+** \retval #CFE_SUCCESS         \copydoc CFE_SUCCESS
 **
-** \param[in]  CalledByTblServices - Flag that identifies whether the CDS is supposed to
-**                       be a Critical Table Image or not.
-** 
-** \return #CFE_SUCCESS                     \copydoc CFE_SUCCESS
-** \return #CFE_ES_CDS_WRONG_TYPE_ERR       \copydoc CFE_ES_CDS_WRONG_TYPE_ERR
-** \return #CFE_ES_CDS_OWNER_ACTIVE_ERR     \copydoc CFE_ES_CDS_OWNER_ACTIVE_ERR
-** \return #CFE_ES_CDS_NOT_FOUND_ERR        \copydoc CFE_ES_CDS_NOT_FOUND_ERR
-** \return Any of the return values from #CFE_ES_UpdateCDSRegistry
-** \return Any of the return values from #CFE_ES_PutCDSBlock
-**                     
 ******************************************************************************/
-int32  CFE_ES_DeleteCDS(const char *CDSName, boolean CalledByTblServices);
+int32 CFE_ES_InitCDSRegistry(void);
+
+/*****************************************************************************/
+/**
+** \brief Determines whether a CDS currently exists
+**
+** \par Description
+**        Reads a set of bytes from the beginning and end of the CDS memory
+**        area and determines if a fixed pattern is present, thus determining
+**        whether the CDS still likely contains valid data or not.
+**
+** \par Assumptions, External Events, and Notes:
+**          None
+**
+** \return #CFE_SUCCESS         \copydoc CFE_SUCCESS
+** \return #CFE_ES_CDS_INVALID  \copydoc CFE_ES_CDS_INVALID
+** \return Any of the return values from #CFE_PSP_ReadFromCDS
+**
+******************************************************************************/
+int32 CFE_ES_ValidateCDS(void);
+
+/*****************************************************************************/
+/**
+** \brief Initializes the contents of the CDS
+**
+** \par Description
+**        Stores a fixed pattern at the beginning and end of the CDS memory
+**        to tag it for future verification following a reset.
+**
+** \par Assumptions, External Events, and Notes:
+**          None
+**
+** \param[in]  CDSSize Total size of CDS memory area (in bytes)
+**
+** \return #OS_SUCCESS          \copydoc OS_SUCCESS
+** \return Any of the return values from #CFE_PSP_WriteToCDS
+** \return Any of the return values from #CFE_ES_CreateCDSPool
+**
+******************************************************************************/
+int32 CFE_ES_InitializeCDS(uint32 CDSSize);
+
+
+
 
 #endif  /* _cfe_es_cds_ */

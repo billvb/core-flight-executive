@@ -516,8 +516,12 @@
 **  'Write Map Info to File' #CFE_SB_SEND_MAP_INFO_CC.
 */
 typedef struct{
-   CFE_SB_CmdHdr_t  Hdr;/**< \brief cFE Software Bus Command Message Header #CFE_SB_CmdHdr_t */
    char Filename[OS_MAX_PATH_LEN];/**< \brief Path and Filename of data to be loaded */
+} CFE_SB_WriteFileInfoCmd_Payload_t;
+
+typedef struct{
+    CFE_SB_CmdHdr_t                     Hdr;/**< \brief cFE Software Bus Command Message Header #CFE_SB_CmdHdr_t */
+    CFE_SB_WriteFileInfoCmd_Payload_t   Payload;
 }CFE_SB_WriteFileInfoCmd_t;
 
 
@@ -531,10 +535,14 @@ typedef struct{
 */
 typedef struct {
 
-   CFE_SB_CmdHdr_t      Hdr;/**< \brief cFE Software Bus Command Message Header #CFE_SB_CmdHdr_t */
    CFE_SB_MsgId_t       MsgId;/**< \brief Message ID of route to be enabled or disabled #CFE_SB_MsgId_t */
    CFE_SB_PipeId_t      Pipe;/**< \brief Pipe ID of route to be enabled or disabled #CFE_SB_PipeId_t */
    uint8                Spare;/**<\brief Spare byte to make command even number of bytes */
+} CFE_SB_EnRoutCmd_Payload_t;
+
+typedef struct{
+    CFE_SB_CmdHdr_t             Hdr;/**< \brief cFE Software Bus Command Message Header #CFE_SB_CmdHdr_t */
+    CFE_SB_EnRoutCmd_Payload_t  Payload;
 } CFE_SB_EnRoutCmd_t;
 
 
@@ -547,7 +555,6 @@ typedef struct {
 */
 typedef struct {
 
-    CFE_SB_TlmHdr_t Hdr;/**< \brief cFE Software Bus Telemetry Message Header */
     uint8           CommandCnt;/**< \cfetlmmnemonic \SB_CMDPC
                                     \brief Count of valid commands received */
     uint8           CmdErrCnt;/**< \cfetlmmnemonic \SB_CMDEC
@@ -586,7 +593,11 @@ typedef struct {
 
     uint32          UnmarkedMem;/**< \cfetlmmnemonic \SB_UNMARKEDMEM
                                      \brief cfg param CFE_SB_BUF_MEMORY_BYTES minus Peak Memory in use */
+} CFE_SB_HKMsg_Payload_t;
 
+typedef struct{
+    CFE_SB_TlmHdr_t         Hdr;/**< \brief cFE Software Bus Telemetry Message Header */
+    CFE_SB_HKMsg_Payload_t  Payload;
 } CFE_SB_HKMsg_t;
 
 
@@ -617,7 +628,6 @@ typedef struct {
 */
 typedef struct {
 
-    CFE_SB_TlmHdr_t     Hdr;/**< \brief cFE Software Bus Telemetry Message Header */
     uint32              MsgIdsInUse;/**< \cfetlmmnemonic \SB_SMMIDIU
                                          \brief Current number of MsgIds with a destination */
     uint32              PeakMsgIdsInUse;/**< \cfetlmmnemonic \SB_SMPMIDIU
@@ -656,7 +666,11 @@ typedef struct {
                                                  \brief cFE Cfg Param \link #CFE_SB_MAX_PIPE_DEPTH \endlink */
     CFE_SB_PipeDepthStats_t PipeDepthStats[CFE_SB_MAX_PIPES];/**< \cfetlmmnemonic \SB_SMPDS
                                                                   \brief Pipe Depth Statistics #CFE_SB_PipeDepthStats_t*/
+} CFE_SB_StatMsg_Payload_t;
 
+typedef struct{
+    CFE_SB_TlmHdr_t             Hdr;/**< \brief cFE Software Bus Telemetry Message Header */
+    CFE_SB_StatMsg_Payload_t    Payload;
 } CFE_SB_StatMsg_t;
 
 
@@ -698,12 +712,16 @@ typedef struct{
 */
 typedef struct {
 
-   CFE_SB_TlmHdr_t      Hdr;/**< \brief cFE Software Bus Telemetry Message Header */
    uint8                SubType;/**< \brief Subscription or Unsubscription */
    CFE_SB_MsgId_t       MsgId;/**< \brief MsgId subscribed or unsubscribe to */
    CFE_SB_Qos_t         Qos;/**< \brief Quality of Service, used only for interprocessor communication */
    CFE_SB_PipeId_t      Pipe;/**< \brief Destination pipe id to send above msg id  */
 
+} CFE_SB_SubRprtMsg_Payload_t;
+
+typedef struct{
+    CFE_SB_TlmHdr_t             Hdr;/**< \brief cFE Software Bus Telemetry Message Header */
+    CFE_SB_SubRprtMsg_Payload_t Payload;
 } CFE_SB_SubRprtMsg_t;
 
 
@@ -735,12 +753,15 @@ typedef struct {
 */
 typedef struct {
 
-   CFE_SB_TlmHdr_t      Hdr;/**< \brief cFE Software Bus Telemetry Message Header */
    uint32               PktSegment;/**< \brief Pkt number(starts at 1) in the series */
    uint32               TotalSegments;/**< \brief Total number of pkts needed to complete the request */
    uint32               Entries;/**< \brief Number of entries in the pkt */
    CFE_SB_SubEntries_t  Entry[CFE_SB_SUB_ENTRIES_PER_PKT];/**< \brief Array of #CFE_SB_SubEntries_t entries */
+} CFE_SB_PrevSubMsg_Payload_t;
 
+typedef struct{
+    CFE_SB_TlmHdr_t             Hdr;/**< \brief cFE Software Bus Telemetry Message Header */
+    CFE_SB_PrevSubMsg_Payload_t Payload;
 } CFE_SB_PrevSubMsg_t;
 
 

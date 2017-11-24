@@ -65,21 +65,13 @@
 */
 #include "cfe_tbl.h"
 #include "cfe_tbl_task.h"
-
+#include "cfe_tbl_filedef.h"
 
 /*********************  Macro and Constant Type Definitions   ***************************/
 
 #define CFE_TBL_NOT_OWNED               0xFFFFFFFF
 #define CFE_TBL_NOT_FOUND               (-1)
 #define CFE_TBL_END_OF_LIST             (CFE_TBL_Handle_t)0xFFFF
-
-typedef struct 
-{
-    uint32                   Reserved;                             /**< Future Use: NumTblSegments in File?   */
-    uint32                   Offset;                               /**< Byte Offset at which load should commence */
-    uint32                   NumBytes;                             /**< Number of bytes to load into table */
-    char                     TableName[CFE_TBL_MAX_FULL_NAME_LEN]; /**< Fully qualified name of table to load */
-} CFE_TBL_File_Hdr_t;
 
 /*****************************  Function Prototypes   **********************************/
 
@@ -523,19 +515,6 @@ int32 CFE_TBL_ReadHeaders( int32 FileDescriptor,
                            const char *LoadFilename );
 
 
-/*****************************************************************************/
-/**
-** \brief Initializes the Table Services API Library
-**
-** \par Description
-**        Initializes the Table Services API Library
-**
-** \par Assumptions, External Events, and Notes:
-**        -# This function MUST be called before any TBL API's are called.
-**
-******************************************************************************/
-int32 CFE_TBL_EarlyInit (void);
-
 
 /*****************************************************************************/
 /**
@@ -569,23 +548,6 @@ void CFE_TBL_InitRegistryRecord (CFE_TBL_RegistryRec_t *RegRecPtr);
 **                     
 ******************************************************************************/
 void CFE_TBL_ByteSwapTblHeader(CFE_TBL_File_Hdr_t *HdrPtr);
-
-
-/*****************************************************************************/
-/**
-** \brief Removes TBL resources associated with specified Application
-**
-** \par Description
-**        This function is called by cFE Executive Services to cleanup after
-**        an Application has been terminated.  It frees TBL services resources
-**        that have been allocated to the specified Application.
-**
-** \par Assumptions, External Events, and Notes:
-**        -# This function DOES NOT remove any critical tables associated with
-**           the specified application from the Critical Data Store.
-**
-******************************************************************************/
-void CFE_TBL_CleanUpApp (uint32 AppId);
 
 
 /*****************************************************************************/
@@ -655,5 +617,67 @@ void CFE_TBL_UpdateCriticalTblCDS(CFE_TBL_RegistryRec_t *RegRecPtr);
 **                     
 ******************************************************************************/
 int32 CFE_TBL_SendNotificationMsg(CFE_TBL_RegistryRec_t *RegRecPtr);
+
+
+/*****************************************************************************/
+/**
+** \brief Gathers data and puts it into the Housekeeping Message format
+**
+** \par Description
+**        Gathers data from the Table Services Application, computes necessary data values and identifies
+**        what Table Validation information needs to be reported in Housekeeping Telemetry.
+**
+** \par Assumptions, External Events, and Notes:
+**          None
+**
+** \retval None
+******************************************************************************/
+extern  void CFE_TBL_GetHkData(void);
+
+
+/*****************************************************************************/
+/**
+** \brief Convert Table Registry Entry for a Table into a Message
+**
+** \par Description
+**        Extracts the Table Registry information for the table specified by the
+**        #CFE_TBL_TaskData_t::HkTlmTblRegIndex variable.  It then formats the
+**        Registry contents into a format appropriate for downlink.
+**
+** \par Assumptions, External Events, and Notes:
+**        #CFE_TBL_TaskData_t::HkTlmTblRegIndex is assumed to be a valid index into
+**           the Table Registry.
+**
+** \retval None
+******************************************************************************/
+extern void CFE_TBL_GetTblRegData(void);
+
+
+/*****************************************************************************/
+/**
+** \brief Performs a byte swap on a uint32 integer
+**
+** \par Description
+**        Converts a big-endian uint32 integer to a little-endian uint32 integer
+**        and vice-versa.
+**
+** \par Assumptions, External Events, and Notes:
+**          None
+**
+** \param[in]  Uint32ToSwapPtr Pointer to uint32 value to be swapped.
+**
+** \param[out] *Uint32ToSwapPtr The swapped uint32 value
+**
+**
+******************************************************************************/
+extern void CFE_TBL_ByteSwapUint32(uint32 *Uint32ToSwapPtr);
+
+
+/*
+** Globals specific to the TBL module
+*/
+extern CFE_TBL_TaskData_t CFE_TBL_TaskData;
+
+
 
 #endif /* _cfe_tbl_internal_ */

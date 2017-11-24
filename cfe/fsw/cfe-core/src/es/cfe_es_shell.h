@@ -67,7 +67,7 @@
 ** Operating System Shell function
 */
 
-int32 CFE_ES_ShellOutputCommand(char * CmdString, char *Filename);
+int32 CFE_ES_ShellOutputCommand(const char * CmdString, const char *Filename);
 
 int32 CFE_ES_ListApplications(int32 fd);
 int32 CFE_ES_ListTasks(int32 fd);

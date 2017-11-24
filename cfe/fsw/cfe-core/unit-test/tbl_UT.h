@@ -41,40 +41,6 @@
 #include "cfe_tbl_task.h"
 #include "cfe_tbl_task_cmds.h"
 
-/*
-** Macro definitions
-*/
-#define CFE_TBL_BAD_CMD_CODE (-1) /**< Command Code found in Message does not
-                                       match any in #CFE_TBL_CmdHandlerTbl */
-#define CFE_TBL_BAD_MSG_ID   (-2) /**< Message ID found in Message does not
-                                       match any in #CFE_TBL_CmdHandlerTbl */
-
-/*
-** Structures
-**/
-typedef enum
-{
-    CFE_TBL_TERM_MSGTYPE = 0, /**< \brief Command Handler Table
-                                          Terminator Type */
-    CFE_TBL_MSG_MSGTYPE,      /**< \brief Message Type (requires Message ID
-                                          match) */
-    CFE_TBL_CMD_MSGTYPE       /**< \brief Command Type (requires Message ID
-                                          and Command Code match) */
-} CFE_TBL_MsgType_t;
-
-/* Data structure of a single record in #CFE_TBL_CmdHandlerTbl */
-typedef struct {
-    uint32 MsgId;               /**< \brief Acceptable Message ID */
-    uint32 CmdCode;             /**< \brief Acceptable Command Code (if
-                                            necessary) */
-    uint32 ExpectedLength;      /**< \brief Expected Message Length (in bytes)
-                                            including message header */
-    CFE_TBL_MsgProcFuncPtr_t MsgProcFuncPtr; /**< \brief Pointer to function
-                                                         to handle message  */
-    CFE_TBL_MsgType_t MsgTypes; /**< \brief Message Type (i.e. - with/without
-                                            Cmd Code)   */
-} CFE_TBL_CmdHandlerTblRec_t;
-
 typedef struct
 {
     uint32 TblElement1;
@@ -94,82 +60,8 @@ typedef struct
     UT_Table1_t        TblData;
 } UT_TempFile_t;
 
-/*
-**  Functions prototypes
-*/
-/* cFE functions */
-CFE_TBL_CmdProcRet_t CFE_TBL_DumpToFile(char *DumpFilename,
-                                        char *TableName,
-                                        void *DumpDataAddr,
-                                        uint32 TblSizeInBytes);
-void CFE_TBL_GetTblRegData(void);
-void CFE_TBL_GetHkData(void);
-void CFE_TBL_TaskMain(void);
-int32 CFE_TBL_TaskInit(void);
-void CFE_TBL_InitData(void);
-void CFE_TBL_TaskPipe(CFE_SB_Msg_t *MessagePtr);
-int16 CFE_TBL_SearchCmdHndlrTbl(CFE_SB_MsgId_t MessageID,
-                                uint16 CommandCode);
-void CFE_TBL_ByteSwapUint32(uint32 *Uint32ToSwapPtr);
-
 
 /* TBL unit test functions */
-/*****************************************************************************/
-/**
-** \brief Saves the data inside the array passed in and sets the data to a
-**        controlled set of data
-**
-** \par Description
-**        Saves the data inside the array passed in and sets the data to a
-**        controlled set of data.
-**
-** \par Assumptions, External Events, and Notes:
-**        None
-**
-** \returns
-**        This function does not return a value.
-**
-** \sa #FindLength
-**
-******************************************************************************/
-void UT_SwapRegistryforControl(CFE_TBL_RegistryRec_t Registry[],
-                               CFE_TBL_RegistryRec_t Desired[]);
-
-/*****************************************************************************/
-/**
-** \brief Returns the original array's values passed in by the
-**        UT_SwapRegistryforControl function
-**
-** \par Description
-**        Returns the original array's values passed in by the
-**        UT_SwapRegistryforControl function.
-**
-** \par Assumptions, External Events, and Notes:
-**        None
-**
-** \returns
-**        This function does not return a value.
-**
-** \sa #FindLength
-**
-******************************************************************************/
-void ReturnOriginValues(CFE_TBL_RegistryRec_t Registry[]);
-
-/*****************************************************************************/
-/**
-** \brief Finds the number of indexes in the array passed into function
-**
-** \par Description
-**        Finds the number of indexes in the array passed into function.
-**
-** \par Assumptions, External Events, and Notes:
-**        None
-**
-** \returns
-**        This function does not return a value.
-**
-******************************************************************************/
-int32 FindLength(CFE_TBL_RegistryRec_t Registry[]);
 
 /*****************************************************************************/
 /**
@@ -188,6 +80,24 @@ int32 FindLength(CFE_TBL_RegistryRec_t Registry[]);
 **
 ******************************************************************************/
 void UT_ProcessSBMsg(CFE_SB_Msg_t *MsgPtr);
+
+/*****************************************************************************/
+/**
+** \brief Initialize the registry
+**
+** \par Description
+**        Fill the whole table registry with known table names in order to
+**        detect when a table name is not registered, and set an owning
+**        application ID for each table entry
+**
+** \par Assumptions, External Events, and Notes:
+**        None
+**
+** \returns
+**        This function does not return a value.
+**
+******************************************************************************/
+void UT_InitializeTableRegistryNames(void);
 
 /*****************************************************************************/
 /**
@@ -302,8 +212,7 @@ void Test_CFE_TBL_DeleteCDSCmd(void);
 ** \returns
 **        This function does not return a value.
 **
-** \sa #UT_Text, #UT_InitData, #UT_Report, #CFE_TBL_TlmRegCmd,
-** \sa #UT_SwapRegistryforControl, #UT_ReturnOriginValues
+** \sa #UT_Text, #UT_InitData, #UT_Report, #CFE_TBL_TlmRegCmd
 **
 ******************************************************************************/
 void Test_CFE_TBL_TlmRegCmd(void);
@@ -322,8 +231,7 @@ void Test_CFE_TBL_TlmRegCmd(void);
 ** \returns
 **        This function does not return a value.
 **
-** \sa #UT_Text, #UT_InitData, #UT_Report, #CFE_TBL_AbortLoadCmd,
-** \sa #UT_SwapRegistryforControl, #UT_ReturnOriginValues
+** \sa #UT_Text, #UT_InitData, #UT_Report, #CFE_TBL_AbortLoadCmd
 **
 ******************************************************************************/
 void Test_CFE_TBL_AbortLoadCmd(void);
@@ -341,8 +249,7 @@ void Test_CFE_TBL_AbortLoadCmd(void);
 ** \returns
 **        This function does not return a value.
 **
-** \sa #UT_Text, #UT_InitData, #UT_Report, #CFE_TBL_ActivateCmd,
-** \sa #UT_SwapRegistryforControl, #UT_ReturnOriginValues
+** \sa #UT_Text, #UT_InitData, #UT_Report, #CFE_TBL_ActivateCmd
 **
 ******************************************************************************/
 void Test_CFE_TBL_ActivateCmd(void);
@@ -398,8 +305,7 @@ void Test_CFE_TBL_ResetCmd(void);
 ** \returns
 **        This function does not return a value.
 **
-** \sa #UT_Text, #UT_InitData, #UT_SwapRegistryforControl, #UT_Report,
-** \sa #CFE_TBL_ValidateCmd, #UT_ReturnOriginValues
+** \sa #UT_Text, #UT_InitData, #UT_Report, #CFE_TBL_ValidateCmd
 **
 ******************************************************************************/
 void Test_CFE_TBL_ValidateCmd(void);
@@ -498,8 +404,7 @@ void Test_CFE_TBL_DumpRegCmd(void);
 ** \returns
 **        This function does not return a value.
 **
-** \sa #UT_Text, #UT_InitData, #UT_SwapRegistryforControl, #UT_Report,
-** \sa #CFE_TBL_DumpCmd, #UT_ReturnOriginValues, #UT_SetRtnCode
+** \sa #UT_Text, #UT_InitData, #UT_Report, #CFE_TBL_DumpCmd, #UT_SetRtnCode
 **
 ******************************************************************************/
 void Test_CFE_TBL_DumpCmd(void);

@@ -3,9 +3,9 @@
 ** $Id: cfe_time_utils.h 1.8 2014/07/07 10:22:52GMT-05:00 acudmore Exp  $
 **
 **
-**      Copyright ¿ 2004-2012, United States government as represented by the 
+**      Copyright ï¿½ 2004-2012, United States government as represented by the 
 **      administrator of the National Aeronautics Space Administration.  
-**      All rights reserved. This software(cFE) was created at NASA¿s Goddard 
+**      All rights reserved. This software(cFE) was created at NASAï¿½s Goddard 
 **      Space Flight Center pursuant to government contracts.
 **
 **      This is governed by the NASA Open Source Agreement and may be used, 
@@ -320,8 +320,20 @@ typedef struct
 
 } CFE_TIME_TaskData_t;
 
+/*
+** Time task global data (from "cfe_time_task.c")...
+*/
+extern CFE_TIME_TaskData_t CFE_TIME_TaskData;
+
+
 /*************************************************************************/
 
+/*
+** Macro to copy systime into another systime.
+** Preferred to use this macro as it does not require the two arguments to be exactly the same type,
+** it will work with any two structures that define "Seconds" and "Subseconds" members.
+*/
+#define CFE_TIME_Copy(m,t)   { (m)->Seconds = (t)->Seconds; (m)->Subseconds = (t)->Subseconds; }
 
 /*
 ** Function prototypes (get local clock)...
@@ -331,12 +343,14 @@ CFE_TIME_SysTime_t CFE_TIME_LatchClock(void);
 /*
 ** Function prototypes (Time Services utilities data)...
 */
+int32 CFE_TIME_TaskInit (void);
+void  CFE_TIME_TaskPipe(CFE_SB_MsgPtr_t MessagePtr);
 void CFE_TIME_InitData(void);
 void CFE_TIME_QueryResetVars(void);
-void CFE_TIME_UpdateResetVars(CFE_TIME_Reference_t *Reference);
+void CFE_TIME_UpdateResetVars(const CFE_TIME_Reference_t *Reference);
 uint16 CFE_TIME_GetStateFlags(void);
 void CFE_TIME_GetDiagData(void);
-void CFE_TIME_GetHkData(CFE_TIME_Reference_t *Reference);
+void CFE_TIME_GetHkData(const CFE_TIME_Reference_t *Reference);
 
 /*
 ** Function prototypes (reference)...
@@ -346,10 +360,10 @@ void CFE_TIME_GetReference(CFE_TIME_Reference_t *Reference);
 /*
 ** Function prototypes (calculate TAI/UTC)...
 */
-CFE_TIME_SysTime_t CFE_TIME_CalculateTAI(CFE_TIME_Reference_t *Reference);
-CFE_TIME_SysTime_t CFE_TIME_CalculateUTC(CFE_TIME_Reference_t *Reference);
+CFE_TIME_SysTime_t CFE_TIME_CalculateTAI(const CFE_TIME_Reference_t *Reference);
+CFE_TIME_SysTime_t CFE_TIME_CalculateUTC(const CFE_TIME_Reference_t *Reference);
 
-int16 CFE_TIME_CalculateState(CFE_TIME_Reference_t *Reference);
+int16 CFE_TIME_CalculateState(const CFE_TIME_Reference_t *Reference);
 
 /*
 ** Function prototypes (set time globals)...
@@ -401,7 +415,7 @@ int32 CFE_TIME_ToneSendTime(CFE_TIME_SysTime_t NewTime);
 ** Function prototypes (process time at the tone signal and data packet)...
 */
 void CFE_TIME_ToneSignal(void);
-void CFE_TIME_ToneData(CFE_TIME_ToneDataCmd_t *Packet);
+void CFE_TIME_ToneData(CFE_TIME_ToneDataCmd_Payload_t *Packet);
 void CFE_TIME_ToneVerify(CFE_TIME_SysTime_t Time1, CFE_TIME_SysTime_t Time2);
 void CFE_TIME_ToneUpdate(void);
 
@@ -417,6 +431,8 @@ void CFE_TIME_NotifyTimeSynchApps(void);
 */
 void CFE_TIME_Local1HzISR(void);
 void CFE_TIME_Local1HzTask(void);
+void CFE_TIME_Local1HzTimerCallback(uint32 TimerId, void *Arg);
+
 
 #endif /* _cfe_time_utils_ */
 

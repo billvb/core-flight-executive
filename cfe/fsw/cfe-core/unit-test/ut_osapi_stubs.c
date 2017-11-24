@@ -101,7 +101,7 @@
 #include "osapi.h"
 #include "common_types.h"
 #include "ut_stubs.h"
-#include "osprintf_priv.h"
+#include "ut_osprintf_stubs.h"
 
 #ifdef SOCKET_QUEUE
 #include <unistd.h>
@@ -117,88 +117,114 @@
 #define OS_BASE_PORT 43000
 #define MAX_PRIORITY 255
 
-#ifdef OS_USE_EMBEDDED_PRINTF
-#define UT_OFFSET_OS_PRINTF 2
-#define UT_OFFSET_OS_SPRINTF 3
-#define UT_OFFSET_OS_SNPRINTF 4
-
-#define UT_BREAK_OS_PRINTF 7
-#define UT_BREAK_OS_SPRINTF 6
-#define UT_BREAK_OS_SNPRINTF 5
-
-#define UT_SKIP_OS_PRINTF 94
-#define UT_SKIP_OS_SPRINTF 22
-#define UT_SKIP_OS_SNPRINTF 22
-#endif
+typedef struct
+{
+    char    name[OS_MAX_API_NAME];
+    int     id;
+    boolean free;
+    char    data[100];
+    int     size;
+} UT_Queue_t;
 
 /*
 ** External global variables
 */
-extern uint32 UT_OS_Fail;
-extern char   UT_ReadBuf[];
-extern int32  UT_ReadBufOffset;
-extern int32  dummy_function(void);
-extern char   UT_appname[80];
-extern int    UT_lognum;
-extern uint32 UT_OS_Fail;
-extern uint32 UT_AppID;
-extern uint32 UT_LocTimeSec;
-extern uint32 UT_LocTimeMSec;
-extern uint32 UT_BinSemFail;
 extern char   cMsg[];
 
-extern UT_Queue_t UT_Queue[OS_MAX_QUEUES];
-
-extern UT_SetRtn_t MutSemCreateRtn;
-extern UT_SetRtn_t MutSemGiveRtn;
-extern UT_SetRtn_t MutSemTakeRtn;
-extern UT_SetRtn_t QueueCreateRtn;
-extern UT_SetRtn_t QueueDelRtn;
-extern UT_SetRtn_t QueueGetRtn;
-extern UT_SetRtn_t QueuePutRtn;
-extern UT_SetRtn_t FileWriteRtn;
-extern UT_SetRtn_t OSReadRtn;
-extern UT_SetRtn_t OSReadRtn2;
-extern UT_SetRtn_t OS_BinSemCreateRtn;
-extern UT_SetRtn_t OSlseekRtn;
-extern UT_SetRtn_t CountSemDelRtn;
-extern UT_SetRtn_t MutSemDelRtn;
-extern UT_SetRtn_t BinSemDelRtn;
-extern UT_SetRtn_t BlocksFreeRtn;
-extern UT_SetRtn_t UnmountRtn;
-extern UT_SetRtn_t RmfsRtn;
-extern UT_SetRtn_t ModuleLoadRtn;
-extern UT_SetRtn_t ModuleUnloadRtn;
-extern UT_SetRtn_t ModuleInfoRtn;
-extern UT_SetRtn_t SymbolLookupRtn;
-extern UT_SetRtn_t HeapGetInfoRtn;
-extern UT_SetRtn_t OSPrintRtn;
-extern UT_SetRtn_t OSTaskExitRtn;
-extern UT_SetRtn_t OSBinSemTimedWaitRtn;
-extern UT_SetRtn_t OSBinSemFlushRtn;
-extern UT_SetRtn_t PSPPanicRtn;
-extern UT_SetRtn_t OSCloseRtn;
-extern UT_SetRtn_t OSTimerGetInfoRtn;
+UT_Queue_t UT_Queue[OS_MAX_QUEUES];
 
 /*
-** Global variables
-*/
-UT_Task_t UT_Task[OS_MAX_TASKS];
+ * The following are now instantiated as part of the OSAL UT stub library,
+ * in the same source file that actually implements the stub, rather than
+ * instantiating it here.
+ */
 
-#ifdef OS_USE_EMBEDDED_PRINTF
-static int gMaxOutputLen = -1;
-static int gCurrentOutputLen = 0;
+char    UT_ReadBuf[100000];
+int32   UT_ReadBufOffset;
+int     UT_lognum;
+int     UT_DummyFuncRtn;
+uint32  UT_BinSemFail = 0;
+uint32  UT_OS_Fail = OS_NO_FAIL;
 
-#ifdef OSP_ARINC653
-uint32 OS_PrintfMutexId = 0xffffffff;
-int OS_printf_break = -1;
-int OS_printf_skip = 0;
-#endif
-#endif
+UT_SetRtn_t BinSemDelRtn;
+UT_SetRtn_t BlocksFreeRtn;
+UT_SetRtn_t CountSemDelRtn;
+UT_SetRtn_t FileWriteRtn;
+UT_SetRtn_t HeapGetInfoRtn;
+UT_SetRtn_t ModuleInfoRtn;
+UT_SetRtn_t ModuleLoadRtn;
+UT_SetRtn_t ModuleUnloadRtn;
+UT_SetRtn_t MutSemCreateRtn;
+UT_SetRtn_t MutSemDelRtn;
+UT_SetRtn_t MutSemGiveRtn;
+UT_SetRtn_t MutSemTakeRtn;
+UT_SetRtn_t OS_BinSemCreateRtn;
+UT_SetRtn_t OSBinSemFlushRtn;
+UT_SetRtn_t OSBinSemTimedWaitRtn;
+UT_SetRtn_t OSCloseRtn;
+UT_SetRtn_t OSlseekRtn;
+UT_SetRtn_t OSReadRtn;
+UT_SetRtn_t OSReadRtn2;
+UT_SetRtn_t OSTaskExitRtn;
+UT_SetRtn_t OSTimerGetInfoRtn;
+UT_SetRtn_t QueueCreateRtn;
+UT_SetRtn_t QueueDelRtn;
+UT_SetRtn_t QueueGetRtn;
+UT_SetRtn_t QueuePutRtn;
+UT_SetRtn_t SymbolLookupRtn;
+UT_SetRtn_t UnmountRtn;
 
 /*
 ** Functions
 */
+/**
+ * Initialization function
+ */
+int32 OS_API_Init (void)
+{
+   uint32 i;
+
+   /* Reset the UT_Queue structure */
+   memset(UT_Queue, 0, sizeof(UT_Queue));
+
+   for(i=0; i < OS_MAX_QUEUES; ++i)
+   {
+      UT_Queue[i].free = TRUE;
+   }
+
+   /* Reset all the existing-style deferred retcode structs */
+   UT_OS_Fail = OS_NO_FAIL;
+   UT_SetRtnCode(&QueuePutRtn, 0, 0);
+   UT_SetRtnCode(&MutSemGiveRtn, 0, 0);
+   UT_SetRtnCode(&MutSemTakeRtn, 0, 0);
+   UT_SetRtnCode(&QueueCreateRtn, 0, 0);
+   UT_SetRtnCode(&QueueDelRtn, 0, 0);
+   UT_SetRtnCode(&QueueGetRtn, 0, 0);
+   UT_SetRtnCode(&FileWriteRtn, 0, 0);
+   UT_SetRtnCode(&OSReadRtn, 0, 0);
+   UT_SetRtnCode(&OSReadRtn2, 0, 0);
+   UT_SetRtnCode(&OS_BinSemCreateRtn, 0, 0);
+   UT_SetRtnCode(&MutSemCreateRtn, 0, 0);
+   UT_SetRtnCode(&OSlseekRtn, 0, 0);
+   UT_SetRtnCode(&CountSemDelRtn, 0, 0);
+   UT_SetRtnCode(&MutSemDelRtn, 0, 0);
+   UT_SetRtnCode(&BinSemDelRtn, 0, 0);
+   UT_SetRtnCode(&BlocksFreeRtn, 0, 0);
+   UT_SetRtnCode(&UnmountRtn, 0, 0);
+   UT_SetRtnCode(&ModuleLoadRtn, 0, 0);
+   UT_SetRtnCode(&ModuleUnloadRtn, 0, 0);
+   UT_SetRtnCode(&ModuleInfoRtn, 0, 0);
+   UT_SetRtnCode(&SymbolLookupRtn, 0, 0);
+   UT_SetRtnCode(&HeapGetInfoRtn, 0, 0);
+   UT_SetRtnCode(&OSTaskExitRtn, 0, 0);
+   UT_SetRtnCode(&OSBinSemTimedWaitRtn, -1, 0);
+   UT_SetRtnCode(&OSBinSemFlushRtn, -1, 0);
+   UT_SetRtnCode(&OSCloseRtn, 0, 0);
+   UT_SetRtnCode(&OSTimerGetInfoRtn, 0, 0);
+
+   return OS_SUCCESS;
+}
+
 /*****************************************************************************/
 /**
 ** \brief OS_BinSemTake stub function
@@ -221,7 +247,7 @@ int32 OS_BinSemTake(uint32 sem_id)
     int32 status = OS_SUCCESS;
 
 #ifdef UT_VERBOSE
-    SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
+    snprintf(cMsg, UT_MAX_MESSAGE_LENGTH,
              "  OS_BinSemTake called: %lu", sem_id);
     UT_Text(cMsg);
 #endif
@@ -272,7 +298,7 @@ int32 OS_close(int32 filedes)
     {
         status = OS_FS_ERROR;
 #ifdef UT_VERBOSE
-        SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
+        snprintf(cMsg, UT_MAX_MESSAGE_LENGTH,
                  "  OS_close called: %ld (FAILURE)", filedes);
         UT_Text(cMsg);
 #endif
@@ -280,7 +306,7 @@ int32 OS_close(int32 filedes)
 #ifdef UT_VERBOSE
     else
     {
-        SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
+        snprintf(cMsg, UT_MAX_MESSAGE_LENGTH,
                  "  OS_close called: %ld (SUCCESS)", filedes);
         UT_Text(cMsg);
     }
@@ -321,7 +347,7 @@ int32 OS_creat(const char *path, int32 access)
     {
         status = OS_FS_ERROR;
 #ifdef UT_VERBOSE
-        SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
+        snprintf(cMsg, UT_MAX_MESSAGE_LENGTH,
                  "  OS_creat called: %d; call to open %s (FAILURE)",
                  UT_lognum, path);
         UT_Text(cMsg);
@@ -331,7 +357,7 @@ int32 OS_creat(const char *path, int32 access)
     {
         status = UT_lognum;
 #ifdef UT_VERBOSE
-        SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
+        snprintf(cMsg, UT_MAX_MESSAGE_LENGTH,
                  "  OS_creat called: %d; call to open %s (SUCCESS)",
                  UT_lognum, path);
         UT_Text(cMsg);
@@ -390,48 +416,6 @@ int32 OS_IntUnlock(int32 IntLevel)
 #endif
 #endif
 
-    return OS_SUCCESS;
-}
-
-/*****************************************************************************/
-/**
-** \brief CFE_PSP_MemCpy stub function
-**
-** \par Description
-**        This function is used to mimic the response of the OS API function
-**        CFE_PSP_MemCpy.  It always returns OS_SUCCESS.
-**
-** \par Assumptions, External Events, and Notes:
-**        None
-**
-** \returns
-**        Returns OS_SUCCESS.
-**
-******************************************************************************/
-int32 CFE_PSP_MemCpy(void *dst, void *src, uint32 size)
-{
-    memcpy(dst, src, size);
-    return OS_SUCCESS;
-}
-
-/*****************************************************************************/
-/**
-** \brief CFE_PSP_MemSet stub function
-**
-** \par Description
-**        This function is used to mimic the response of the OS API function
-**        CFE_PSP_MemSet.  It always returns OS_SUCCESS.
-**
-** \par Assumptions, External Events, and Notes:
-**        None
-**
-** \returns
-**        Returns OS_SUCCESS.
-**
-******************************************************************************/
-int32 CFE_PSP_MemSet(void *dst, uint8 value , uint32 size)
-{
-    memset(dst, (int)value, (size_t)size);
     return OS_SUCCESS;
 }
 
@@ -507,367 +491,6 @@ int32 OS_MutSemTake(uint32 sem_id)
     }
 
     return status;
-}
-
-/*****************************************************************************/
-/**
-** \brief OS_printf stub function
-**
-** \par Description
-**        This function is used to mimic the response of the OS API function
-**        OS_printf.  The user can adjust the response by setting the value of
-**        OSPrintRtn.count prior to calling the function.  If count is not
-**        negative then the value OSPrintRtn.value is incremented by a fixed
-**        amount and OSPrintRtn.count is incremented.  If count is negative the
-**        print string is compared to known responses and if a match is found
-**        the value OSPrintRtn.value is incremented by a specified constant
-**        value.  OSPrintRtn.count is decremented to keep track of the number
-**        of messages logged.  The unit test code compares the OSPrintRtn value
-**        and count variables against expected totals to ensure the proper
-**        response of other functions being tested.
-**
-** \par Assumptions, External Events, and Notes:
-**        None
-**
-** \returns
-**        This function does not return a value.
-**
-******************************************************************************/
-void OS_printf(const char *string, ...)
-{
-    char    tmpString[CFE_ES_MAX_SYSLOG_MSG_SIZE * 2];
-    char    *start;
-    char    dash = '-';
-    VA_LIST ptr;
-
-    VA_START(ptr, string, UT_OFFSET_OS_PRINTF, UT_BREAK_OS_PRINTF,
-             UT_SKIP_OS_PRINTF);
-    VSNPRINTF(tmpString, CFE_ES_MAX_SYSLOG_MSG_SIZE * 2, string, ptr);
-    VA_END(ptr);
-
-#ifdef UT_VERBOSE
-    UT_Text(tmpString);
-#endif
-
-    if (OSPrintRtn.count >= 0)
-    {
-        OSPrintRtn.value += OS_PRINT_INCR;
-        OSPrintRtn.count++;
-    }
-    else
-    {
-        OSPrintRtn.count--;
-
-        if ((start = strchr(tmpString, dash)))
-        {
-            start += 2; /* Skip dash and space */
-
-            if (strcmp(start, "CFE_ES_ExitApp: CORE Application CFE_ES Had an "
-                       "Init Error.\n") == 0)
-            {
-                OSPrintRtn.value += 11;
-            }
-            else if (strcmp(start, "POWER ON RESET due to max proc resets "
-                            "(Commanded).\n") == 0) 
-            {
-                OSPrintRtn.value += 12;
-            }
-            else if (strcmp(start, "CFE_ES_ExitApp: CORE Application CFE_ES"
-                            " Had a Runtime Error.\n") == 0)
-            {
-                OSPrintRtn.value += 13;
-            }
-            else if (strcmp(start, "CFE_ES_ExitApp, Cannot Exit CORE "
-                            "Application CFE_ES\n") == 0)
-            {
-                OSPrintRtn.value += 14;
-            }
-            else if (strcmp(start, "PROCESSOR RESET called from CFE_ES_ResetCFE "
-                            "(Commanded).\n") == 0) 
-            {
-                OSPrintRtn.value += 15;
-            }
-            else if (strcmp(start, "POWERON RESET called from CFE_ES_ResetCFE "
-                            "(Commanded).\n") == 0)
-            {
-                OSPrintRtn.value += 16;
-            }
-
-            else if (strcmp(start, "CFE_ES_ExitChildTask Error: Cannot Call "
-                            "from a cFE App Main Task. ID = 1\n") == 0)
-            {
-                OSPrintRtn.value += 17;
-            }
-            else if (strcmp(start, "CFE_ES_ExitChildTask Error Calling "
-                                   "CFE_ES_GetAppID. Task ID = 1, RC = "
-                                   "0xC4000001\n") == 0 ||
-                     strcmp(start, "CFE_ES_ExitChildTask Error Calling "
-                                   "CFE_ES_GetAppID. Task ID = 1, RC = "
-                                   "0xc4000001\n") == 0)
-            {
-                OSPrintRtn.value += 18;
-            }
-
-            else if (strcmp(start, "ES SharedData Mutex Take Err Stat=0x"
-                            "ffffffff,App=1,Func=TestAPI,Line=12345\n") == 0 ||
-                     strcmp(start, "ES SharedData Mutex Take Err Stat=0x"
-                            "FFFFFFFF,App=1,Func=TestAPI,Line=12345\n") == 0)
-            {
-                OSPrintRtn.value += 19;
-            }
-            else if (strcmp(start, "ES SharedData Mutex Give Err Stat=0x"
-                            "ffffffff,App=1,Func=TestAPI,Line=98765\n") == 0 ||
-                     strcmp(start, "ES SharedData Mutex Give Err Stat=0x"
-                            "FFFFFFFF,App=1,Func=TestAPI,Line=98765\n") == 0)
-            {
-                OSPrintRtn.value += 20;
-            }
-
-            else if (strcmp(start, "CFE_ES_RestartApp: Cannot Restart "
-                            "Application appName, It is not running.\n") == 0)
-            {
-                OSPrintRtn.value += 21;
-            }
-
-            else if (strcmp(start, "ES Startup: Insufficent Free Space on "
-                            "Volatile Disk, Reformatting.\n") == 0)
-            {
-                OSPrintRtn.value += 22;
-            }
-            else if (strcmp(start, "ES Startup: Error Creating Volatile(RAM) "
-                            "Volume. EC = 0xFFFFFFFF\n") == 0 ||
-                     strcmp(start, "ES Startup: Error Creating Volatile(RAM) "
-                            "Volume. EC = 0xffffffff\n") == 0)
-            {
-                OSPrintRtn.value += 23;
-            }
-            else if (strcmp(start, "ES Startup: Error Initializing Volatile"
-                            "(RAM) Volume. EC = 0xFFFFFFFF\n") == 0 ||
-                     strcmp(start, "ES Startup: Error Initializing Volatile"
-                            "(RAM) Volume. EC = 0xffffffff\n") == 0)
-            {
-                OSPrintRtn.value += 24;
-            }
-            else if (strcmp(start, "ES Startup: Error Mounting Volatile(RAM) "
-                            "Volume. EC = 0xFFFFFFFF\n") == 0 ||
-                     strcmp(start, "ES Startup: Error Mounting Volatile(RAM) "
-                            "Volume. EC = 0xffffffff\n") == 0)
-            {
-                OSPrintRtn.value += 25;
-            }
-            else if (strcmp(start, "ES Startup: Error Re-Mounting Volatile"
-                            "(RAM) Volume. EC = 0xFFFFFFFF\n") == 0 ||
-                     strcmp(start, "ES Startup: Error Re-Mounting Volatile"
-                            "(RAM) Volume. EC = 0xffffffff\n") == 0)
-            {
-                OSPrintRtn.value += 26;
-            }
-            else if (strcmp(start, "ES Startup: Error Re-Formating Volatile"
-                            "(RAM) Volume. EC = 0xFFFFFFFF\n") == 0 ||
-                     strcmp(start, "ES Startup: Error Re-Formating Volatile"
-                            "(RAM) Volume. EC = 0xffffffff\n") == 0)
-            {
-                OSPrintRtn.value += 27;
-            }
-            else if (strcmp(start, "ES Startup: Error Removing Volatile"
-                            "(RAM) Volume. EC = 0xFFFFFFFF\n") == 0 ||
-                     strcmp(start, "ES Startup: Error Removing Volatile"
-                            "(RAM) Volume. EC = 0xffffffff\n") == 0)
-            {
-                OSPrintRtn.value += 28;
-            }
-            else if (strcmp(start, "ES Startup: Error Un-Mounting Volatile"
-                            "(RAM) Volume. EC = 0xFFFFFFFF\n") == 0 ||
-                     strcmp(start, "ES Startup: Error Un-Mounting Volatile"
-                            "(RAM) Volume. EC = 0xffffffff\n") == 0)
-            {
-                OSPrintRtn.value += 29;
-            }
-            else if (strcmp(start, "ES Startup: Error Determining Blocks Free "
-                            "on Volume. EC = 0xFFFFFFFF\n") == 0 ||
-                     strcmp(start, "ES Startup: Error Determining Blocks Free "
-                            "on Volume. EC = 0xffffffff\n") == 0)
-            {
-                OSPrintRtn.value += 30;
-            }
-
-            else if (strcmp(start, "ES Startup: OS_TaskCreate error creating "
-                            "core App: CFE_TBL: EC = 0xFFFFFFFF\n") == 0 ||
-                     strcmp(start, "ES Startup: OS_TaskCreate error creating "
-                            "core App: CFE_TBL: EC = 0xffffffff\n") == 0)
-            {
-                OSPrintRtn.value += 31;
-            }
-            else if (strcmp(start, "ES Startup: CFE_ES_Global.TaskTable record"
-                            " used error for App: CFE_EVS, "
-                            "continuing.\n") == 0)
-            {
-                OSPrintRtn.value += 32;
-            }
-            else if (strcmp(start, "ES Startup: Error, No free application "
-                            "slots available for CORE App!\n") == 0)
-            {
-                OSPrintRtn.value += 33;
-            }
-            else if (strcmp(start, "ES Startup: Error returned when "
-                            "calling function: CFE_TBL_EarlyInit: EC = "
-                            "0xFFFFFFFF\n") == 0 ||
-                     strcmp(start, "ES Startup: Error returned when "
-                            "calling function: CFE_TBL_EarlyInit: EC = "
-                            "0xffffffff\n") == 0)
-            {
-                OSPrintRtn.value += 34;
-            }
-            else if (strcmp(start, "ES Startup: bad function pointer ( table "
-                            "entry = 1).\n") == 0)
-            {
-                OSPrintRtn.value += 35;
-            }
-
-            else if (strcmp(start, "ES Startup: ES Startup File Line is too "
-                            "long: 137 bytes.\n") == 0)
-            {
-                OSPrintRtn.value += 36;
-            }
-            else if (strcmp(start, "ES Startup: Error Reading Startup file. "
-                            "EC = 0xFFFFFFFF\n") == 0 ||
-                     strcmp(start, "ES Startup: Error Reading Startup file. "
-                            "EC = 0xffffffff\n") == 0)
-            {
-                OSPrintRtn.value += 37;
-            }
-            else if (strcmp(start, "ES Startup: Error, Can't Open ES App "
-                            "Startup file: /cf/apps/cfe_es_startup.scr EC = "
-                            "0xFFFFFFFF\n") == 0 ||
-                     strcmp(start, "ES Startup: Error, Can't Open ES App "
-                            "Startup file: /cf/apps/cfe_es_startup.scr EC = "
-                            "0xffffffff\n") == 0)
-            {
-                OSPrintRtn.value += 38;
-            }
-            else if (strcmp(start, "ES Startup: Opened ES App Startup file: "
-                            "/ram/apps/cfe_es_startup.scr\n") == 0)
-            {
-                OSPrintRtn.value += 39;
-            }
-
-            else if (strcmp(start, "ES:Error reading cmd pipe,RC="
-                            "0xFFFFFFFF\n") == 0 ||
-                     strcmp(start, "ES:Error reading cmd pipe,RC="
-                            "0xffffffff\n") == 0)
-            {
-                OSPrintRtn.value += 40;
-            }
-            else if (strcmp(start, "ES:Application Init Failed,RC="
-                            "0xC4000017\n") == 0 ||
-                     strcmp(start, "ES:Application Init Failed,RC="
-                            "0xc4000017\n") == 0)
-            {
-                OSPrintRtn.value += 41;
-            }
-
-            else if (strcmp(start, "ES:Call to CFE_ES_RegisterApp Failed, RC ="
-                            " 0xC4000017\n") == 0 ||
-                     strcmp(start, "ES:Call to CFE_ES_RegisterApp Failed, RC ="
-                            " 0xc4000017\n") == 0)
-            {
-                OSPrintRtn.value += 42;
-            }
-
-            else if (strcmp(start, "ES Startup: Load Shared Library Init "
-                            "Error.\n") == 0)
-            {
-                OSPrintRtn.value += 43;
-            }
-            else if (strcmp(start, "ES Startup: Unable to decompress library "
-                            "file: /cf/apps/tst_lib.bundle.gz\n") == 0)
-            {
-                OSPrintRtn.value += 44;
-            }
-            else if (strcmp(start, "ES Startup: Unable to extract filename "
-                            "from path: /cf/apps/tst_lib.bundle.gz.\n") == 0)
-            {
-                OSPrintRtn.value += 45;
-            }
-            else if (strncmp(start, "ES Startup: Unable to extract filename "
-                            "from path: /cf/apps/this_is_a_filename_that_"
-                            "exceeds_the_maximum_allowed", 110) == 0)
-            {
-                OSPrintRtn.value += 46;
-            }
-            else if (strcmp(start, "ES Startup: Library path plus file name "
-                            "length (68) exceeds max allowed (64)\n") == 0)
-            {
-                OSPrintRtn.value += 47;
-            }
-            else if (strcmp(start, "ES Startup: Could not load cFE Shared "
-                            "Library\n") == 0)
-            {
-                OSPrintRtn.value += 48;
-            }
-            else if (strcmp(start, "ES Startup: Could not find Library Init "
-                            "symbol:TST_LIB_Init. EC = 0xffffffff\n") == 0 ||
-                     strcmp(start, "ES Startup: Could not find Library Init "
-                            "symbol:TST_LIB_Init. EC = 0xFFFFFFFF\n") == 0)
-            {
-                OSPrintRtn.value += 49;
-            }
-            else if (strcmp(start, "ES Startup: No free library slots "
-                            "available\n") == 0)
-            {
-                OSPrintRtn.value += 50;
-            }
-
-            else if (strcmp(start, "ES Startup: AppCreate Error: TaskCreate "
-                            "AppName Failed. EC = 0xffffffff!\n") == 0 ||
-                     strcmp(start, "ES Startup: AppCreate Error: TaskCreate "
-                            "AppName Failed. EC = 0xFFFFFFFF!\n") == 0)
-            {
-                OSPrintRtn.value += 51;
-            }
-            else if (strcmp(start, "ES Startup: Unable to decompress "
-                            "Application File: ut/filename.gz\n") == 0)
-            {
-                OSPrintRtn.value += 52;
-            }
-            else if (strcmp(start, "ES Startup: Error: ES_TaskTable slot in "
-                            "use at task creation!\n") == 0)
-            {
-                OSPrintRtn.value += 53;
-            }
-            else if (strcmp(start, "ES Startup: Unable to extract filename "
-                            "from path: ut/filename.gz.\n") == 0)
-            {
-                OSPrintRtn.value += 54;
-            }
-            else if (strcmp(start, "ES Startup: Could not load cFE application"
-                            " file:ut/filename.x. EC = 0xffffffff\n") == 0 ||
-                     strcmp(start, "ES Startup: Could not load cFE application"
-                            " file:ut/filename.x. EC = 0xFFFFFFFF\n") == 0)
-            {
-                OSPrintRtn.value += 55;
-            }
-            else if (strcmp(start, "ES Startup: Could not find symbol:"
-                            "EntryPoint. EC = 0xffffffff\n") == 0 ||
-                     strcmp(start, "ES Startup: Could not find symbol:"
-                            "EntryPoint. EC = 0xFFFFFFFF\n") == 0)
-            {
-                OSPrintRtn.value += 56;
-            }
-            else if (strncmp(start, "ES Startup: Unable to extract filename "
-                             "from path: ut/this_is_a_filename_that_exceeds_"
-                             "the_maximum_allowed", 104) == 0)
-            {
-                OSPrintRtn.value += 57;
-            }
-            else if (strcmp(start, "ES Startup: Application path plus file "
-                            "name length (68) exceeds max allowed "
-                            "(64)\n") == 0)
-            {
-                OSPrintRtn.value += 58;
-            }
-        }
-    }
 }
 
 #ifdef SOCKET_QUEUE
@@ -979,7 +602,7 @@ int32 OS_QueueCreate(uint32 *queue_id, const char *queue_name,
                     {
                         status = OS_ERROR;
 #ifdef UT_VERBOSE
-                        SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
+                        snprintf(cMsg, UT_MAX_MESSAGE_LENGTH,
                                  "  Bind failed on OS_QueueCreate, errno = %d",
                                  errno);
                         UT_Text(cMsg);
@@ -1253,7 +876,11 @@ int32 OS_QueueGet(uint32 queue_id, void *data, uint32 size,
 **        OS_INVALID_POINTER, OS_QUEUE_FULL, or OS_SUCCESS.
 **
 ******************************************************************************/
+#if !defined(OSAL_API_VERSION) || (OSAL_API_VERSION < 40192)
 int32 OS_QueuePut(uint32 queue_id, void *data, uint32 size, uint32 flags)
+#else
+int32 OS_QueuePut(uint32 queue_id, const void *data, uint32 size, uint32 flags)
+#endif
 {
     struct     sockaddr_in serva;
     static int socketFlags = 0;
@@ -1631,7 +1258,11 @@ int32 OS_QueueGet(uint32 queue_id,
 **        OS_INVALID_POINTER, OS_QUEUE_FULL, or OS_SUCCESS.
 **
 ******************************************************************************/
+#if !defined(OSAL_API_VERSION) || (OSAL_API_VERSION < 40192)
 int32 OS_QueuePut(uint32 queue_id, void *data, uint32 size, uint32 flags)
+#else
+int32 OS_QueuePut(uint32 queue_id, const void *data, uint32 size, uint32 flags)
+#endif
 {
     int32   status = OS_SUCCESS;
     boolean flag = FALSE;
@@ -1687,7 +1318,7 @@ int32 OS_QueuePut(uint32 queue_id, void *data, uint32 size, uint32 flags)
 int32 OS_remove(const char *path)
 {
 #ifdef UT_VERBOSE
-    SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH, "  OS_remove called: %s", path);
+    snprintf(cMsg, UT_MAX_MESSAGE_LENGTH, "  OS_remove called: %s", path);
     UT_Text(cMsg);
 #endif
     return 0;
@@ -1717,7 +1348,11 @@ int32 OS_remove(const char *path)
 **        of the input variable, nbytes.
 **
 ******************************************************************************/
+#if !defined(OSAL_API_VERSION) || (OSAL_API_VERSION < 40192)
 int32 OS_write(int32 filedes, void *buffer, uint32 nbytes)
+#else
+int32 OS_write(int32 filedes, const void *buffer, uint32 nbytes)
+#endif
 {
     int32   status;
     boolean flag = FALSE;
@@ -1739,7 +1374,7 @@ int32 OS_write(int32 filedes, void *buffer, uint32 nbytes)
         {
             status = OS_FS_ERROR;
 #ifdef UT_VERBOSE
-            SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
+            snprintf(cMsg, UT_MAX_MESSAGE_LENGTH,
                      "  OS_write called: %lu (FAILURE)", filedes);
             UT_Text(cMsg);
 #endif
@@ -1748,7 +1383,7 @@ int32 OS_write(int32 filedes, void *buffer, uint32 nbytes)
         {
             status = nbytes;
 #ifdef UT_VERBOSE
-            SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
+            snprintf(cMsg, UT_MAX_MESSAGE_LENGTH,
                      "  OS_write called: %lu (SUCCESS)", filedes);
             UT_Text(cMsg);
 #endif
@@ -1780,7 +1415,7 @@ int32 OS_write(int32 filedes, void *buffer, uint32 nbytes)
 int32 OS_BinSemFlush(uint32 sem_id)
 {
 #ifdef UT_VERBOSE
-    SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
+    snprintf(cMsg, UT_MAX_MESSAGE_LENGTH,
              "  OS_BinSemFlush called: %lu", sem_id);
     UT_Text(cMsg);
 #endif
@@ -1844,7 +1479,11 @@ int32 OS_TaskRegister(void)
 ******************************************************************************/
 int32 OS_TaskCreate(uint32 *task_id, const char *task_name,
                     osal_task_entry function_pointer,
+#if !defined(OSAL_API_VERSION) || (OSAL_API_VERSION < 40192)
                     const uint32 *stack_pointer,
+#else
+                    uint32 *stack_pointer,
+#endif
                     uint32 stack_size, uint32 priority,
                     uint32 flags)
 {
@@ -1856,7 +1495,7 @@ int32 OS_TaskCreate(uint32 *task_id, const char *task_name,
     {
         status = OS_ERROR;
 #ifdef UT_VERBOSE
-        SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
+        snprintf(cMsg, UT_MAX_MESSAGE_LENGTH,
                  "  OS_TaskCreate called: %s%lu (FAILURE)",
                  task_name, *task_id);
         UT_Text(cMsg);
@@ -1865,7 +1504,7 @@ int32 OS_TaskCreate(uint32 *task_id, const char *task_name,
 #ifdef UT_VERBOSE
     else
     {
-        SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
+        snprintf(cMsg, UT_MAX_MESSAGE_LENGTH,
                  "  OS_TaskCreate called: %s%lu (SUCCESS)",
                  task_name, *task_id);
         UT_Text(cMsg);
@@ -1904,9 +1543,14 @@ uint32 OS_TaskGetId(void)
 **
 ** \par Description
 **        This function is used to mimic the response of the OS API function
-**        OS_TaskGetInfo.  If the input structure, task_prop, is null, it
-**        returns OS_INVALID_POINTER.  Otherwise it sets the task structure
-**        variables to fixed values and returns OS_SUCCESS.
+**        OS_TaskGetInfo.  The variable TaskGetInfoRtn.value is set to the
+**        value passed to the function, reset_type, and the variable
+**        TaskGetInfoRtn.count is incremented each time this function is
+**        called.  The unit tests compare these values to expected results to
+**        verify proper system response.  If TaskGetInfoRtn.count is set to
+**        zero the if the input structure, task_prop, is null, it returns
+**        OS_INVALID_POINTER.  Otherwise it sets the task structure variables
+**        to fixed values and returns OS_SUCCESS.
 **
 ** \par Assumptions, External Events, and Notes:
 **        None
@@ -1918,19 +1562,34 @@ uint32 OS_TaskGetId(void)
 int32 OS_TaskGetInfo(uint32 task_id, OS_task_prop_t *task_prop)
 {
     int32 status = OS_SUCCESS;
+    boolean flag = FALSE;
 
-    if (task_prop == NULL)
+    if (TaskGetInfoRtn.count > 0)
     {
-        status = OS_INVALID_POINTER;
+        TaskGetInfoRtn.count--;
+
+        if (TaskGetInfoRtn.count == 0)
+        {
+            status = TaskGetInfoRtn.value;
+            flag = TRUE;
+        }
     }
-    else
+
+    if (flag == FALSE)
     {
-        task_prop->creator = 0;
-        task_prop->OStask_id = OS_MAX_TASKS - 1;
-        task_prop->stack_size = UT_Task[task_id].stack_size;
-        task_prop->priority = UT_Task[task_id].priority;
-        strncpy(task_prop->name, UT_Task[task_id].name, OS_MAX_API_NAME + 1);
-        task_prop->name[OS_MAX_API_NAME] = '\0';
+        if (task_prop == NULL)
+        {
+            status = OS_INVALID_POINTER;
+        }
+        else
+        {
+            task_prop->creator = 0;
+            task_prop->OStask_id = OS_MAX_TASKS - 1;
+            task_prop->stack_size = 100;
+            task_prop->priority = 150;
+            strncpy(task_prop->name, "UnitTest", OS_MAX_API_NAME);
+            task_prop->name[OS_MAX_API_NAME] = '\0';
+        }
     }
 
     return status;
@@ -1952,7 +1611,11 @@ int32 OS_TaskGetInfo(uint32 task_id, OS_task_prop_t *task_prop)
 **        Returns either OS_FS_SUCCESS or OS_FS_ERROR.
 **
 ******************************************************************************/
+#if !defined(OSAL_API_VERSION) || (OSAL_API_VERSION < 40192)
 int32 OS_mkfs(char *address, char *devname, char * volname, uint32 blocksize,
+#else
+int32 OS_mkfs(char *address, const char *devname, const char * volname, uint32 blocksize,
+#endif
               uint32 numblocks)
 {
     int32 status = OS_FS_SUCCESS;
@@ -1961,7 +1624,7 @@ int32 OS_mkfs(char *address, char *devname, char * volname, uint32 blocksize,
     {
         status = OS_FS_ERROR;
 #ifdef UT_VERBOSE
-        SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
+        snprintf(cMsg, UT_MAX_MESSAGE_LENGTH,
                  "  OS_mkfs called: %s (FAILURE)", devname);
         UT_Text(cMsg);
 #endif
@@ -1969,7 +1632,7 @@ int32 OS_mkfs(char *address, char *devname, char * volname, uint32 blocksize,
 #ifdef UT_VERBOSE
     else
     {
-        SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
+        snprintf(cMsg, UT_MAX_MESSAGE_LENGTH,
                  "  OS_mkfs called: %s (SUCCESS)", devname);
         UT_Text(cMsg);
     }
@@ -1994,7 +1657,11 @@ int32 OS_mkfs(char *address, char *devname, char * volname, uint32 blocksize,
 **        Returns either OS_FS_SUCCESS or OS_FS_ERROR.
 **
 ******************************************************************************/
+#if !defined(OSAL_API_VERSION) || (OSAL_API_VERSION < 40192)
 int32 OS_rmfs(char *devname)
+#else
+int32 OS_rmfs(const char *devname)
+#endif
 {
     int32 status = OS_FS_SUCCESS;
 
@@ -2002,7 +1669,7 @@ int32 OS_rmfs(char *devname)
     {
         status = OS_FS_ERROR;
 #ifdef UT_VERBOSE
-        SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
+        snprintf(cMsg, UT_MAX_MESSAGE_LENGTH,
                  "  OS_rmfs called: %s (FAILURE)", devname);
         UT_Text(cMsg);
 #endif
@@ -2010,7 +1677,7 @@ int32 OS_rmfs(char *devname)
 #ifdef UT_VERBOSE
     else
     {
-        SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
+        snprintf(cMsg, UT_MAX_MESSAGE_LENGTH,
                  "  OS_rmfs called: %s (SUCCESS)", devname);
         UT_Text(cMsg);
     }
@@ -2035,7 +1702,11 @@ int32 OS_rmfs(char *devname)
 **        Returns either OS_SUCCESS or OS_FS_ERROR.
 **
 ******************************************************************************/
+#if !defined(OSAL_API_VERSION) || (OSAL_API_VERSION < 40192)
 int32 OS_mount(const char *devname, char* mountpoint)
+#else
+int32 OS_mount(const char *devname, const char* mountpoint)
+#endif
 {
     int32 status = OS_SUCCESS;
 
@@ -2043,7 +1714,7 @@ int32 OS_mount(const char *devname, char* mountpoint)
     {
         status = OS_FS_ERROR;
 #ifdef UT_VERBOSE
-        SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
+        snprintf(cMsg, UT_MAX_MESSAGE_LENGTH,
                  "  OS_mount called: devname=%s, mountpoint=%s (FAILURE)",
                  devname, mountpoint);
         UT_Text(cMsg);
@@ -2052,7 +1723,7 @@ int32 OS_mount(const char *devname, char* mountpoint)
 #ifdef UT_VERBOSE
     else
     {
-        SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
+        snprintf(cMsg, UT_MAX_MESSAGE_LENGTH,
                  "  OS_mount called: devname=%s, mountpoint=%s (SUCCESS)",
                  devname, mountpoint);
         UT_Text(cMsg);
@@ -2078,7 +1749,11 @@ int32 OS_mount(const char *devname, char* mountpoint)
 **        Returns either OS_SUCCESS or OS_FS_ERROR.
 **
 ******************************************************************************/
+#if !defined(OSAL_API_VERSION) || (OSAL_API_VERSION < 40192)
 int32 OS_initfs(char *address, char *devname, char *volname,
+#else
+int32 OS_initfs(char *address, const char *devname, const char *volname,
+#endif
                 uint32 blocksize, uint32 numblocks)
 {
     int32 status = OS_SUCCESS;
@@ -2087,7 +1762,7 @@ int32 OS_initfs(char *address, char *devname, char *volname,
     {
         status = OS_FS_ERROR;
 #ifdef UT_VERBOSE
-        SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
+        snprintf(cMsg, UT_MAX_MESSAGE_LENGTH,
                  "  OS_initfs called: %s (FAILURE)", devname);
         UT_Text(cMsg);
 #endif
@@ -2095,7 +1770,7 @@ int32 OS_initfs(char *address, char *devname, char *volname,
 #ifdef UT_VERBOSE
     else
     {
-        SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
+        snprintf(cMsg, UT_MAX_MESSAGE_LENGTH,
                  "  OS_initfs called: %s (SUCCESS)", devname);
         UT_Text(cMsg);
     }
@@ -2119,10 +1794,14 @@ int32 OS_initfs(char *address, char *devname, char *volname,
 **        Returns OS_SUCCESS.
 **
 ******************************************************************************/
+#if !defined(OSAL_API_VERSION) || (OSAL_API_VERSION < 40192)
 int32 OS_ShellOutputToFile(char* Cmd, int32 OS_fd)
+#else
+int32 OS_ShellOutputToFile(const char* Cmd, int32 OS_fd)
+#endif
 {
 #ifdef UT_VERBOSE
-    SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
+    snprintf(cMsg, UT_MAX_MESSAGE_LENGTH,
             "  OS_ShellOutput to file called: %s", Cmd);
     UT_Text(cMsg);
 #endif
@@ -2296,7 +1975,7 @@ int32 OS_BinSemCreate(uint32 *sem_id, const char *sem_name,
     {
         status = OS_ERROR;
 #ifdef UT_VERBOSE
-        SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
+        snprintf(cMsg, UT_MAX_MESSAGE_LENGTH,
                  "  OS_BinSemCreate called: %d (FAILURE)", sem_ctr);
         UT_Text(cMsg);
 #endif
@@ -2319,7 +1998,7 @@ int32 OS_BinSemCreate(uint32 *sem_id, const char *sem_name,
 #ifdef UT_VERBOSE
         if (flag == FALSE)
         {
-            SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
+            snprintf(cMsg, UT_MAX_MESSAGE_LENGTH,
                      "  OS_BinSemCreate called: %d (SUCCESS)", sem_ctr);
             UT_Text(cMsg);
         }
@@ -2479,7 +2158,7 @@ int32 OS_TaskDelay(uint32 millisecond)
 int32 OS_BinSemGive(uint32 sem_id)
 {
 #ifdef UT_VERBOSE
-    SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
+    snprintf(cMsg, UT_MAX_MESSAGE_LENGTH,
              "  OS_BinSemGive called: %lu", sem_id);
     UT_Text(cMsg);
 #endif
@@ -2488,56 +2167,49 @@ int32 OS_BinSemGive(uint32 sem_id)
 
 /*****************************************************************************/
 /**
-** \brief CFE_PSP_Panic stub function
-**
-** \par Description
-**        This function is used to mimic the response of the OS API function
-**        CFE_PSP_Panic.  The variable PSPPanicRtn.value is set equal to the
-**        input variable ErrorCode and the variable PSPPanicRtn.count is
-**        incremented each time this function is called.  The unit tests
-**        compare these values to expected results to verify proper system
-**        response.
-**
-** \par Assumptions, External Events, and Notes:
-**        None
-**
-** \returns
-**        This function does not return a value.
-**
-******************************************************************************/
-void CFE_PSP_Panic(int32 ErrorCode)
-{
-#ifdef UT_VERBOSE
-    SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
-             "  CFE_PSP_Panic called: EC = 0x%lx", (uint32) ErrorCode);
-    UT_Text(cMsg);
-#endif
-    PSPPanicRtn.value = ErrorCode;
-    PSPPanicRtn.count++;
-}
-
-/*****************************************************************************/
-/**
 ** \brief OS_BinSemGetInfo stub function
 **
 ** \par Description
 **        This function is used to mimic the response of the OS API function
-**        OS_BinSemGetInfo.  It sets the binary semaphore structure variables
-**        to fixed values and returns OS_SUCCESS.
+**        OS_BinSemGetInfo.  The user can adjust the response by setting the
+**        values in the BinSemGetInfoRtn structure prior to this function being
+**        called.  If the value BinSemGetInfoRtn.count is greater than zero
+**        then the counter is decremented; if it then equals zero the return
+**        value is set to the user-defined value BinSemGetInfoRtn.value.
+**        Otherwise it sets the binary semaphore structure variables to fixed
+**        values and returns OS_SUCCESS.
 **
 ** \par Assumptions, External Events, and Notes:
 **        None
 **
 ** \returns
-**        Returns OS_SUCCESS.
+**        Returns either a user-defined status flag or OS_SUCCESS.
 **
 ******************************************************************************/
 int32 OS_BinSemGetInfo(uint32 sem_id, OS_bin_sem_prop_t *bin_prop)
 {
-    bin_prop->creator =  0;
-    strncpy(bin_prop->name, "Name", OS_MAX_API_NAME + 1);
-    bin_prop->name[OS_MAX_API_NAME] = '\0';
-    return OS_SUCCESS;
+    int32   status = OS_SUCCESS;
+    boolean flag = FALSE;
+
+    if (BinSemGetInfoRtn.count > 0)
+    {
+        BinSemGetInfoRtn.count--;
+
+        if (BinSemGetInfoRtn.count == 0)
+        {
+            status = BinSemGetInfoRtn.value;
+            flag = TRUE;
+        }
+    }
+
+    if (flag == FALSE)
+    {
+        bin_prop->creator =  0;
+        strncpy(bin_prop->name, "Name", OS_MAX_API_NAME + 1);
+        bin_prop->name[OS_MAX_API_NAME] = '\0';
+    }
+
+    return status;
 }
 
 /*****************************************************************************/
@@ -2546,22 +2218,45 @@ int32 OS_BinSemGetInfo(uint32 sem_id, OS_bin_sem_prop_t *bin_prop)
 **
 ** \par Description
 **        This function is used to mimic the response of the OS API function
-**        OS_MutSemGetInfo.  It sets the mutex semaphore structure variables
-**        to fixed values and returns OS_SUCCESS.
+**        OS_MutSemGetInfo.  The user can adjust the response by setting the
+**        values in the MutSemGetInfoRtn structure prior to this function being
+**        called.  If the value MutSemGetInfoRtn.count is greater than zero
+**        then the counter is decremented; if it then equals zero the return
+**        value is set to the user-defined value MutSemGetInfoRtn.value.
+**        Otherwise it sets the mutex semaphore structure variables to fixed
+**        values and returns OS_SUCCESS.
 **
 ** \par Assumptions, External Events, and Notes:
 **        None
 **
 ** \returns
-**        Returns OS_SUCCESS.
+**        Returns either a user-defined status flag or OS_SUCCESS.
 **
 ******************************************************************************/
 int32 OS_MutSemGetInfo(uint32 sem_id, OS_mut_sem_prop_t *mut_prop)
 {
-    strncpy(mut_prop->name, "Name", OS_MAX_API_NAME + 1);
-    mut_prop->name[OS_MAX_API_NAME] = '\0';
-    mut_prop->creator =  1;
-    return OS_SUCCESS;
+    int32   status = OS_SUCCESS;
+    boolean flag = FALSE;
+
+    if (MutSemGetInfoRtn.count > 0)
+    {
+        MutSemGetInfoRtn.count--;
+
+        if (MutSemGetInfoRtn.count == 0)
+        {
+            status = MutSemGetInfoRtn.value;
+            flag = TRUE;
+        }
+    }
+
+    if (flag == FALSE)
+    {
+        strncpy(mut_prop->name, "Name", OS_MAX_API_NAME + 1);
+        mut_prop->name[OS_MAX_API_NAME] = '\0';
+        mut_prop->creator =  1;
+    }
+
+    return status;
 }
 
 /*****************************************************************************/
@@ -2570,8 +2265,13 @@ int32 OS_MutSemGetInfo(uint32 sem_id, OS_mut_sem_prop_t *mut_prop)
 **
 ** \par Description
 **        This function is used to mimic the response of the OS API function
-**        OS_CountSemGetInfo.  It sets the counting semaphore structure
-**        variables to fixed values and returns OS_SUCCESS.
+**        OS_CountSemGetInfo.  The user can adjust the response by setting the
+**        values in the CountSemGetInfoRtn structure prior to this function
+**        being called.  If the value CountSemGetInfoRtn.count is greater than
+**        zero then the counter is decremented; if it then equals zero the
+**        return value is set to the user-defined value
+**        CountSemGetInfoRtn.value.  Otherwise it sets the counting semaphore
+**        structure variables to fixed values and returns OS_SUCCESS.
 **
 ** \par Assumptions, External Events, and Notes:
 **        None
@@ -2582,10 +2282,28 @@ int32 OS_MutSemGetInfo(uint32 sem_id, OS_mut_sem_prop_t *mut_prop)
 ******************************************************************************/
 int32 OS_CountSemGetInfo(uint32 sem_id, OS_count_sem_prop_t *count_prop)
 {
-    count_prop->creator =  0;
-    strncpy(count_prop->name, "Name", OS_MAX_API_NAME + 1);
-    count_prop->name[OS_MAX_API_NAME] = '\0';
-    return OS_SUCCESS;
+    int32   status = OS_SUCCESS;
+    boolean flag = FALSE;
+
+    if (CountSemGetInfoRtn.count > 0)
+    {
+        CountSemGetInfoRtn.count--;
+
+        if (CountSemGetInfoRtn.count == 0)
+        {
+            status = CountSemGetInfoRtn.value;
+            flag = TRUE;
+        }
+    }
+
+    if (flag == FALSE)
+    {
+        count_prop->creator =  0;
+        strncpy(count_prop->name, "Name", OS_MAX_API_NAME + 1);
+        count_prop->name[OS_MAX_API_NAME] = '\0';
+    }
+
+    return status;
 }
 
 /*****************************************************************************/
@@ -2594,22 +2312,45 @@ int32 OS_CountSemGetInfo(uint32 sem_id, OS_count_sem_prop_t *count_prop)
 **
 ** \par Description
 **        This function is used to mimic the response of the OS API function
-**        OS_QueueGetInfo.  It sets the queue structure variables to fixed
+**        OS_QueueGetInfo.  The user can adjust the response by setting the
+**        values in the QueueGetInfoRtn structure prior to this function being
+**        called.  If the value QueueGetInfoRtn.count is greater than zero
+**        then the counter is decremented; if it then equals zero the return
+**        value is set to the user-defined value QueueGetInfoRtn.value.
+**        Otherwise it sets the queue structure variables to fixed
 **        values and returns OS_SUCCESS.
 **
 ** \par Assumptions, External Events, and Notes:
 **        None
 **
 ** \returns
-**        Returns OS_SUCCESS.
+**        Returns either a user-defined status flag or OS_SUCCESS.
 **
 ******************************************************************************/
 int32 OS_QueueGetInfo(uint32 sem_id, OS_queue_prop_t *queue_prop)
 {
-    queue_prop->creator =  0;
-    strncpy(queue_prop->name, "Name", OS_MAX_API_NAME + 1);
-    queue_prop->name[OS_MAX_API_NAME] = '\0';
-    return OS_SUCCESS;
+    int32   status = OS_SUCCESS;
+    boolean flag = FALSE;
+
+    if (QueueGetInfoRtn.count > 0)
+    {
+        QueueGetInfoRtn.count--;
+
+        if (QueueGetInfoRtn.count == 0)
+        {
+            status = QueueGetInfoRtn.value;
+            flag = TRUE;
+        }
+    }
+
+    if (flag == FALSE)
+    {
+        queue_prop->creator =  0;
+        strncpy(queue_prop->name, "Name", OS_MAX_API_NAME + 1);
+        queue_prop->name[OS_MAX_API_NAME] = '\0';
+    }
+
+    return status;
 }
 
 /*****************************************************************************/
@@ -2729,26 +2470,48 @@ int32 OS_CountSemDelete(uint32 sem_id)
 **
 ** \par Description
 **        This function is used to mimic the response of the OS API function
-**        OS_FDGetInfo.  It sets the table entry structure variables to fixed
+**        OS_FDGetInfo.  The user can adjust the response by setting the
+**        values in the FDGetInfoRtn structure prior to this function being
+**        called.  If the value FDGetInfoRtn.count is greater than zero
+**        then the counter is decremented; if it then equals zero the return
+**        value is set to the user-defined value FDGetInfoRtn.value.
+**        Otherwise it sets the table entry structure variables to fixed
 **        values and returns OS_FS_SUCCESS.
 **
 ** \par Assumptions, External Events, and Notes:
 **        None
 **
 ** \returns
-**        Returns OS_FS_SUCCESS.
+**        Returns either a user-defined status flag or OS_FS_SUCCESS.
 **
 ******************************************************************************/
 int32 OS_FDGetInfo(int32 filedes, OS_FDTableEntry *fd_prop)
 {
     OS_FDTableEntry fd_prop2;
+    int32           status = OS_SUCCESS;
+    boolean         flag = FALSE;
 
-    fd_prop2.User = 0;
-    strncpy(fd_prop2.Path, "PATH", OS_MAX_PATH_LEN);
-    fd_prop2.Path[OS_MAX_PATH_LEN - 1] = '\0';
-    fd_prop2.IsValid = TRUE;
-    *fd_prop = fd_prop2;
-    return OS_FS_SUCCESS;
+    if (FDGetInfoRtn.count > 0)
+    {
+        FDGetInfoRtn.count--;
+
+        if (FDGetInfoRtn.count == 0)
+        {
+            status = FDGetInfoRtn.value;
+            flag = TRUE;
+        }
+    }
+
+    if (flag == FALSE)
+    {
+        fd_prop2.User = 0;
+        strncpy(fd_prop2.Path, "PATH", OS_MAX_PATH_LEN);
+        fd_prop2.Path[OS_MAX_PATH_LEN - 1] = '\0';
+        fd_prop2.IsValid = TRUE;
+        *fd_prop = fd_prop2;
+    }
+
+    return status;
 }
 
 /*****************************************************************************/
@@ -2891,6 +2654,30 @@ void OS_TaskExit()
 
 /*****************************************************************************/
 /**
+** \brief dummy_function stub function
+**
+** \par Description
+**        This function is used by the OS API function, OS_SymbolLookup, which
+**        requires a valid function for which to report the address.  The user
+**        defines the function's return value in the variable UT_DummyFuncRtn.
+**
+** \par Assumptions, External Events, and Notes:
+**        None
+**
+** \returns
+**        Returns a user-defined status value, UT_DummyFuncRtn.
+**
+******************************************************************************/
+int32 dummy_function(void)
+{
+#ifdef UT_VERBOSE
+    UT_Text("  dummy function called");
+#endif
+    return UT_DummyFuncRtn;
+}
+
+/*****************************************************************************/
+/**
 ** \brief OS_SymbolLookup stub function
 **
 ** \par Description
@@ -2909,7 +2696,11 @@ void OS_TaskExit()
 **        Returns either a user-defined status flag or OS_SUCCESS.
 **
 ******************************************************************************/
+#if !defined(OSAL_API_VERSION) || (OSAL_API_VERSION < 40192)
 int32 OS_SymbolLookup(uint32 *symbol_address, char *symbol_name)
+#else
+int32 OS_SymbolLookup(cpuaddr *symbol_address, const char *symbol_name)
+#endif
 {
     int32   status = OS_SUCCESS;
     boolean flag = FALSE;
@@ -2953,7 +2744,11 @@ int32 OS_SymbolLookup(uint32 *symbol_address, char *symbol_name)
 **        Returns either a user-defined status flag or OS_SUCCESS.
 **
 ******************************************************************************/
+#if !defined(OSAL_API_VERSION) || (OSAL_API_VERSION < 40192)
 int32 OS_ModuleLoad(uint32 *module_id, char *module_name, char *filename)
+#else
+int32 OS_ModuleLoad(uint32 *module_id, const char *module_name, const char *filename)
+#endif
 {
     int32 status = OS_SUCCESS;
 
@@ -3027,7 +2822,11 @@ int32 OS_ModuleUnload(uint32 module_id)
 **        Returns either a user-defined status flag or OS_SUCCESS.
 **
 ******************************************************************************/
+#if !defined(OSAL_API_VERSION) || (OSAL_API_VERSION < 40192)
 int32 OS_ModuleInfo(uint32 module_id, OS_module_record_t *module_info)
+#else
+int32 OS_ModuleInfo(uint32 module_id, OS_module_prop_t *module_info)
+#endif
 {
     int32 status = OS_SUCCESS;
 
@@ -3134,27 +2933,49 @@ int32 OS_HeapGetInfo(OS_heap_prop_t *heap_prop)
 ** \par Description
 **        This function is used to mimic the response of the OS API function
 **        OS_TimerGetInfo.  The user can adjust the response by setting
-**        the values in the OSTimerGetInfoRtn structure prior to this function
-**        being called.  If the value OSTimerGetInfoRtn.count is greater than
-**        zero then the counter is decremented and the timer creator value is
-**        set to the user-defined value OSTimerGetInfoRtn.value.
+**        the values in the TimerGetInfoRtn2 structure prior to this function
+**        being called.  If the value TimerGetInfoRtn2.count is greater than
+**        zero then the counter is decremented; if it then equals zero the
+**        return value is set to the user-defined value TimerGetInfoRtn2.value.
+**        Otherwise the user can adjust the response by setting the values in
+**        the OSTimerGetInfoRtn structure prior to this function being called.
+**        If the value OSTimerGetInfoRtn.count is greater than zero then the
+**        counter is decremented and the timer creator value is set to the
+**        user-defined value OSTimerGetInfoRtn.value.
 **
 ** \par Assumptions, External Events, and Notes:
 **        None
 **
 ** \returns
-**        Returns OS_SUCCESS.
+**        Returns either a user-defined status flag or OS_SUCCESS.
 **
 ******************************************************************************/
 int32 OS_TimerGetInfo(uint32 timer_id, OS_timer_prop_t *timer_prop)
 {
+    int32   status = OS_SUCCESS;
+    boolean flag = FALSE;
+
     if (OSTimerGetInfoRtn.count > 0)
     {
-        timer_prop->creator = OSTimerGetInfoRtn.value;
         OSTimerGetInfoRtn.count--;
+
+        if (OSTimerGetInfoRtn.count == 0)
+        {
+            status = OSTimerGetInfoRtn.value;
+            flag = TRUE;
+        }
     }
 
-    return OS_SUCCESS;
+    if (flag == FALSE)
+    {
+        if (OSTimerGetInfoRtn.count > 0)
+        {
+            timer_prop->creator = OSTimerGetInfoRtn.value;
+            OSTimerGetInfoRtn.count--;
+        }
+    }
+
+    return status;
 }
 
 /*****************************************************************************/
@@ -3163,18 +2984,35 @@ int32 OS_TimerGetInfo(uint32 timer_id, OS_timer_prop_t *timer_prop)
 **
 ** \par Description
 **        This function is used as a placeholder for the OS API function
-**        OS_TimerDelete.  It always returns OS_ERR_INVALID_ID.
+**        OS_TimerDelete.  The user can adjust the response by setting
+**        the values in the TimerDeleteRtn structure prior to this function
+**        being called.  If the value TimerDeleteRtn.count is greater than
+**        zero then the counter is decremented; if it then equals zero the
+**        return value is set to the user-defined value TimerDeleteRtn.value.
+**        Otherwise it always returns OS_ERR_INVALID_ID.
 **
 ** \par Assumptions, External Events, and Notes:
 **        None
 **
 ** \returns
-**        Returns OS_ERR_INVALID_ID.
+**        Returns either a user-defined status flag or OS_ERR_INVALID_ID.
 **
 ******************************************************************************/
 int32 OS_TimerDelete(uint32 timer_id)
 {
-    return OS_ERR_INVALID_ID;
+    int32   status = OS_ERR_INVALID_ID;
+
+    if (TimerDeleteRtn.count > 0)
+    {
+        TimerDeleteRtn.count--;
+
+        if (TimerDeleteRtn.count == 0)
+        {
+            status = TimerDeleteRtn.value;
+        }
+    }
+
+    return status;
 }
 
 /*****************************************************************************/
@@ -3199,935 +3037,64 @@ int32 OS_IntAttachHandler(uint32 InterruptNumber,
     return OS_ERR_NOT_IMPLEMENTED;
 }
 
-#ifdef OS_USE_EMBEDDED_PRINTF
 /*****************************************************************************/
 /**
-** \brief OS_GetStringLen stub function
+** \brief OS_SelectTone stub function
 **
 ** \par Description
-**        This function is identical to the OS API function OS_GetStringLen.
+**        This function is used as a placeholder for the OS API function
+**        OS_SelectTone.
 **
 ** \par Assumptions, External Events, and Notes:
 **        None
 **
-** \param[in]  strptr  Pointer to a character string.
-**
 ** \returns
-** \retstmt
-**        Returns the number of characters in the string. \endcode
-** \endreturns
+**        This function does not return a value.
 **
 ******************************************************************************/
-int OS_GetStringLen(const char *strptr)
+void OS_SelectTone(int16 Signal)
 {
-    int len = 0;
-
-    /* Find string length */
-    for (; *strptr; strptr++)
-    {
-        len++;
-    }
-
-    return len;
 }
 
-/*****************************************************************************/
-/**
-** \brief OS_OutputSingleChar stub function
-**
-** \par Description
-**        This function is identical to the OS API function
-**        OS_OutputSingleChar.
-**
-** \par Assumptions, External Events, and Notes:
-**        None
-**
-** \param[out] str  Pointer to the output character string buffer.
-**
-** \param[in]  c    Single character for output to the buffer.
-**
-** \returns
-** \retstmt
-**        This function does not return a value. \endcode
-** \endreturns
-**
-** \sa #putchar
-**
-******************************************************************************/
-void OS_OutputSingleChar(char **str, int c)
+/*
+** Report and close any sockets found open
+*/
+void UT_CheckForOpenSockets(void)
 {
-    if (!(gMaxOutputLen >= 0 && gCurrentOutputLen >= gMaxOutputLen))
-    {
-        if (str)
-        {
-            /* Output to the character string buffer */
-            **str = (char) c;
-            (*str)++;
-        }
-        else
-        {
-            /* Output to the console */
-            /* ~~~ Insert putchar() replacement here ~~~ */
-#ifdef OSP_ARINC653_CFE
-            TUTF_putchar();
-#else
-            putchar(c);
-#endif
-            /* ~~~ Insert putchar() replacement here ~~~ */
-        }
+    int i;
+    int InUse = 0;
 
-        gCurrentOutputLen++;
+    for (i = 0; i < OS_MAX_QUEUES; i++)
+    {
+        if (UT_Queue[i].free == FALSE)
+        {
+            InUse++;
+#ifdef UT_VERBOSE
+            snprintf(cMsg, UT_MAX_MESSAGE_LENGTH,
+                     "  UT_Queue[%d].%s left open. ID=%d",
+                     i, UT_Queue[i].name, UT_Queue[i].id);
+            UT_Text(cMsg);
+#ifdef SOCKET_QUEUE
+            snprintf(cMsg, UT_MAX_MESSAGE_LENGTH,
+                     "   Closing socket ID %d, close returned %d",
+                     UT_Queue[i].id, close(UT_Queue[i].id));
+            UT_Text(cMsg);
+#endif
+#endif
+
+            /* Clean up same as OS_QueueDelete stub */
+            UT_Queue[i].free = TRUE;
+            strcpy(UT_Queue[i].name, "");
+            UT_Queue[i].id = 0;
+        }
     }
+
+#ifdef UT_VERBOSE
+    if (InUse > 0)
+    {
+        snprintf(cMsg, UT_MAX_MESSAGE_LENGTH, "%d socket(s) open", InUse);
+        UT_Text(cMsg);
+    }
+#endif
 }
 
-/*****************************************************************************/
-/**
-** \brief OS_Double2String stub function
-**
-** \par Description
-**        This function is identical to the OS API function OS_Double2String.
-**
-** \par Assumptions, External Events, and Notes:
-**        None
-**
-** \param[out] out_bfr     Pointer to a character string buffer.
-**
-** \param[in]  dbl         Double precision floating point value to convert.
-**
-** \param[in]  dec_digits  Number of digits to display to the right of the
-**                         decimal point.
-**
-** \param[in]  lead        Pointer to the leading character bit flag.
-**
-** \returns
-** \retstmt
-**        This function does not return a value. \endcode
-** \endreturns
-**
-** \sa #OS_GetStringLen
-**
-******************************************************************************/
-#ifndef OSP_NO_FLOAT
-void OS_Double2String(char *out_bfr, double dbl,
-                      unsigned dec_digits, int *lead)
-{
-    unsigned mult = 1;
-    unsigned idx;
-    unsigned wholeNum;
-    unsigned decimalNum;
-    char temp_bfr[FLOAT_BUF_LEN + 1];
-
-    static const double round_nums[8] =
-    {
-        0.5,
-        0.05,
-        0.005,
-        0.0005,
-        0.00005,
-        0.000005,
-        0.0000005,
-        0.00000005
-    };
-
-    /* Extract negative info */
-    if (dbl < 0.0)
-    {
-        dbl = -dbl;
-        *lead |= LEAD_NEG;
-    }
-
-    /* Handling rounding by adding .5LSB to the floating-point data */
-    if (dec_digits < 8)
-    {
-        dbl += round_nums[dec_digits];
-    }
-
-    /* Construct fractional multiplier for specified number of digits */
-    for (idx = 0; idx < dec_digits; idx++)
-    {
-        mult *= 10;
-    }
-
-    wholeNum = (unsigned) dbl;
-    decimalNum = (unsigned) ((dbl - wholeNum) * mult);
-
-    /* Convert integer portion */
-    idx = 0;
-
-    while (wholeNum != 0 && idx < FLOAT_BUF_LEN)
-    {
-        temp_bfr[idx] = '0' + (wholeNum % 10);
-        idx++;
-        wholeNum /= 10;
-    }
-
-    if (idx == 0)
-    {
-        *out_bfr = '0';
-        out_bfr++;
-    }
-    else
-    {
-        while (idx > 0)
-        {
-            *out_bfr = temp_bfr[idx - 1];
-            out_bfr++;
-            idx--;
-        }
-    }
-
-    if (dec_digits > 0)
-    {
-        *out_bfr = '.';
-        out_bfr++;
-
-        /* Convert fractional portion */
-        idx = 0;
-
-        while (decimalNum != 0)
-        {
-            temp_bfr[idx] = '0' + (decimalNum % 10);
-            idx++;
-            decimalNum /= 10;
-        }
-
-        /* Pad the decimal portion with 0s as necessary */
-        while (idx < dec_digits)
-        {
-            temp_bfr[idx] = '0';
-            idx++;
-        }
-
-        while (idx > 0)
-        {
-            *out_bfr = temp_bfr[idx - 1];
-            out_bfr++;
-            idx--;
-        }
-    }
-
-    *out_bfr = 0;
-}
-#endif
-
-/*****************************************************************************/
-/**
-** \brief OS_ParseString stub function
-**
-** \par Description
-**        This function is identical to the OS API function OS_ParseString.
-**
-** \par Assumptions, External Events, and Notes:
-**        None
-**
-** \param[out] out        Pointer to the output character string buffer.
-**
-** \param[in]  *string    Pointer to the string to format and then output.
-**
-** \param[in]  min_width  Minimum resulting string length.
-**
-** \param[in]  max_width  Maximum resulting string length.
-**
-** \param[in]  pad        Pointer to the leading character bit flag.
-**
-** \param[in]  lead       Leading character bit flag.
-**
-** \param[in]  s_flag     Non-zero if this function is called by the %s
-**                        handler; zero otherwise.  Used to determine how the
-**                        maximum string length is applied.
-**
-** \returns
-** \retstmt
-**        Returns the length in characters of the resulting string output.
-**        \endcode
-** \endreturns
-**
-** \sa #OS_GetStringLen, #OS_OutputSingleChar
-**
-******************************************************************************/
-int OS_ParseString(char **out, const char *string,
-                   int min_width, int max_width, int pad,
-                   int lead, unsigned s_flag)
-{
-    register int pc = 0, padchar = ' ';
-    int len = 0;
-
-    len = OS_GetStringLen(string);
-
-    /* Set length to # if specified by %.#s format */
-    if (s_flag && max_width && len > max_width)
-    {
-        len = max_width;
-    }
-
-    if (min_width > 0)
-    {
-        if (len >= min_width)
-        {
-            min_width = 0;
-        }
-        else
-        {
-            min_width -= len;
-        }
-
-        if ((pad & PAD_ZERO) && !s_flag)
-        {
-            padchar = '0';
-        }
-    }
-
-    if (max_width > min_width)
-    {
-        max_width -= min_width;
-
-        if (len >= max_width)
-        {
-            max_width = 0;
-        }
-        else
-        {
-            max_width -= len;
-        }
-
-        if (lead & LEAD_HEX)
-        {
-            if (max_width >= 2)
-            {
-                max_width -= 2;
-            }
-            else
-            {
-                max_width = 0;
-            }
-        }
-        else if ((lead & LEAD_NEG) || (lead & LEAD_SIGN))
-        {
-            if (max_width >= 1)
-            {
-                max_width--;
-            }
-            else
-            {
-                max_width = 0;
-            }
-        }
-
-        for (; max_width > 0; max_width--)
-        {
-            OS_OutputSingleChar(out, ' ');
-            pc++;
-        }
-    }
-
-    if ((lead & LEAD_HEX) && padchar == '0')
-    {
-        OS_OutputSingleChar(out, '0');
-        OS_OutputSingleChar(out, 'x');
-        pc += 2;
-    }
-    else if (lead & LEAD_NEG)
-    {
-        OS_OutputSingleChar(out, '-');
-        pc++;
-    }
-    else if (lead & LEAD_SIGN)
-    {
-        OS_OutputSingleChar(out, '+');
-        pc++;
-    }
-    else if (lead & LEAD_SPACE)
-    {
-        OS_OutputSingleChar(out, ' ');
-        pc++;
-    }
-
-    if (!(pad & PAD_RIGHT))
-    {
-        for (; min_width > 0; min_width--)
-        {
-            OS_OutputSingleChar(out, padchar);
-            pc++;
-        }
-    }
-
-    if ((lead & LEAD_HEX) && padchar == ' ')
-    {
-        OS_OutputSingleChar(out, '0');
-        OS_OutputSingleChar(out, 'x');
-        pc += 2;
-    }
-
-    for (; len; string++)
-    {
-        OS_OutputSingleChar(out, *string);
-        pc++;
-        len--;
-    }
-
-    for (; min_width > 0; min_width--)
-    {
-        OS_OutputSingleChar(out, padchar);
-        pc++;
-    }
-
-    return pc;
-}
-
-/*****************************************************************************/
-/**
-** \brief OS_ParseInteger stub function
-**
-** \par Description
-**        This function is identical to the OS API function OS_ParseInteger.
-**
-** \par Assumptions, External Events, and Notes:
-**        None
-**
-** \param[out] out              Pointer to the output character string buffer.
-**
-** \param[in]  i                Integer to convert.
-**
-** \param[in]  base             = 10 for base 10 (decimal); = 16 for base 16
-**                              (hexadecimal).
-**
-** \param[in]  sign             Non-zero for integer values; zero for unsigned
-**                              integer values .
-**
-** \param[in]  space_pad_width  Format modifier minimum field width (e.g.,
-**                              the 5 in %5.2d).
-**
-** \param[in]  zero_pad_width   Format modifier precision specifier (e.g.,
-**                              the 2 in %5.2d).
-**
-** \param[in]  pad              Pointer to the leading character bit flag.
-**
-** \param[in]  lead             Leading character bit flag.
-**
-** \param[in]  letbase          Non-zero if this function is called by the %s
-**                              handler; zero otherwise.  Used to determine how the
-**                              maximum string length is applied.
-**
-** \returns
-** \retstmt
-**        Returns the length in characters of the resulting string output.
-**        \endcode
-** \endreturns
-**
-** \sa #OS_ParseString
-**
-******************************************************************************/
-int OS_ParseInteger(char **out, int i, unsigned base, int sign,
-                    int space_pad_width, int zero_pad_width,
-                    int pad, int lead, int letbase)
-{
-    char print_buf[PRINT_BUF_LEN + 1];
-    char *s;
-    int t, pc = 0;
-    unsigned u = (unsigned) i;
-    int rtn;
-
-    if (i == 0)
-    {
-        print_buf[0] = '0';
-        print_buf[1] = '\0';
-        rtn = OS_ParseString(out, print_buf, zero_pad_width,
-                             space_pad_width, pad, lead, 0);
-    }
-    else
-    {
-        if (sign && base == 10 && i < 0)
-        {
-            u = (unsigned) -i;
-            lead |= LEAD_NEG;
-        }
-
-        /* Make sure print_buf is NULL-terminated */
-        s = print_buf + PRINT_BUF_LEN - 1;
-        *s = '\0';
-
-        while (u)
-        {
-            t = u % base;
-
-            if (t >= 10)
-            {
-                t += letbase - '0' - 10;
-            }
-
-            s--;
-            *s = (char) t + '0';
-            u /= base;
-        }
-
-        rtn = pc + OS_ParseString(out, s, zero_pad_width,
-                                  space_pad_width, pad, lead, 0);
-    }
-
-    return rtn;
-}
-
-/*****************************************************************************/
-/**
-** \brief OS_vsnprintf stub function
-**
-** \par Description
-**        This function is identical to the OS API function OS_vsnprintf.
-**
-** \par Assumptions, External Events, and Notes:
-**        None
-**
-** \param[out] *out     Pointer to character buffer to hold the  output string.
-**
-** \param[in]  max_len  Maximum allowed length of the output string.
-**
-** \param[in]  *format  Pointer to a printf-style format string.
-**
-** \param[in]  varg     Pointer to the beginning of the list of variables
-**                      to output per the format string.
-**
-** \returns
-** \retstmt
-**        Returns the number of characters output to the string buffer.
-**        \endcode
-** \endreturns
-**
-** \sa
-**
-******************************************************************************/
-int OS_vsnprintf(char *out_buffer, int max_len,
-                 const char *format, VA_LIST varg)
-{
-    unsigned post_decimal;
-    int width, pad, lead;
-    unsigned dec_width;
-    int pc = 0;
-    char scr[2];
-    char *s;
-    char **out;
-
-#ifndef OSP_NO_FLOAT
-    unsigned dec_width_set;
-    double *dblptr;
-    double dbl;
-    char float_bfr[FLOAT_BUF_LEN + 1];
-#endif
-
-#ifdef OSP_ARINC653
-    unsigned parm_count = 0;
-#endif
-
-    if (out_buffer)
-    {
-        out = &out_buffer;
-    }
-    else
-    {
-        out = 0;
-    }
-
-    gMaxOutputLen = max_len;
-    gCurrentOutputLen = 0;
-
-    /* Step through and parse the format string */
-    for (; *format != '\0'; format++)
-    {
-        /* Process the format code following the format specifier (%) */
-        if (*format == '%')
-        {
-            format++;
-            width = 0;
-            dec_width = 0;
-#ifndef OSP_NO_FLOAT
-            dec_width_set = 0;
-#endif
-            pad = 0;
-            lead = 0;
-            post_decimal = 0;
-
-            /* Look for format modifiers */
-            while (*format == '-' ||
-                   *format == '+' ||
-                   *format == ' ' ||
-                   *format == '0')
-            {
-                if (*format == '-')
-                {
-                    /* Left-justify output */
-                    format++;
-                    pad |= PAD_RIGHT;
-                }
-                else if (*format == '+')
-                {
-                    /* Prepend the plus sign (+) to the output if the value is
-                     * positive
-                     */
-                    format++;
-                    lead |= LEAD_SIGN;
-                }
-                else if (*format == ' ')
-                {
-                    /* Prepend a space in place of the plus sign (+) if the
-                     * value is positive
-                     */
-                    format++;
-                    lead |= LEAD_SPACE;
-                }
-                else if (*format == '0')
-                {
-                    /* Pad numerical output with leading zeroes */
-                    format++;
-                    pad |= PAD_ZERO;
-                }
-            }
-
-            /* Look for field width and precision specifier (e.g., ###.###) */
-            while (1)
-            {
-                if (*format == '.')
-                {
-                    /* Decimal point indicates any following numbers are the
-                     * precision specifier
-                     */
-                    if (post_decimal)
-                    {
-                        /* Already found one decimal point, any others indicate
-                         * a format string error; back up pointer so the output
-                         * will show all of the erroneous modifier
-                         */
-                        while (*(format -1) != '%')
-                        {
-                            format--;
-                        }
-
-                        break;
-                    }
-
-                    post_decimal = 1;
-                    format++;
-                }
-                else if (*format >= '0' &&  *format <= '9')
-                {
-                    if (post_decimal)
-                    {
-                        /* After the decimal is the precision specifier; add
-                         * number to the total, accounting for the number of
-                         * digits
-                         */
-                        dec_width *= 10;
-                        dec_width += (unsigned) (unsigned char)
-                                         (*format - '0');
-#ifndef OSP_NO_FLOAT
-                        dec_width_set = 1;
-#endif
-		    }
-                    else
-                    {
-                        /* Prior to the decimal is the field width; add number
-                         * to the total, accounting for the number of digits
-                         */
-                        width *= 10;
-                        width += *format - '0';
-                    }
-
-                    format++;
-                }
-                else
-                {
-                    /* End of field width and precision specifier reached;
-                     * exit 'while' loop
-                     */
-                    break;
-                }
-            }
-
-            /* Check for long format modifier; if found then skip since all
-             * are treated as long regardless
-             */
-            if (*format == 'l')
-            {
-                format++;
-            }
-
-            switch (*format)
-            {
-                case 's': /* Character string */
-                    s = (char *) *varg;
-                    varg++;
-#ifdef OSP_ARINC653	
-                    parm_count++;
-#endif
-                    pc += OS_ParseString(out, s, width, dec_width, pad, 0, 1);
-                    break;
-
-                case 'd': /* (Long) integer */
-                case 'i':
-                    if (dec_width)
-                    {
-                        pad = PAD_ZERO;
-                    }
-                    else if (width && (pad & PAD_ZERO))
-                    {
-                        dec_width = width;
-                        width = 0;
-
-                        if ((int) *varg < 0 || lead)
-                        {
-                            dec_width--;
-                        }
-                    }
-
-                    pc += OS_ParseInteger(out, (int) *varg, 10, 1, width,
-                                          dec_width, pad, lead, 'a');
-                    varg++;
-#ifdef OSP_ARINC653	
-                    parm_count++;
-#endif
-                    break;
-
-                case 'u': /* (Long) unsigned integer */
-                    if (dec_width)
-                    {
-                        pad = PAD_ZERO;
-                    }
-                    else if (width && (pad & PAD_ZERO))
-                    {
-                        dec_width = width;
-                        width = 0;
-                    }
-
-                    pc += OS_ParseInteger(out, (int) *varg, 10, 0, width,
-                                          dec_width, pad, 0, 'a');
-                    varg++;
-#ifdef OSP_ARINC653	
-                    parm_count++;
-#endif
-                    break;
-
-                case 'x': /* Hexadecimal (lower case) */
-                    if (dec_width)
-                    {
-                        pad = PAD_ZERO;
-                    }
-                    else if ((pad & PAD_ZERO))
-                    {
-                        dec_width = width;
-                    }
-
-                    pc += OS_ParseInteger(out, (int) *varg, 16, 0, width,
-                                          dec_width, pad, lead, 'a');
-                    varg++;
-#ifdef OSP_ARINC653	
-                    parm_count++;
-#endif
-                    break;
-
-                case 'X': /* Hexadecimal (upper case) */
-                    if (dec_width)
-                    {
-                        pad = PAD_ZERO;
-                    }
-                    else if ((pad & PAD_ZERO))
-                    {
-                        dec_width = width;
-                    }
-
-                    pc += OS_ParseInteger(out, (int) *varg, 16, 0, width,
-                                          dec_width, pad, lead, 'A');
-                    varg++;
-#ifdef OSP_ARINC653	
-                    parm_count++;
-#endif
-                    break;
-
-                case 'p': /* Address (hexadecimal with '0x' prepended) */
-                    if (dec_width)
-                    {
-                        pad = PAD_ZERO;
-                    }
-                    else if ((pad & PAD_ZERO) && width >= 2)
-                    {
-                        dec_width = width - 2;
-                    }
-
-                    lead = LEAD_HEX;
-                    pc += OS_ParseInteger(out, (int) *varg, 16, 0, width,
-                                          dec_width, pad, lead, 'a');
-                    varg++;
-#ifdef OSP_ARINC653	
-                    parm_count++;
-#endif
-                    break;
-
-                case 'c': /* Single character */
-                    scr[0] = (char) *varg;
-                    varg++;
-#ifdef OSP_ARINC653	
-                    parm_count++;
-#endif
-                    scr[1] = '\0';
-                    pc += OS_ParseString(out, scr, width, 0, pad, 0, 0);
-                    break;
-
-#ifndef OSP_NO_FLOAT
-                case 'f': /* (Long) float */
-                    dblptr = (double *) varg;
-                    dbl = *dblptr;
-                    dblptr++;
-                    varg = (VA_LIST) dblptr;
-#ifdef OSP_ARINC653	
-                    parm_count++;
-#endif
-
-                    if (!dec_width_set)
-                    {
-                        dec_width = 6;
-                    }
-
-                    OS_Double2String(float_bfr, dbl, dec_width, &lead);
-
-                    if (width && !(pad & PAD_RIGHT) && !(pad & PAD_ZERO))
-                    {
-                        dec_width = 0;
-                    }
-                    else
-                    {
-                        dec_width = width - (lead != 0);
-                        width = 0;
-                    }
-
-                    pc += OS_ParseString(out, float_bfr, dec_width,
-                                         width, pad, lead, 0);
-                    break;
-#endif
-
-                case '%': /* Output percent character (%) */
-                    OS_OutputSingleChar(out, *format);
-                    pc++;
-                    break;
-
-                case '\0':
-                    /* Premature end of format string; back up one so the
-                     * 'for' loop will terminate parsing gracefully
-                     */
-                    format--;
-                    break;
-
-                default:
-                    /* Invalid format code; output the format specifier
-                     * and code
-                     */
-                    OS_OutputSingleChar(out, '%');
-                    OS_OutputSingleChar(out, *format);
-                    pc += 2;
-                    break;
-            }
-
-#ifdef OSP_ARINC653
-            /* If at the end of the first contiguous list of values */
-            if (parm_count == OS_printf_break)
-            {
-                /* Adjust pointer to skip to the second contiguous list */
-                parm_count++;
-                varg += OS_printf_skip;
-            }
-#endif
-        }
-        /* Normal output character (not a format specifier); send to output */
-        else
-        {
-            OS_OutputSingleChar(out, *format);
-            pc++;
-        }
-    }
-
-    if (out)
-    {
-        **out = '\0';
-    }
-
-    return pc;
-}
-
-/*****************************************************************************/
-/**
-** \brief OS_sprintf stub function
-**
-** \par Description
-**        This function is identical to the OS API function OS_sprintf.
-**
-** \par Assumptions, External Events, and Notes:
-**        None
-**
-** \param[out] *out         Pointer to character buffer to hold the
-**                          output string.
-**
-** \param[in]  *format      Pointer to a printf-style format string.
-**
-** \param[in]  {arguments}  Variables to output per the format string (the
-**                          number of arguments is variable).
-**
-** \returns
-** \retstmt
-**        Returns the number of characters output to the string buffer.
-**        \endcode
-** \endreturns
-**
-** \sa #OS_vsnprintf
-**
-******************************************************************************/
-int OS_sprintf(char *out, const char *format, ...)
-{
-    VA_LIST varg;
-    int length;
-
-    /* Create a pointer into the stack */
-    VA_START(varg, format, UT_OFFSET_OS_SPRINTF, UT_BREAK_OS_SPRINTF,
-             UT_SKIP_OS_SPRINTF);
-    length = OS_vsnprintf(out, -1, format, varg);
-    VA_END(varg);
-    return(length);
-}
-
-/*****************************************************************************/
-/**
-** \brief OS_snprintf stub function
-**
-** \par Description
-**        This function is identical to the OS API function OS_snprintf.
-**
-** \par Assumptions, External Events, and Notes:
-**        None
-**
-** \param[out] *out         Pointer to character buffer to hold the
-**                          output string.
-**
-** \param[in]  max_len      Maximum allowed length of the output string.
-**
-** \param[in]  *format      Pointer to a printf-style format string.
-**
-** \param[in]  {arguments}  Variables to output per the format string (the
-**                          number of arguments is variable).
-**
-** \returns
-** \retstmt
-**        Returns the number of characters output to the string buffer.
-**        \endcode
-** \endreturns
-**
-** \sa #OS_vsnprintf
-**
-******************************************************************************/
-int OS_snprintf(char *out, unsigned max_len, const char *format, ...)
-{
-    VA_LIST varg;
-    int length;
-
-    /* Create a pointer into the stack */
-    VA_START(varg, format, UT_OFFSET_OS_SNPRINTF, UT_BREAK_OS_SNPRINTF,
-             UT_SKIP_OS_SNPRINTF);
-    length = OS_vsnprintf(out, (int) max_len - 1, format, varg);
-    VA_END(varg);
-    return(length);
-}
-#endif

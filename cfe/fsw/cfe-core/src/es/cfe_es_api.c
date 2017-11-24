@@ -153,7 +153,7 @@
 /*
 ** Required header files.
 */
-#include "cfe.h"
+#include "private/cfe_private.h"
 #include "cfe_es.h"
 #include "cfe_es_apps.h"
 #include "cfe_es_global.h"
@@ -174,7 +174,7 @@
 **
 ** Purpose:  Return The Type of reset the cFE had.
 **           The function will return the start type 
-**           which is CFE_ES_POWERON_RESET or CFE_ES_PROCESSOR_RESET.
+**           which is CFE_PSP_RST_TYPE_POWERON or CFE_PSP_RST_TYPE_PROCESSOR.
 **           The sub-type is optional and will be returned if a non-NULL pointer
 **           is passed in to the function.
 */
@@ -199,9 +199,8 @@ int32 CFE_ES_GetResetType(uint32 *ResetSubtypePtr)
 int32 CFE_ES_ResetCFE(uint32 ResetType)
 {
     int32 ReturnCode;
-    int32 status;
     
-    if ( ResetType == CFE_ES_PROCESSOR_RESET )
+    if ( ResetType == CFE_PSP_RST_TYPE_PROCESSOR )
     {
        /*
        ** Increment the processor reset count
@@ -221,13 +220,13 @@ int32 CFE_ES_ResetCFE(uint32 ResetType)
            ** Log the reset in the ER Log. The log will be wiped out, but it's good to have
            ** the entry just in case something fails.
            */
-           status =  CFE_ES_WriteToERLog(CFE_ES_CORE_LOG_ENTRY, CFE_ES_POWERON_RESET, 
-                                         CFE_ES_RESET_COMMAND,
+           CFE_ES_WriteToERLog(CFE_ES_CORE_LOG_ENTRY, CFE_PSP_RST_TYPE_POWERON,
+                                         CFE_PSP_RST_SUBTYPE_RESET_COMMAND,
                                          "POWER ON RESET due to max proc resets (Commanded).", NULL,0 );
            /*
            ** Call the BSP reset routine 
            */
-           CFE_PSP_Restart(CFE_ES_POWERON_RESET);
+           CFE_PSP_Restart(CFE_PSP_RST_TYPE_POWERON);
        }
        else
        {
@@ -241,13 +240,13 @@ int32 CFE_ES_ResetCFE(uint32 ResetType)
            /*
            ** Log the reset in the ER Log
            */
-           status =  CFE_ES_WriteToERLog(CFE_ES_CORE_LOG_ENTRY, CFE_ES_PROCESSOR_RESET,
+           CFE_ES_WriteToERLog(CFE_ES_CORE_LOG_ENTRY, CFE_ES_PROCESSOR_RESET,
                                        CFE_ES_RESET_COMMAND,
                                        "PROCESSOR RESET called from CFE_ES_ResetCFE (Commanded).", NULL,0 );
            /*
            ** Call the BSP reset routine
            */
-           CFE_PSP_Restart(ResetType);
+           CFE_PSP_Restart(CFE_PSP_RST_TYPE_PROCESSOR);
        
        } /* end if */
        
@@ -257,7 +256,7 @@ int32 CFE_ES_ResetCFE(uint32 ResetType)
        */
        ReturnCode = CFE_ES_NOT_IMPLEMENTED;
     }
-    else if ( ResetType == CFE_ES_POWERON_RESET )
+    else if ( ResetType == CFE_PSP_RST_TYPE_POWERON )
     {
        CFE_ES_WriteToSysLog("POWERON RESET called from CFE_ES_ResetCFE (Commanded).\n");
 
@@ -265,14 +264,14 @@ int32 CFE_ES_ResetCFE(uint32 ResetType)
        ** Log the reset in the ER Log. The log will be wiped out, but it's good to have
        ** the entry just in case something fails.
        */
-       status =  CFE_ES_WriteToERLog(CFE_ES_CORE_LOG_ENTRY, CFE_ES_POWERON_RESET, 
-                                       CFE_ES_RESET_COMMAND,
+       CFE_ES_WriteToERLog(CFE_ES_CORE_LOG_ENTRY, CFE_PSP_RST_TYPE_POWERON,
+                                       CFE_PSP_RST_SUBTYPE_RESET_COMMAND,
                                        "POWERON RESET called from CFE_ES_ResetCFE (Commanded).", NULL,0 );
 
        /*
        ** Call the BSP reset routine
        */
-       CFE_PSP_Restart(ResetType);
+       CFE_PSP_Restart(CFE_PSP_RST_TYPE_POWERON);
        
        /* 
        ** If the BSP routine is not implemented, 
@@ -282,7 +281,7 @@ int32 CFE_ES_ResetCFE(uint32 ResetType)
     }
     else
     {
-       CFE_ES_WriteToSysLog("ES ResetCFE: Invalid Reset Type: %d.\n",ResetType);
+       CFE_ES_WriteToSysLog("ES ResetCFE: Invalid Reset Type: %d.\n",(int)ResetType);
        ReturnCode = CFE_ES_BAD_ARGUMENT;
     }
 
@@ -324,7 +323,7 @@ int32 CFE_ES_RestartApp(uint32 AppID)
        {
           CFE_ES_WriteToSysLog("CFE_ES_RestartApp: Restart Application %s Initiated\n",
                              CFE_ES_Global.AppTable[AppID].StartParams.Name);
-          CFE_ES_Global.AppTable[AppID].StateRecord.AppControlRequest = CFE_ES_SYS_RESTART;
+          CFE_ES_Global.AppTable[AppID].StateRecord.AppControlRequest = CFE_ES_RUNSTATUS_SYS_RESTART;
           CFE_ES_Global.AppTable[AppID].StateRecord.AppState = CFE_ES_APP_STATE_WAITING;
           CFE_ES_Global.AppTable[AppID].StateRecord.AppTimer = CFE_ES_APP_KILL_TIMEOUT;
        }
@@ -373,7 +372,7 @@ int32 CFE_ES_ReloadApp(uint32 AppID, const char *AppFileName)
        CFE_ES_WriteToSysLog("CFE_ES_ReloadApp: Reload Application %s Initiated. New filename = %s\n", 
                              CFE_ES_Global.AppTable[AppID].StartParams.Name, AppFileName);
        strncpy((char *)CFE_ES_Global.AppTable[AppID].StartParams.FileName, AppFileName, OS_MAX_PATH_LEN);
-       CFE_ES_Global.AppTable[AppID].StateRecord.AppControlRequest = CFE_ES_SYS_RELOAD;
+       CFE_ES_Global.AppTable[AppID].StateRecord.AppControlRequest = CFE_ES_RUNSTATUS_SYS_RELOAD;
        CFE_ES_Global.AppTable[AppID].StateRecord.AppState = CFE_ES_APP_STATE_WAITING;
        CFE_ES_Global.AppTable[AppID].StateRecord.AppTimer = CFE_ES_APP_KILL_TIMEOUT;
     }
@@ -415,7 +414,7 @@ int32 CFE_ES_DeleteApp(uint32 AppID)
     {
        CFE_ES_WriteToSysLog("CFE_ES_DeleteApp: Delete Application %s Initiated\n",
                              CFE_ES_Global.AppTable[AppID].StartParams.Name);    
-       CFE_ES_Global.AppTable[AppID].StateRecord.AppControlRequest = CFE_ES_SYS_DELETE;
+       CFE_ES_Global.AppTable[AppID].StateRecord.AppControlRequest = CFE_ES_RUNSTATUS_SYS_DELETE;
        CFE_ES_Global.AppTable[AppID].StateRecord.AppState = CFE_ES_APP_STATE_WAITING;
        CFE_ES_Global.AppTable[AppID].StateRecord.AppTimer = CFE_ES_APP_KILL_TIMEOUT;
     }
@@ -453,7 +452,7 @@ void CFE_ES_ExitApp(uint32 ExitStatus)
           /*
           ** A core app should only call this function with one of two ExitStatus codes.
           */
-          if ( ExitStatus == CFE_ES_CORE_APP_INIT_ERROR )
+          if ( ExitStatus == CFE_ES_RUNSTATUS_CORE_APP_INIT_ERROR )
           {
               CFE_ES_WriteToSysLog ("CFE_ES_ExitApp: CORE Application %s Had an Init Error.\n",
                                      CFE_ES_Global.AppTable[AppID].StartParams.Name );
@@ -467,14 +466,14 @@ void CFE_ES_ExitApp(uint32 ExitStatus)
               /*
               ** Do a Processor Reset the cFE
               */                                                                                                          
-              ReturnCode = CFE_ES_ResetCFE(CFE_ES_PROCESSOR_RESET);
+              ReturnCode = CFE_ES_ResetCFE(CFE_PSP_RST_TYPE_PROCESSOR);
               
               /*
               ** Code will not return
               */
               
           }
-          else if ( ExitStatus == CFE_ES_CORE_APP_RUNTIME_ERROR )
+          else if ( ExitStatus == CFE_ES_RUNSTATUS_CORE_APP_RUNTIME_ERROR )
           {
               CFE_ES_WriteToSysLog ("CFE_ES_ExitApp: CORE Application %s Had a Runtime Error.\n",
                                      CFE_ES_Global.AppTable[AppID].StartParams.Name );  
@@ -490,9 +489,9 @@ void CFE_ES_ExitApp(uint32 ExitStatus)
               OS_TaskExit();   
               
               /*
-              ** Code will not return
+              ** Code will not return, except under unit test
               */
-                                                                                       
+              return;
           }
           else 
           {
@@ -539,7 +538,7 @@ void CFE_ES_ExitApp(uint32 ExitStatus)
 */
 int32 CFE_ES_RunLoop(uint32 *RunStatus)
 {
-    int32  ReturnCode = TRUE;
+    int32  ReturnCode;
     uint32 AppID;
     uint32 TaskID;
     
@@ -556,7 +555,7 @@ int32 CFE_ES_RunLoop(uint32 *RunStatus)
        /*
        ** Get the Task ID for the main task
        */
-       TaskID = CFE_ES_Global.AppTable[AppID].TaskInfo.MainTaskId;
+       OS_ConvertToArrayIndex(CFE_ES_Global.AppTable[AppID].TaskInfo.MainTaskId, &TaskID);
        
        /*
        ** Increment the execution counter for the main task
@@ -566,12 +565,12 @@ int32 CFE_ES_RunLoop(uint32 *RunStatus)
        /*
        ** Validate RunStatus
        */
-       if ( *RunStatus == CFE_ES_APP_RUN || *RunStatus == CFE_ES_APP_EXIT || *RunStatus == CFE_ES_APP_ERROR )
+       if ( *RunStatus == CFE_ES_RUNSTATUS_APP_RUN || *RunStatus == CFE_ES_RUNSTATUS_APP_EXIT || *RunStatus == CFE_ES_RUNSTATUS_APP_ERROR )
        {  
           /*
           ** Look up the system control request
           */
-          if ( *RunStatus == CFE_ES_APP_RUN )
+          if ( *RunStatus == CFE_ES_RUNSTATUS_APP_RUN )
           {            
              /* 
              ** The first time an App calls this function, change the state from 
@@ -583,37 +582,11 @@ int32 CFE_ES_RunLoop(uint32 *RunStatus)
                 ** Change the state to RUNNING
                 */
                 CFE_ES_Global.AppTable[AppID].StateRecord.AppState = CFE_ES_APP_STATE_RUNNING;
-                
-                /*
-                ** Once the Startup Sync point has been passed, it will not apply to new apps.
-                ** These new Apps will be started individually by a command to ES.
-                */
-                if ( CFE_ES_Global.StartupSemaphoreReleased == FALSE)
-                {
-                   CFE_ES_Global.AppStartupCounter--;
-                   
-                   /*
-                   ** Do not actually release the semaphore until the startup file is finished.
-                   ** This avoids the problem of the counter going being decremented with each new app
-                   ** as opposed to waiting until all of the apps are started
-                   */
-                   if (( CFE_ES_Global.StartupFileComplete == TRUE ) && ( CFE_ES_Global.AppStartupCounter <= 0 ))
-                   {
-                      CFE_ES_Global.AppStartupCounter = 0;
-                      CFE_ES_Global.StartupSemaphoreReleased = TRUE;
-                      
-                      /* 
-                      ** Release semaphore 
-                      */
-                      OS_BinSemFlush(CFE_ES_Global.StartupSyncSemaphore); 
-
-                   }
-                   
-                } /* End if StartupSemaphoreReleased == FALSE */
+                ++CFE_ES_Global.AppReadyCount;
                 
              } /* End if AppState == CFE_ES_APP_STATE_INITIALIZING */
              
-             if ( CFE_ES_Global.AppTable[AppID].StateRecord.AppControlRequest != CFE_ES_APP_RUN )
+             if ( CFE_ES_Global.AppTable[AppID].StateRecord.AppControlRequest != CFE_ES_RUNSTATUS_APP_RUN )
              { 
                  /*
                  ** We have an external request to stop
@@ -643,8 +616,8 @@ int32 CFE_ES_RunLoop(uint32 *RunStatus)
           /*
           ** Not a supported RunStatus code, the app will abort
           */
-          CFE_ES_WriteToSysLog("CFE_ES_RunLoop Error: Invalid RunStatus:%d!\n",*RunStatus);
-          CFE_ES_Global.AppTable[AppID].StateRecord.AppControlRequest = CFE_ES_APP_ERROR; 
+          CFE_ES_WriteToSysLog("CFE_ES_RunLoop Error: Invalid RunStatus:%d!\n",(int)(*RunStatus));
+          CFE_ES_Global.AppTable[AppID].StateRecord.AppControlRequest = CFE_ES_RUNSTATUS_APP_ERROR;
           ReturnCode = FALSE;
        
        } /* End if *RunStatus == CFE_ES_APP_RUN .. */
@@ -655,7 +628,7 @@ int32 CFE_ES_RunLoop(uint32 *RunStatus)
        /*
        ** Cannot do anything without the AppID
        */
-       CFE_ES_WriteToSysLog("CFE_ES_RunLoop Error: Cannot get AppID for the caller: RC = %08X\n",ReturnCode);
+       CFE_ES_WriteToSysLog("CFE_ES_RunLoop Error: Cannot get AppID for the caller: RC = %08X\n",(unsigned int)ReturnCode);
        ReturnCode = FALSE;
          
     } /* end if ReturnCode == CFE_SUCCESS */
@@ -669,89 +642,54 @@ int32 CFE_ES_RunLoop(uint32 *RunStatus)
 /*
 ** Function: CFE_ES_WaitForStartupSync
 **
-** Purpose:  Waits for all of the applications in the CFE startup table to initialize before
-**           continuing.
+** Purpose:  Called by applications that need to ensure that all other apps are running
+**           before completing their initialization process.
+**
+**           This will also mark the calling task itself as "ready"
 **
 */
 void CFE_ES_WaitForStartupSync(uint32 TimeOutMilliseconds)
 {
-   int32  ReturnCode;
-   uint32 AppID;
-   
-   /*
-   ** In order to prevent problems with underlying OS calls, the wait will be a minimum of 1 second.
-   ** The wait should never be indefinite, in case an app does not start correctly.
-   */
-   if ( TimeOutMilliseconds < 1000 )
-   {
-      TimeOutMilliseconds = 1000;
-   }
- 
-   CFE_ES_LockSharedData(__func__,__LINE__);
+    int32 Status;
+    uint32 AppID;
+    uint32 MinSystemState;
 
-   /*
-   ** Dont bother waiting if the startup semaphore has been released already
-   */
-   if ( CFE_ES_Global.StartupSemaphoreReleased == FALSE)
-   {
-      /*
-      ** Get App ID
-      */
-      ReturnCode = CFE_ES_GetAppIDInternal(&AppID);
-      if ( ReturnCode == CFE_SUCCESS )
-      {
-         if ( CFE_ES_Global.AppTable[AppID].StateRecord.AppState == CFE_ES_APP_STATE_INITIALIZING)
-         {
-             /* 
-             ** Change the state to RUNNING
-             ** This will prevent the AppStartupCounter from being decremented again if the wait on the 
-             ** semaphore times out. So this code will run in one of two places: This function or the 
-             ** first time that the CFE_ES_RunLoop function is called, but it should not run in both for 
-             ** an app. If the init code gets more complicated, it should be put in a common function. 
-             */
-             CFE_ES_Global.AppTable[AppID].StateRecord.AppState = CFE_ES_APP_STATE_RUNNING;
+    MinSystemState = CFE_ES_SYSTEM_STATE_UNDEFINED;
 
-         }    
+    /*
+     * An application calling CFE_ES_WaitForStartupSync() is assumed to have
+     * completed its initialization and is ready to run.  This is required,
+     * or else the sync delay will end up waiting for itself, or could deadlock
+     * by two apps waiting for each other, etc.
+     */
+    CFE_ES_LockSharedData(__func__,__LINE__);
+    Status = CFE_ES_GetAppIDInternal(&AppID);
+    if ( Status == CFE_SUCCESS )
+    {
+        if ( CFE_ES_Global.AppTable[AppID].StateRecord.AppState == CFE_ES_APP_STATE_INITIALIZING)
+        {
+            CFE_ES_Global.AppTable[AppID].StateRecord.AppState = CFE_ES_APP_STATE_RUNNING;
+            ++CFE_ES_Global.AppReadyCount;
+        }
 
-         /*
-         ** The counter must be decremented here to properly count the calling app as finishing 
-         ** it's initialization.
+        /*
+         * For core apps that call this function, these can start once the core app init
+         * process is done.  For everything else (external apps) wait until fully operational.
          */
-         CFE_ES_Global.AppStartupCounter--;
+        if ( CFE_ES_Global.AppTable[AppID].Type == CFE_ES_APP_TYPE_CORE)
+        {
+            MinSystemState = CFE_ES_SYSTEM_STATE_CORE_READY;
+        }
+        else
+        {
+            MinSystemState = CFE_ES_SYSTEM_STATE_OPERATIONAL;
+        }
 
-         /*
-         ** If the waiting app ends up being the last one, then release the semaphore and dont wait
-         */
-         if (( CFE_ES_Global.StartupFileComplete == TRUE ) && ( CFE_ES_Global.AppStartupCounter <= 0 ))
-         {
-             CFE_ES_Global.AppStartupCounter = 0;
-             CFE_ES_Global.StartupSemaphoreReleased = TRUE;
-             CFE_ES_UnlockSharedData(__func__,__LINE__);
+    }
+    CFE_ES_UnlockSharedData(__func__,__LINE__);
 
-             /* 
-             ** Release semaphore 
-             */
-             OS_BinSemFlush(CFE_ES_Global.StartupSyncSemaphore);  
-
-         }
-         else
-         {
-             /* 
-             ** Wait on the semaphore
-             */ 
-             CFE_ES_UnlockSharedData(__func__,__LINE__);
-             ReturnCode = OS_BinSemTimedWait(CFE_ES_Global.StartupSyncSemaphore, TimeOutMilliseconds);
-         }
-      }
-      else /* GetAppIdInternal fails */
-      {
-         CFE_ES_UnlockSharedData(__func__,__LINE__);
-      }
-   }
-   else /* Semaphore is already released */
-   {
-      CFE_ES_UnlockSharedData(__func__,__LINE__);
-   }
+    /* Do the actual delay loop */
+    CFE_ES_ApplicationSyncDelay(MinSystemState, TimeOutMilliseconds);
 
 } /* End of CFE_ES_WaitForStartupSync() */
 
@@ -807,7 +745,7 @@ int32 CFE_ES_RegisterApp(void)
 **           Application ID.
 **
 */
-int32 CFE_ES_GetAppIDByName(uint32 *AppIdPtr, char *AppName)
+int32 CFE_ES_GetAppIDByName(uint32 *AppIdPtr, const char *AppName)
 {
    int32 Result = CFE_ES_ERR_APPNAME;
    uint32 i;
@@ -823,7 +761,7 @@ int32 CFE_ES_GetAppIDByName(uint32 *AppIdPtr, char *AppName)
       {
          if ( strncmp(AppName, (char *)CFE_ES_Global.AppTable[i].StartParams.Name, OS_MAX_API_NAME) == 0 )
          {
-            *AppIdPtr = (int) i;
+            *AppIdPtr = i;
             Result = CFE_SUCCESS;
             break;
          }
@@ -853,17 +791,18 @@ int32 CFE_ES_GetAppID(uint32 *AppIdPtr)
    /*
    ** Step 1: Get the OS task ID
    */
-   TaskId = OS_TaskGetId();
-
-   /*
-   ** Step 2: get the Application ID for the current task
-   */
-   if ( CFE_ES_Global.TaskTable[TaskId].RecordUsed == TRUE )
+   if (OS_ConvertToArrayIndex(OS_TaskGetId(), &TaskId) == OS_SUCCESS)
    {
-      *AppIdPtr = CFE_ES_Global.TaskTable[TaskId].AppId;
-      Result = CFE_SUCCESS;
-   } /* end if */
-   
+      /*
+      ** Step 2: get the Application ID for the current task
+      */
+      if ( CFE_ES_Global.TaskTable[TaskId].RecordUsed == TRUE )
+      {
+         *AppIdPtr = CFE_ES_Global.TaskTable[TaskId].AppId;
+         Result = CFE_SUCCESS;
+      } /* end if */
+   }
+
    CFE_ES_UnlockSharedData(__func__,__LINE__);
       
    return(Result);
@@ -929,13 +868,13 @@ int32 CFE_ES_GetAppInfo(CFE_ES_AppInfo_t *AppInfo, uint32 AppId)
          }
          else
          {
-            CFE_ES_WriteToSysLog("CFE_ES_GetAppInfo: App ID Not Active: %d\n",AppId);
+            CFE_ES_WriteToSysLog("CFE_ES_GetAppInfo: App ID Not Active: %d\n",(int)AppId);
             ReturnCode = CFE_ES_ERR_APPID;
          }
       }
       else
       {
-         CFE_ES_WriteToSysLog("CFE_ES_GetAppInfo: App ID Exceeds CFE_ES_APPLICATION_MAX: %d\n",AppId);
+         CFE_ES_WriteToSysLog("CFE_ES_GetAppInfo: App ID Exceeds CFE_ES_APPLICATION_MAX: %d\n",(int)AppId);
          ReturnCode = CFE_ES_ERR_APPID;
       }
    }
@@ -954,70 +893,68 @@ int32 CFE_ES_GetAppInfo(CFE_ES_AppInfo_t *AppInfo, uint32 AppId)
 ** Purpose:  Get Task Information given a specified Task ID
 **
 */
-int32 CFE_ES_GetTaskInfo(CFE_ES_TaskInfo_t *TaskInfo, uint32 TaskId)
+int32 CFE_ES_GetTaskInfo(CFE_ES_TaskInfo_t *TaskInfo, uint32 OSTaskId)
 {
    int32  ReturnCode = CFE_SUCCESS;
+   uint32 TaskId;
 
    CFE_ES_LockSharedData(__func__,__LINE__);
 
-   if ( TaskId < OS_MAX_TASKS )
+   if (OS_ConvertToArrayIndex(OSTaskId, &TaskId) != OS_SUCCESS || TaskId >= OS_MAX_TASKS)
    {
-      if (  CFE_ES_Global.TaskTable[TaskId].RecordUsed == TRUE )
+      CFE_ES_WriteToSysLog("CFE_ES_GetTaskInfo: Task ID Not Valid: %u\n",(unsigned int)OSTaskId);
+      ReturnCode = CFE_ES_ERR_TASKID;
+   }
+   else if (  CFE_ES_Global.TaskTable[TaskId].RecordUsed == TRUE )
+   {
+
+      /*
+      ** Get the Application ID and Task Name
+      */
+      TaskInfo->AppId = CFE_ES_Global.TaskTable[TaskId].AppId;
+      strncpy((char *)TaskInfo->TaskName,
+              (char *)CFE_ES_Global.TaskTable[TaskId].TaskName,OS_MAX_API_NAME);
+      TaskInfo->TaskName[OS_MAX_API_NAME - 1] = '\0';
+
+      /*
+      ** Get the Application Name
+      */
+      if ( CFE_ES_Global.AppTable[TaskInfo->AppId].RecordUsed == TRUE )
       {
-    
+         strncpy((char *)TaskInfo->AppName,
+                 (char *)CFE_ES_Global.AppTable[TaskInfo->AppId].StartParams.Name,
+                 OS_MAX_API_NAME);
+         TaskInfo->AppName[OS_MAX_API_NAME - 1] = '\0';
+
          /*
-         ** Get the Application ID and Task Name
-         */  
-         TaskInfo->AppId = CFE_ES_Global.TaskTable[TaskId].AppId;
-         strncpy((char *)TaskInfo->TaskName, 
-                 (char *)CFE_ES_Global.TaskTable[TaskId].TaskName,OS_MAX_API_NAME);
-         TaskInfo->TaskName[OS_MAX_API_NAME - 1] = '\0';         
-         /*
-         ** Get the Application Name
+         ** Store away the Task ID ( for the QueryAllTasks Cmd )
          */
-         if ( CFE_ES_Global.AppTable[TaskInfo->AppId].RecordUsed == TRUE )
-         {
-         
-            strncpy((char *)TaskInfo->AppName, 
-                    (char *)CFE_ES_Global.AppTable[TaskInfo->AppId].StartParams.Name, 
-                    OS_MAX_API_NAME);
-            TaskInfo->AppName[OS_MAX_API_NAME - 1] = '\0';
-            
-            /*
-            ** Store away the Task ID ( for the QueryAllTasks Cmd )
-            */
-            TaskInfo->TaskId = TaskId;
- 
-            
-            /*
-            ** Get the Execution counter for the task
-            */
-            TaskInfo->ExecutionCounter =  CFE_ES_Global.TaskTable[TaskId].ExecutionCounter;
-                                             
-            ReturnCode = CFE_SUCCESS;
-         
-         }
-         else
-         {
-            CFE_ES_WriteToSysLog("CFE_ES_GetTaskInfo: Task ID:%d Parent App ID:%d not Active.\n",
-               TaskId,TaskInfo->AppId);
-            ReturnCode = CFE_ES_ERR_TASKID;
-         }
+         TaskInfo->TaskId = OSTaskId;
+
+
+         /*
+         ** Get the Execution counter for the task
+         */
+         TaskInfo->ExecutionCounter =  CFE_ES_Global.TaskTable[TaskId].ExecutionCounter;
+
+         ReturnCode = CFE_SUCCESS;
+
       }
       else
       {
-         CFE_ES_WriteToSysLog("CFE_ES_GetTaskInfo: Task ID Not Active: %d\n",TaskId);
+         CFE_ES_WriteToSysLog("CFE_ES_GetTaskInfo: Task ID:%u Parent App ID:%d not Active.\n",
+                 (unsigned int)OSTaskId,(int)TaskInfo->AppId);
          ReturnCode = CFE_ES_ERR_TASKID;
       }
    }
    else
    {
-         CFE_ES_WriteToSysLog("CFE_ES_GetTaskInfo: Task ID Exceeds OS MAX: %d\n",TaskId);
-         ReturnCode = CFE_ES_ERR_TASKID;
+      CFE_ES_WriteToSysLog("CFE_ES_GetTaskInfo: Task ID Not Active: %u\n",(unsigned int)OSTaskId);
+      ReturnCode = CFE_ES_ERR_TASKID;
    }
    
    CFE_ES_UnlockSharedData(__func__,__LINE__);
-      
+
    return(ReturnCode);
 
 } /* End of CFE_ES_GetAppName() */
@@ -1032,7 +969,7 @@ int32 CFE_ES_GetTaskInfo(CFE_ES_TaskInfo_t *TaskInfo, uint32 TaskId)
 int32 CFE_ES_CreateChildTask(uint32 *TaskIdPtr,
                         const char   *TaskName,
                         CFE_ES_ChildTaskMainFuncPtr_t   FunctionPtr,
-                        const uint32 *StackPtr,
+                        uint32 *StackPtr,
                         uint32  StackSize,
                         uint32  Priority,
                         uint32  Flags)
@@ -1041,7 +978,7 @@ int32 CFE_ES_CreateChildTask(uint32 *TaskIdPtr,
    int32          Result;
    uint32         AppId= 0xFFFFFFFF;
    int32          ReturnCode;
-   int32          TaskId;
+   uint32         TaskId;
    uint32         ParentTaskId;
 
    /*
@@ -1062,12 +999,12 @@ int32 CFE_ES_CreateChildTask(uint32 *TaskIdPtr,
    }
    else if ( TaskName == NULL )
    {
-      CFE_ES_WriteToSysLog("CFE_ES_CreateChildTask: TaskName Parameter is NULL for Task ID %d.\n",*TaskIdPtr);
+      CFE_ES_WriteToSysLog("CFE_ES_CreateChildTask: TaskName Parameter is NULL for Task ID %d.\n",(int)(*TaskIdPtr));
       ReturnCode = CFE_ES_BAD_ARGUMENT;
    }
    else if ( FunctionPtr == NULL )
    {
-      CFE_ES_WriteToSysLog("CFE_ES_CreateChildTask: Function Pointer Parameter is NULL for Task '%s' (ID %d).\n",TaskName,*TaskIdPtr);
+      CFE_ES_WriteToSysLog("CFE_ES_CreateChildTask: Function Pointer Parameter is NULL for Task '%s' (ID %d).\n",TaskName,(int)(*TaskIdPtr));
       ReturnCode = CFE_ES_BAD_ARGUMENT;
    }
    else 
@@ -1081,7 +1018,7 @@ int32 CFE_ES_CreateChildTask(uint32 *TaskIdPtr,
       Result = CFE_ES_GetAppIDInternal(&AppId);
       if (Result != CFE_SUCCESS)
       {
-          CFE_ES_WriteToSysLog("CFE_ES_CreateChildTask: Error calling CFE_ES_GetAppID for Task '%s'. RC = 0x%08X\n",TaskName,Result);
+          CFE_ES_WriteToSysLog("CFE_ES_CreateChildTask: Error calling CFE_ES_GetAppID for Task '%s'. RC = 0x%08X\n",TaskName,(unsigned int)Result);
           ReturnCode = Result;
       }
       else  /* else AppId is valid */
@@ -1113,11 +1050,13 @@ int32 CFE_ES_CreateChildTask(uint32 *TaskIdPtr,
             */
             if ( Result == OS_SUCCESS )
             {
-               CFE_ES_Global.TaskTable[*TaskIdPtr].RecordUsed = TRUE;
-               CFE_ES_Global.TaskTable[*TaskIdPtr].AppId = AppId;
-               CFE_ES_Global.TaskTable[*TaskIdPtr].TaskId = *TaskIdPtr;
-               strncpy((char *)CFE_ES_Global.TaskTable[*TaskIdPtr].TaskName,TaskName,OS_MAX_API_NAME);
-               CFE_ES_Global.TaskTable[*TaskIdPtr].TaskName[OS_MAX_API_NAME - 1] = '\0';
+               OS_ConvertToArrayIndex(*TaskIdPtr, &TaskId);
+
+               CFE_ES_Global.TaskTable[TaskId].RecordUsed = TRUE;
+               CFE_ES_Global.TaskTable[TaskId].AppId = AppId;
+               CFE_ES_Global.TaskTable[TaskId].TaskId = *TaskIdPtr;
+               strncpy((char *)CFE_ES_Global.TaskTable[TaskId].TaskName,TaskName,OS_MAX_API_NAME);
+               CFE_ES_Global.TaskTable[TaskId].TaskName[OS_MAX_API_NAME - 1] = '\0';
                CFE_ES_Global.RegisteredTasks++;
 
                /*
@@ -1129,7 +1068,7 @@ int32 CFE_ES_CreateChildTask(uint32 *TaskIdPtr,
             }
             else
             {
-               CFE_ES_WriteToSysLog("CFE_ES_CreateChildTask: Error calling OS_TaskCreate for Task '%s' RC = 0x%08X\n",TaskName,Result);
+               CFE_ES_WriteToSysLog("CFE_ES_CreateChildTask: Error calling OS_TaskCreate for Task '%s' RC = 0x%08X\n",TaskName,(unsigned int)Result);
                ReturnCode = CFE_ES_ERR_CHILD_TASK_CREATE;
             }
          } 
@@ -1202,11 +1141,12 @@ int32 CFE_ES_RegisterChildTask(void)
 */
 void CFE_ES_IncrementTaskCounter(void)
 {
-   int32 TaskId;
+   uint32 TaskId;
 
-   TaskId = OS_TaskGetId();
-   
-   CFE_ES_Global.TaskTable[TaskId].ExecutionCounter++;
+   if (OS_ConvertToArrayIndex(OS_TaskGetId(), &TaskId) == OS_SUCCESS)
+   {
+      CFE_ES_Global.TaskTable[TaskId].ExecutionCounter++;
+   }
    
 } /* End of CFE_ES_ExitChildTask() */
 
@@ -1218,9 +1158,10 @@ void CFE_ES_IncrementTaskCounter(void)
 ** Purpose:  Remove a Child Task from the cFE system.
 **
 */
-int32 CFE_ES_DeleteChildTask(uint32 TaskId)
+int32 CFE_ES_DeleteChildTask(uint32 OSTaskId)
 {
     uint32  i;
+    uint32  TaskId;
     uint32  TaskIsMain = FALSE;
     int32   ReturnCode = CFE_SUCCESS;
     int32   OSReturnCode;
@@ -1229,15 +1170,14 @@ int32 CFE_ES_DeleteChildTask(uint32 TaskId)
     /*
     ** Make sure the task ID is within range
     */
-    if ( TaskId < OS_MAX_TASKS )
+    if (OS_ConvertToArrayIndex(OSTaskId, &TaskId) == OS_SUCCESS)
     {
-    
        CFE_ES_LockSharedData(__func__,__LINE__);
     
        /*
        ** Make sure the task is active/valid
        */
-       if ( CFE_ES_Global.TaskTable[TaskId].RecordUsed == TRUE )
+       if (TaskId < OS_MAX_TASKS && CFE_ES_Global.TaskTable[TaskId].RecordUsed == TRUE )
        {
           /*
           ** Search for this task ID in the ES App Table to make sure
@@ -1248,7 +1188,7 @@ int32 CFE_ES_DeleteChildTask(uint32 TaskId)
           {
              if ( CFE_ES_Global.AppTable[i].RecordUsed == TRUE )
              {
-                if ( CFE_ES_Global.AppTable[i].TaskInfo.MainTaskId == TaskId )
+                if ( CFE_ES_Global.AppTable[i].TaskInfo.MainTaskId == OSTaskId )
                 {
                    /*
                    ** Error, the task Id is an App Main Task ID
@@ -1264,7 +1204,7 @@ int32 CFE_ES_DeleteChildTask(uint32 TaskId)
              /*
              ** Can delete the Task
              */
-             OSReturnCode = OS_TaskDelete(TaskId);
+             OSReturnCode = OS_TaskDelete(OSTaskId);
              if ( OSReturnCode == OS_SUCCESS )
              {
                 /*
@@ -1276,13 +1216,13 @@ int32 CFE_ES_DeleteChildTask(uint32 TaskId)
                 /*
                 ** Report the task delete
                 */
-                CFE_ES_WriteToSysLog("CFE_ES_DeleteChildTask Task %d Deleted\n",TaskId );
+                CFE_ES_WriteToSysLog("CFE_ES_DeleteChildTask Task %u Deleted\n",(unsigned int)OSTaskId );
                 ReturnCode = CFE_SUCCESS;
              }
              else
              {
-                CFE_ES_WriteToSysLog("CFE_ES_DeleteChildTask Error: Error Calling OS_TaskDelete: Task %d, RC = 0x%08X\n",
-                                     TaskId, OSReturnCode);
+                CFE_ES_WriteToSysLog("CFE_ES_DeleteChildTask Error: Error Calling OS_TaskDelete: Task %u, RC = 0x%08X\n",
+                        (unsigned int)OSTaskId, (unsigned int)OSReturnCode);
                 ReturnCode = CFE_ES_ERR_CHILD_TASK_DELETE;
              }
           }
@@ -1291,7 +1231,7 @@ int32 CFE_ES_DeleteChildTask(uint32 TaskId)
              /*
              ** Error: The task is a cFE Application Main task
              */
-             CFE_ES_WriteToSysLog("CFE_ES_DeleteChildTask Error: Task %d is a cFE Main Task.\n",TaskId );
+             CFE_ES_WriteToSysLog("CFE_ES_DeleteChildTask Error: Task %u is a cFE Main Task.\n",(unsigned int)OSTaskId );
              ReturnCode = CFE_ES_ERR_CHILD_TASK_DELETE_MAIN_TASK;
           } /* end if TaskMain == FALSE */
        }
@@ -1300,7 +1240,7 @@ int32 CFE_ES_DeleteChildTask(uint32 TaskId)
           /*
           ** Task ID is not in use, so it is invalid
           */
-          CFE_ES_WriteToSysLog("CFE_ES_DeleteChildTask Error: Task ID is not active: %d\n",TaskId );
+          CFE_ES_WriteToSysLog("CFE_ES_DeleteChildTask Error: Task ID is not active: %u\n",(unsigned int)OSTaskId );
           ReturnCode = CFE_ES_ERR_TASKID;
    
        } /* end if */
@@ -1313,7 +1253,7 @@ int32 CFE_ES_DeleteChildTask(uint32 TaskId)
        /*
        ** Task ID is invalid ( too large )
        */
-       CFE_ES_WriteToSysLog("CFE_ES_DeleteChildTask Error: Invalid Task ID: %d\n",TaskId );
+       CFE_ES_WriteToSysLog("CFE_ES_DeleteChildTask Error: Invalid Task ID: %u\n",(unsigned int)OSTaskId );
        ReturnCode = CFE_ES_ERR_TASKID;
        
     }
@@ -1329,7 +1269,7 @@ int32 CFE_ES_DeleteChildTask(uint32 TaskId)
 */
 void CFE_ES_ExitChildTask(void)
 {
-   int32 TaskId;
+   uint32 TaskId;
    uint32 ParentTaskId;
    uint32 AppId; 
    uint32 ReturnCode;
@@ -1348,34 +1288,38 @@ void CFE_ES_ExitChildTask(void)
       ParentTaskId = CFE_ES_Global.AppTable[AppId].TaskInfo.MainTaskId;
       if ( TaskId != ParentTaskId )
       {
-         /*
-         ** Invalidate the task table entry
-         */
-         CFE_ES_Global.TaskTable[TaskId].RecordUsed = FALSE;
-         CFE_ES_Global.RegisteredTasks--;
+         if (OS_ConvertToArrayIndex(TaskId, &TaskId) == OS_SUCCESS)
+         {
+            /*
+            ** Invalidate the task table entry
+            */
+            CFE_ES_Global.TaskTable[TaskId].RecordUsed = FALSE;
+            CFE_ES_Global.RegisteredTasks--;
 
 
-         CFE_ES_UnlockSharedData(__func__,__LINE__);
+            CFE_ES_UnlockSharedData(__func__,__LINE__);
 
+
+            /*
+            ** Call the OS AL routine
+            */
+            OS_TaskExit();
+            /*
+            ** Does not return from OS_TaskExit, except under unit test
+            */
+            return;
+         }
          
-         /*
-         ** Call the OS AL routine
-         */
-         OS_TaskExit(); 
-         
-         /* 
-         ** Does not return from OS_TaskExit 
-         */
       }
       else
       {
-         CFE_ES_WriteToSysLog("CFE_ES_ExitChildTask Error: Cannot Call from a cFE App Main Task. ID = %d\n",TaskId );
+         CFE_ES_WriteToSysLog("CFE_ES_ExitChildTask Error: Cannot Call from a cFE App Main Task. ID = %d\n",(int)TaskId );
       }
    }
    else
    {   
       CFE_ES_WriteToSysLog("CFE_ES_ExitChildTask Error Calling CFE_ES_GetAppID. Task ID = %d, RC = 0x%08X\n",
-                           TaskId, ReturnCode );
+              (int)TaskId, (unsigned int)ReturnCode );
    } /* end if GetAppId */
 
    CFE_ES_UnlockSharedData(__func__,__LINE__);
@@ -1394,9 +1338,9 @@ int32 CFE_ES_WriteToSysLog(const char *SpecStringPtr, ...)
     va_list       ArgPtr;
     char          TmpString[CFE_ES_MAX_SYSLOG_MSG_SIZE];
     char          MsgWithoutTime[CFE_EVS_MAX_MESSAGE_LENGTH];
-    int32         TmpStringLen;
-    int32         LogOverflow;
-    int32         TruncTmpStringLen;
+    size_t        TmpStringLen;
+    size_t        LogOverflow;
+    size_t        TruncTmpStringLen;
     uint32        ReturnCode;
     int32         i;
 
@@ -1487,33 +1431,6 @@ int32 CFE_ES_WriteToSysLog(const char *SpecStringPtr, ...)
 
 } /* End of CFE_ES_WriteToSysLog() */
 
-/*
-** Function: CFE_ES_RegisterDriver
-**
-** Purpose:  Initialize a cFE device driver.
-**
-*/
-int32 CFE_ES_RegisterDriver(uint32 *DriverIdPtr, CFE_ES_DeviceDriver_t *DriverPtr)
-{
-   CFE_ES_WriteToSysLog("CFE ES Register Driver not Implemented\n");
-   return(CFE_ES_NOT_IMPLEMENTED);
-
-} /* End of CFE_ES_RegisterDriver() */
-
-
-/*
-** Function: CFE_ES_UnloadDriver
-**
-** Purpose:  Unload a cFE device driver.
-**
-*/
-int32 CFE_ES_UnloadDriver(uint32 DriverId)
-{
-    CFE_ES_WriteToSysLog("CFE ES Unload Driver not Implemented\n");
-    return(CFE_ES_NOT_IMPLEMENTED);
-
-} /* End of CFE_ES_UnloadDriver() */
-
 
 /*
 ** Function: CFE_ES_CalculateCRC
@@ -1521,14 +1438,13 @@ int32 CFE_ES_UnloadDriver(uint32 DriverId)
 ** Purpose:  Perform a CRC calculation on a range of memory.
 **
 */
-uint32 CFE_ES_CalculateCRC(void *DataPtr, uint32 DataLength, uint32 InputCRC, uint32 TypeCRC)
+uint32 CFE_ES_CalculateCRC(const void *DataPtr, uint32 DataLength, uint32 InputCRC, uint32 TypeCRC)
 {
     uint32  i;
     int16  Index;
     int16  Crc = 0;
-    uint8 *BufPtr;
+    const uint8 *BufPtr;
     uint8  ByteValue;
-    int32  Status;
 
     static const uint16 CrcTable[256]=
     {
@@ -1576,14 +1492,17 @@ uint32 CFE_ES_CalculateCRC(void *DataPtr, uint32 DataLength, uint32 InputCRC, ui
 
       case CFE_ES_CRC_16:
            Crc    =  (int16 )( 0xFFFF & InputCRC );
-           BufPtr = (uint8 *)DataPtr;
+           BufPtr = (const uint8 *)DataPtr;
 
            for ( i = 0 ; i < DataLength ; i++,  BufPtr++)
-	        {
-                  Status = CFE_PSP_MemRead8((uint32)BufPtr, &ByteValue);
-	          Index = ( ( Crc ^ ByteValue) & 0x00FF);
-	          Crc = ( (Crc >> 8 ) & 0x00FF) ^ CrcTable[Index];
-	        }
+           {
+              if (CFE_PSP_MemRead8((cpuaddr)BufPtr, &ByteValue) != CFE_PSP_SUCCESS)
+              {
+                 ByteValue = 0;
+              }
+              Index = ( ( Crc ^ ByteValue) & 0x00FF);
+              Crc = ( (Crc >> 8 ) & 0x00FF) ^ CrcTable[Index];
+           }
            break;
 
       case CFE_ES_CRC_8:
@@ -1607,11 +1526,10 @@ uint32 CFE_ES_CalculateCRC(void *DataPtr, uint32 DataLength, uint32 InputCRC, ui
 int32 CFE_ES_RegisterCDS(CFE_ES_CDSHandle_t *CDSHandlePtr, int32 BlockSize, const char *Name)
 {
     int32   Status = CFE_SUCCESS;
-    int32   NameLen = 0;
+    size_t  NameLen = 0;
     uint32  ThisAppId = 0;
     
     char    AppName[OS_MAX_API_NAME] = {"UNKNOWN"};
-    char    LogMsg[128];
     char    CDSName[CFE_ES_CDS_MAX_FULL_NAME_LEN] = {""};
 
     /* Check to make sure calling application is legit */
@@ -1619,7 +1537,7 @@ int32 CFE_ES_RegisterCDS(CFE_ES_CDSHandle_t *CDSHandlePtr, int32 BlockSize, cons
     
     if ( Status != CFE_SUCCESS )  /* Application ID was invalid */
     {
-         CFE_ES_WriteToSysLog("CFE_CDS:Register-Bad AppId(%d)\n", ThisAppId);
+         CFE_ES_WriteToSysLog("CFE_CDS:Register-Bad AppId(%d)\n", (int)ThisAppId);
     }
     else if (CFE_ES_Global.CDSVars.MemPoolSize == 0)
     {
@@ -1638,13 +1556,10 @@ int32 CFE_ES_RegisterCDS(CFE_ES_CDSHandle_t *CDSHandlePtr, int32 BlockSize, cons
            Status = CFE_ES_CDS_INVALID_NAME;
 
            /* Perform a buffer overrun safe copy of name for debug log message */
-           strncpy(LogMsg, "CFE_CDS:Register-CDS Name (", 27);
-           strncpy(&LogMsg[27], Name, 72);
-           strcat(LogMsg, ") is too long\n");
-           CFE_ES_WriteToSysLog(LogMsg);
 
            strncpy(CDSName, Name, CFE_ES_CDS_MAX_NAME_LENGTH);
            CDSName[CFE_ES_CDS_MAX_NAME_LENGTH-1] = '\0';
+           CFE_ES_WriteToSysLog("CFE_CDS:Register-CDS Name (%s) is too long\n", CDSName);
         }
         else
         {
@@ -1676,7 +1591,7 @@ int32 CFE_ES_RegisterCDS(CFE_ES_CDSHandle_t *CDSHandlePtr, int32 BlockSize, cons
                                    CFE_EVS_ERROR,
                                    ThisAppId,
                                    "%s Failed to Register CDS '%s', Status=0x%08X",
-                                   AppName, Name, Status);
+                                   AppName, Name, (unsigned int)Status);
     }
     
     return Status;
@@ -1715,7 +1630,7 @@ int32 CFE_ES_RestoreFromCDS(void *RestoreToMemory, CFE_ES_CDSHandle_t Handle)
 /* end of file */
 
 
-int32 CFE_ES_RegisterGenCounter(uint32 *CounterIdPtr, char *CounterName)
+int32 CFE_ES_RegisterGenCounter(uint32 *CounterIdPtr, const char *CounterName)
 {
    int32 ReturnCode = CFE_ES_BAD_ARGUMENT;
    uint32 CheckPtr;
@@ -1829,7 +1744,7 @@ int32 CFE_ES_GetGenCount(uint32 CounterId, uint32 *Count)
    return Status;
 } /* End of CFE_ES_GetGenCount() */
 
-int32 CFE_ES_GetGenCounterIDByName(uint32 *CounterIdPtr, char *CounterName)
+int32 CFE_ES_GetGenCounterIDByName(uint32 *CounterIdPtr, const char *CounterName)
 {
 
    int32 Result = CFE_ES_BAD_ARGUMENT;
@@ -1846,7 +1761,7 @@ int32 CFE_ES_GetGenCounterIDByName(uint32 *CounterIdPtr, char *CounterName)
          {
             if(CounterIdPtr != NULL)
             {
-               *CounterIdPtr = (int) i;
+               *CounterIdPtr = i;
                Result = CFE_SUCCESS;
             }
             break;
@@ -1878,16 +1793,26 @@ int32 CFE_ES_GetAppIDInternal(uint32 *AppIdPtr)
    /*
    ** Step 1: Get the OS task ID
    */
-   TaskId = OS_TaskGetId();
-
-   /*
-   ** Step 2: get the Application ID for the current task
-   */
-   if ( CFE_ES_Global.TaskTable[TaskId].RecordUsed == TRUE )
+   if (OS_ConvertToArrayIndex(OS_TaskGetId(), &TaskId) == OS_SUCCESS)
    {
-      *AppIdPtr = CFE_ES_Global.TaskTable[TaskId].AppId;
-      Result = CFE_SUCCESS;
+      /*
+      ** Step 2: get the Application ID for the current task
+      */
+      if ( CFE_ES_Global.TaskTable[TaskId].RecordUsed == TRUE )
+      {
+         *AppIdPtr = CFE_ES_Global.TaskTable[TaskId].AppId;
+         Result = CFE_SUCCESS;
+      }
+      else
+      {
+         *AppIdPtr = 0;
+      } /* end if */
+   }
+   else
+   {
+      *AppIdPtr = 0;
    } /* end if */
+
    return(Result);
 
 } /* End of CFE_ES_GetAppIDInternal() */
@@ -1919,7 +1844,7 @@ void CFE_ES_LockSharedData(const char *FunctionName, int32 LineNumber)
         CFE_ES_GetAppIDInternal(&AppId);
 
         CFE_ES_WriteToSysLog("ES SharedData Mutex Take Err Stat=0x%x,App=%d,Func=%s,Line=%d\n",
-                 Status,AppId,FunctionName,LineNumber);
+                (unsigned int)Status,(int)AppId,FunctionName,(int)LineNumber);
 
     }/* end if */
 
@@ -1953,7 +1878,7 @@ void CFE_ES_UnlockSharedData(const char *FunctionName, int32 LineNumber)
         CFE_ES_GetAppIDInternal(&AppId);
 
         CFE_ES_WriteToSysLog("ES SharedData Mutex Give Err Stat=0x%x,App=%d,Func=%s,Line=%d\n",
-                                Status,AppId,FunctionName,LineNumber);
+                (unsigned int)Status,(int)AppId,FunctionName,(int)LineNumber);
 
     }/* end if */
 
@@ -1976,15 +1901,15 @@ void CFE_ES_UnlockSharedData(const char *FunctionName, int32 LineNumber)
 **  Return:
 **    None
 */
-void CFE_ES_ProcessCoreException(uint32  HostTaskId,     uint8 *ReasonString, 
-                                 uint32 *ContextPointer, uint32 ContextSize)
+void CFE_ES_ProcessCoreException(uint32  HostTaskId,     const char *ReasonString,
+                                 const uint32 *ContextPointer, uint32 ContextSize)
 {
     uint32                 i;
     int32                  Status;
     OS_task_prop_t         TaskProp;
     CFE_ES_TaskInfo_t      EsTaskInfo;
-    int                    FoundExceptionTask = 0;
-    int                    ExceptionTaskID = 0;
+    uint32                 FoundExceptionTask = 0;
+    uint32                 ExceptionTaskID = 0;
     
     /*
     ** If a loadable cFE Application caused the reset and it's
@@ -1998,14 +1923,15 @@ void CFE_ES_ProcessCoreException(uint32  HostTaskId,     uint8 *ReasonString,
     */ 
     for ( i = 0; i < OS_MAX_TASKS; i++ )
     {
-       Status = OS_TaskGetInfo (i, &TaskProp);
-                                                                                                                                   
-       if ( Status == OS_SUCCESS )
+       if (CFE_ES_Global.TaskTable[i].RecordUsed == TRUE)
        {
-          if ( TaskProp.OStask_id == HostTaskId )
+          ExceptionTaskID = CFE_ES_Global.TaskTable[i].TaskId;
+          Status = OS_TaskGetInfo (ExceptionTaskID, &TaskProp);
+
+          if ( Status == OS_SUCCESS && TaskProp.OStask_id == HostTaskId )
           {
              FoundExceptionTask = 1;
-             ExceptionTaskID = (int) i;
+             break;
           }
        }
     }
@@ -2027,8 +1953,8 @@ void CFE_ES_ProcessCoreException(uint32  HostTaskId,     uint8 *ReasonString,
              /*
              ** Log the Application reset 
              */
-             CFE_ES_WriteToERLog(CFE_ES_CORE_LOG_ENTRY, CFE_ES_APP_RESTART, 
-                            CFE_ES_EXCEPTION, (char *)ReasonString,
+             CFE_ES_WriteToERLog(CFE_ES_CORE_LOG_ENTRY, CFE_ES_APP_RESTART,
+                            CFE_PSP_RST_SUBTYPE_EXCEPTION, (char *)ReasonString,
                             ContextPointer, ContextSize );
 
              /*
@@ -2063,14 +1989,14 @@ void CFE_ES_ProcessCoreException(uint32  HostTaskId,     uint8 *ReasonString,
         ** Log the reset in the ER Log. The log will be wiped out, but it's good to have
         ** the entry just in case something fails.
         */
-        CFE_ES_WriteToERLog(CFE_ES_CORE_LOG_ENTRY,  CFE_ES_POWERON_RESET, 
-                            CFE_ES_EXCEPTION, (char *)ReasonString,
+        CFE_ES_WriteToERLog(CFE_ES_CORE_LOG_ENTRY,  CFE_PSP_RST_TYPE_POWERON, 
+                            CFE_PSP_RST_SUBTYPE_EXCEPTION, (char *)ReasonString,
                             ContextPointer, ContextSize );
 
         /*
         ** Call the BSP reset routine to do a Poweron Reset 
         */
-        CFE_PSP_Restart(CFE_ES_POWERON_RESET); 
+        CFE_PSP_Restart(CFE_PSP_RST_TYPE_POWERON);
 
     }
     else /* Do a processor reset */
@@ -2084,14 +2010,14 @@ void CFE_ES_ProcessCoreException(uint32  HostTaskId,     uint8 *ReasonString,
         /*
         ** Log the reset in the ER Log
         */
-        CFE_ES_WriteToERLog(CFE_ES_CORE_LOG_ENTRY, CFE_ES_PROCESSOR_RESET, 
-                            CFE_ES_EXCEPTION, (char *)ReasonString,
+        CFE_ES_WriteToERLog(CFE_ES_CORE_LOG_ENTRY, CFE_PSP_RST_TYPE_PROCESSOR, 
+                            CFE_PSP_RST_SUBTYPE_EXCEPTION, (char *)ReasonString,
                             ContextPointer, ContextSize );
 
         /*
         ** Need to do a processor reset
         */   
-        CFE_PSP_Restart(CFE_ES_PROCESSOR_RESET);  
+        CFE_PSP_Restart(CFE_PSP_RST_TYPE_PROCESSOR);
 
     } /* end if */
            

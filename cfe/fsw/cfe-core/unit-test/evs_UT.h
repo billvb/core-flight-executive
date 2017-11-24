@@ -34,6 +34,7 @@
 #include <string.h>
 #include "cfe.h"
 #include "common_types.h"
+#include "osapi.h"
 #include "cfe_evs.h"
 #include "cfe_evs_log.h"
 #include "cfe_evs_task.h"
@@ -41,18 +42,7 @@
 #include "cfe_sb.h"
 #include "cfe_es.h"
 #include "cfe_time.h"
-#include "osapi.h"
 #include "ut_stubs.h"
-
-/*
-** Function prototypes
-*/
-/* cFE functions */
-void CFE_EVS_TaskMain(void);
-void CFE_EVS_TaskInit(void);
-int32 EVS_GetApplicationInfo(uint32 *, char *);
-void CFE_EVS_ProcessCommandPacket(CFE_SB_MsgPtr_t EVS_MsgPtr);
-int32 CFE_EVS_CleanUpApp(uint32 AppID);
 
 /* EVS unit test functions */
 /*****************************************************************************/

@@ -220,7 +220,7 @@ export CFE_UNIT_TEST=$CFE_DIR/fsw/cfe-core/unit-test
 # CFE_TOOLS is the location of the root directory for the cFE tools.
 # This variable is used in the platform-specific Makefiles to build the table
 # generation tool (elf2cfetbl) executable
-export CFE_TOOLS=$CFE_DIR/tools
+export CFE_TOOLS=$CFS_MISSION/tools
 
 #
 # Variable: UTF_SRC

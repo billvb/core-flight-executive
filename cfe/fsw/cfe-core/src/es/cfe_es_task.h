@@ -148,6 +148,13 @@ typedef struct
 
 } CFE_ES_TaskData_t;
 
+/*
+** Executive Services (ES) task global data.
+*/
+extern CFE_ES_TaskData_t CFE_ES_TaskData;
+
+
+
 /*************************************************************************/
 
 /*
@@ -186,7 +193,7 @@ void CFE_ES_TlmPoolStatsCmd(CFE_SB_MsgPtr_t Msg);
 void CFE_ES_DumpCDSRegCmd( const CFE_SB_Msg_t *MessagePtr );
 boolean CFE_ES_ValidateHandle(CFE_ES_MemHandle_t  Handle);
 boolean CFE_ES_VerifyCmdLength(CFE_SB_MsgPtr_t msg, uint16 ExpectedLength);
-void CFE_ES_FileWriteByteCntErr(char *Filename,uint32 Requested,uint32 Actual);
+void CFE_ES_FileWriteByteCntErr(const char *Filename,uint32 Requested,uint32 Actual);
 
 /*************************************************************************/
 

@@ -129,24 +129,24 @@
 /*
 ** Error Severity
 */
-#define CFE_SEVERITY_BITMASK     (0xc0000000L)
+#define CFE_SEVERITY_BITMASK     ((int32)0xc0000000)
 
-#define CFE_SEVERITY_SUCCESS     (0x00000000L)
-#define CFE_SEVERITY_INFO        (0x40000000L)
-#define CFE_SEVERITY_ERROR       (0xc0000000L)
+#define CFE_SEVERITY_SUCCESS     ((int32)0x00000000)
+#define CFE_SEVERITY_INFO        ((int32)0x40000000)
+#define CFE_SEVERITY_ERROR       ((int32)0xc0000000)
 
 /*
 ** cFE Service Identifiers
 */
-#define CFE_SERVICE_BITMASK      (0x0e000000L)
+#define CFE_SERVICE_BITMASK      ((int32)0x0e000000)
 
-#define CFE_EVENTS_SERVICE       (0x02000000L)
-#define CFE_EXECUTIVE_SERVICE    (0x04000000L)
-#define CFE_FILE_SERVICE         (0x06000000L)
-#define CFE_OSAPI_SERVICE        (0x08000000L)
-#define CFE_SOFTWARE_BUS_SERVICE (0x0a000000L)
-#define CFE_TABLE_SERVICE        (0x0c000000L)
-#define CFE_TIME_SERVICE         (0x0e000000L)
+#define CFE_EVENTS_SERVICE       ((int32)0x02000000)
+#define CFE_EXECUTIVE_SERVICE    ((int32)0x04000000)
+#define CFE_FILE_SERVICE         ((int32)0x06000000)
+#define CFE_OSAPI_SERVICE        ((int32)0x08000000)
+#define CFE_SOFTWARE_BUS_SERVICE ((int32)0x0a000000)
+#define CFE_TABLE_SERVICE        ((int32)0x0c000000)
+#define CFE_TIME_SERVICE         ((int32)0x0e000000)
 
 /*
 ************* COMMON STATUS CODE *************
@@ -155,7 +155,7 @@
 /**
 **  Operation was performed successfully
 */
-#define CFE_SUCCESS              (0L)
+#define CFE_SUCCESS              (0)
 
 /*
 ************* EVENTS SERVICES STATUS CODES *************
@@ -165,34 +165,34 @@
 **  #CFE_EVS_Register() FilterScheme parameter was illegal
 **
 */
-#define CFE_EVS_UNKNOWN_FILTER            (0xc2000001L)
+#define CFE_EVS_UNKNOWN_FILTER            ((int32)0xc2000001)
 
 /**
 **  Calling application never previously called #CFE_EVS_Register()
 **
 */
-#define CFE_EVS_APP_NOT_REGISTERED        (0xc2000002L)
+#define CFE_EVS_APP_NOT_REGISTERED        ((int32)0xc2000002)
 
 /**
 **  Application ID returned by #CFE_ES_GetAppIDByName is greater
 **  than #CFE_ES_MAX_APPLICATIONS
 **
 */
-#define CFE_EVS_APP_ILLEGAL_APP_ID        (0xc2000003L)
+#define CFE_EVS_APP_ILLEGAL_APP_ID        ((int32)0xc2000003)
 
 /**
 **  Number of Application event filters input upon
 **  registration is greater than #CFE_EVS_MAX_EVENT_FILTERS
 **
 */
-#define CFE_EVS_APP_FILTER_OVERLOAD        (0xc2000004L)
+#define CFE_EVS_APP_FILTER_OVERLOAD        ((int32)0xc2000004)
 
 /**
 **  Could not get pointer to the ES Reset area, so we could
 **  not get the pointer to the EVS Log.
 **
 */
-#define CFE_EVS_RESET_AREA_POINTER        (0xc2000005L)
+#define CFE_EVS_RESET_AREA_POINTER        ((int32)0xc2000005)
 
 
 /**
@@ -200,7 +200,7 @@
 **  any event filter registered by the calling application.
 **
 */
-#define CFE_EVS_EVT_NOT_REGISTERED        (0xc2000006L)
+#define CFE_EVS_EVT_NOT_REGISTERED        ((int32)0xc2000006)
 
 
 /**
@@ -210,7 +210,7 @@
 **  the specified feature.
 **
 */
-#define CFE_EVS_NOT_IMPLEMENTED (0xc200ffffL)
+#define CFE_EVS_NOT_IMPLEMENTED ((int32)0xc200ffff)
 
 /*
 ************* EXECUTIVE SERVICES STATUS CODES *************
@@ -220,79 +220,79 @@
 **  The given application ID does not reflect a currently active application.
 **
 */
-#define CFE_ES_ERR_APPID     (0xc4000001L)
+#define CFE_ES_ERR_APPID     ((int32)0xc4000001)
 
 /**
 **  There is no match for the given application name in the current application list.
 **
 */
-#define CFE_ES_ERR_APPNAME   (0xc4000002L)
+#define CFE_ES_ERR_APPNAME   ((int32)0xc4000002)
 
 /**
 **  Invalid pointer argument (NULL)
 **
 */
-#define CFE_ES_ERR_BUFFER    (0xc4000003L)
+#define CFE_ES_ERR_BUFFER    ((int32)0xc4000003)
 
 /**
 **  There was an error loading or creating the App.
 **
 */
-#define CFE_ES_ERR_APP_CREATE  (0xc4000004L)
+#define CFE_ES_ERR_APP_CREATE  ((int32)0xc4000004)
 
 /**
 **  There was an error creating a child task.
 **
 */
-#define CFE_ES_ERR_CHILD_TASK_CREATE  (0xc4000005L)
+#define CFE_ES_ERR_CHILD_TASK_CREATE  ((int32)0xc4000005)
 
 /**
 **  The cFE system Log is full.
 **
 */
-#define CFE_ES_ERR_SYS_LOG_FULL  (0xc4000006L)
+#define CFE_ES_ERR_SYS_LOG_FULL  ((int32)0xc4000006)
 
 /**
 **  The Memory Pool handle is invalid.
 **
 */
-#define CFE_ES_ERR_MEM_HANDLE  (0xc4000007L)
+#define CFE_ES_ERR_MEM_HANDLE  ((int32)0xc4000007)
 
 /**
 **  The block size requested is invalid.
 **
 */
-#define CFE_ES_ERR_MEM_BLOCK_SIZE  (0xc4000008L)
+#define CFE_ES_ERR_MEM_BLOCK_SIZE  ((int32)0xc4000008)
 
 /**
 **  Could not load the shared library.
 **
 */
-#define CFE_ES_ERR_LOAD_LIB  (0xc4000009L)
+#define CFE_ES_ERR_LOAD_LIB  ((int32)0xc4000009)
 
 /**
 **  Bad parameter passed into an ES API.
 **
 */
-#define CFE_ES_BAD_ARGUMENT  (0xc400000aL)
+#define CFE_ES_BAD_ARGUMENT  ((int32)0xc400000a)
 
 /** 
 **  Errors occured when trying to register a child task.
 **
 */
-#define CFE_ES_ERR_CHILD_TASK_REGISTER  (0xc400000bL)
+#define CFE_ES_ERR_CHILD_TASK_REGISTER  ((int32)0xc400000b)
 
 /** 
 **  Error occured ehen trying to pass a system call to the OS shell
 **
 */
-#define CFE_ES_ERR_SHELL_CMD  (0xc400000cL)
+#define CFE_ES_ERR_SHELL_CMD  ((int32)0xc400000c)
 
 /**
 **  The Application is receiving the pointer to a CDS that was already present.
 **
 */
-#define CFE_ES_CDS_ALREADY_EXISTS  (0x4400000dL)
+#define CFE_ES_CDS_ALREADY_EXISTS  ((int32)0x4400000d)
 
 
 /**
@@ -300,7 +300,7 @@
 **  CDS memory.
 **
 */
-#define CFE_ES_CDS_INSUFFICIENT_MEMORY  (0xc400000eL)
+#define CFE_ES_CDS_INSUFFICIENT_MEMORY  ((int32)0xc400000e)
 
 
 /**
@@ -308,14 +308,14 @@
 **  Either the name is too long (> #CFE_ES_CDS_MAX_NAME_LENGTH) or was an empty string.
 **
 */
-#define CFE_ES_CDS_INVALID_NAME  (0xc400000fL)
+#define CFE_ES_CDS_INVALID_NAME  ((int32)0xc400000f)
 
 
 /**
 **  The Application is requesting a CDS Block with a size of zero.
 **
 */
-#define CFE_ES_CDS_INVALID_SIZE  (0xc4000010L)
+#define CFE_ES_CDS_INVALID_SIZE  ((int32)0xc4000010)
 
 
 /**
@@ -324,60 +324,60 @@
 **  macro defined in the cfe_platform_cfg.h file.
 **
 */
-#define CFE_ES_CDS_REGISTRY_FULL  (0xc4000011L)
+#define CFE_ES_CDS_REGISTRY_FULL  ((int32)0xc4000011)
 
 
 /**
 **  The CDS contents are invalid.
 **
 */
-#define CFE_ES_CDS_INVALID  (0xc4000012L)
+#define CFE_ES_CDS_INVALID  ((int32)0xc4000012)
 
 
 /**
 **  The CDS was inaccessible
 **
 */
-#define CFE_ES_CDS_ACCESS_ERROR  (0xc4000013L)
+#define CFE_ES_CDS_ACCESS_ERROR  ((int32)0xc4000013)
 
 
 /**
 **  Occurs when a file operation fails
 **
 */
-#define CFE_ES_FILE_IO_ERR  (0xc4000014L)
+#define CFE_ES_FILE_IO_ERR  ((int32)0xc4000014)
 
 
 /**
 **  Occurs when the BSP is not successful in returning the reset area address.
 **
 */
-#define CFE_ES_RST_ACCESS_ERR  (0xc4000015L)
+#define CFE_ES_RST_ACCESS_ERR  ((int32)0xc4000015)
 
 /**
 **  Occurs when the Task ID passed into #CFE_ES_GetTaskInfo is invalid.
 **
 */
-#define CFE_ES_ERR_TASKID  (0xc4000016L)
+#define CFE_ES_ERR_TASKID  ((int32)0xc4000016)
 
 /**
 **  Occurs when the #CFE_ES_RegisterApp fails.
 **
 */
-#define CFE_ES_ERR_APP_REGISTER  (0xc4000017L)
+#define CFE_ES_ERR_APP_REGISTER  ((int32)0xc4000017)
 
 /**
 **  There was an error deleting a child task.
 **
 */
-#define CFE_ES_ERR_CHILD_TASK_DELETE  (0xc4000018L)
+#define CFE_ES_ERR_CHILD_TASK_DELETE  ((int32)0xc4000018)
 
 /**
 **  There was an attempt to delete a cFE App Main Task with
 **  the #CFE_ES_DeleteChildTask API.
 **
 */
-#define CFE_ES_ERR_CHILD_TASK_DELETE_MAIN_TASK  (0xc4000019L)
+#define CFE_ES_ERR_CHILD_TASK_DELETE_MAIN_TASK  ((int32)0xc4000019)
 
 /**
 **  Occurs when trying to read a CDS Data block and the CRC of the current
@@ -385,14 +385,14 @@
 **  the CDS Data Block are corrupted or the CDS Control Block is corrupted.
 **
 */
-#define CFE_ES_CDS_BLOCK_CRC_ERR  (0xc400001AL)
+#define CFE_ES_CDS_BLOCK_CRC_ERR  ((int32)0xc400001A)
 
 /**
 **  Occurs when trying to delete a Mutex that belongs to a task that ES
 **  is cleaning up.
 **
 */
-#define CFE_ES_MUT_SEM_DELETE_ERR  (0xc400001BL)
+#define CFE_ES_MUT_SEM_DELETE_ERR  ((int32)0xc400001B)
 
 
 /**
@@ -400,28 +400,28 @@
 **  is cleaning up.
 **
 */
-#define CFE_ES_BIN_SEM_DELETE_ERR  (0xc400001CL)
+#define CFE_ES_BIN_SEM_DELETE_ERR  ((int32)0xc400001C)
 
 /**
 **  Occurs when trying to delete a Counting Semaphore that belongs to a task that ES
 **  is cleaning up.
 **
 */
-#define CFE_ES_COUNT_SEM_DELETE_ERR  (0xc400001DL)
+#define CFE_ES_COUNT_SEM_DELETE_ERR  ((int32)0xc400001D)
 
 /**
 **  Occurs when trying to delete a Queue that belongs to a task that ES
 **  is cleaning up.
 **
 */
-#define CFE_ES_QUEUE_DELETE_ERR  (0xc400001EL)
+#define CFE_ES_QUEUE_DELETE_ERR  ((int32)0xc400001E)
 
 /**
 **  Occurs when trying to close a file that belongs to a task that ES
 **  is cleaning up.
 **
 */
-#define CFE_ES_FILE_CLOSE_ERR  (0xc400001FL)
+#define CFE_ES_FILE_CLOSE_ERR  ((int32)0xc400001F)
 
 /**
 **  Occurs when Table Services is trying to delete a Critical Data Store that
@@ -429,14 +429,14 @@
 **  a Critical Table Image.
 **
 */
-#define CFE_ES_CDS_WRONG_TYPE_ERR  (0xc4000020L)
+#define CFE_ES_CDS_WRONG_TYPE_ERR  ((int32)0xc4000020)
 
 /**
 **  Occurs when a search of the Critical Data Store Registry does not find a
 **  critical data store with the specified name.
 **
 */
-#define CFE_ES_CDS_NOT_FOUND_ERR   (0xc4000021L)
+#define CFE_ES_CDS_NOT_FOUND_ERR   ((int32)0xc4000021)
 
 /**
 **  Occurs when an attempt was made to delete a CDS when an application
@@ -445,7 +445,7 @@
 **  in the system.
 **
 */
-#define CFE_ES_CDS_OWNER_ACTIVE_ERR (0xc4000022L)
+#define CFE_ES_CDS_OWNER_ACTIVE_ERR ((int32)0xc4000022)
 
 
 /**
@@ -457,20 +457,20 @@
 **  each problem.
 **
 */
-#define CFE_ES_APP_CLEANUP_ERR (0xc4000023L)
+#define CFE_ES_APP_CLEANUP_ERR ((int32)0xc4000023)
 
 /**
 **  Occurs when trying to delete a Timer that belongs to a task that ES
 **  is cleaning up.
 **
 */
-#define CFE_ES_TIMER_DELETE_ERR (0xc4000024L)
+#define CFE_ES_TIMER_DELETE_ERR ((int32)0xc4000024)
 
 /**
 **  The specified address is not in the memory pool.
 **
 */
-#define CFE_ES_BUFFER_NOT_IN_POOL (0xc4000025L)
+#define CFE_ES_BUFFER_NOT_IN_POOL ((int32)0xc4000025)
 
 
 /**
@@ -478,7 +478,13 @@
 **  is cleaning up.
 **
 */
-#define CFE_ES_TASK_DELETE_ERR  (0xc4000026L)
+#define CFE_ES_TASK_DELETE_ERR  ((int32)0xc4000026)
+
+/**
+**  Occurs if the timeout for a given operation was exceeded
+**
+*/
+#define CFE_ES_OPERATION_TIMED_OUT ((int32)0xc4000027)
 
 
 /**
@@ -488,7 +494,7 @@
 **  the specified feature.
 **
 */
-#define CFE_ES_NOT_IMPLEMENTED  (0xc400ffffL)
+#define CFE_ES_NOT_IMPLEMENTED  ((int32)0xc400ffff)
 
 
 /*
@@ -500,59 +506,59 @@
 **  validation checks.
 **
 */
-#define CFE_FS_BAD_ARGUMENT             (0xc6000001L)
+#define CFE_FS_BAD_ARGUMENT             ((int32)0xc6000001)
 
 /*
 **  FS was unable to extract a filename from a path string
 **
 */
-#define CFE_FS_INVALID_PATH             (0xc6000002L)
+#define CFE_FS_INVALID_PATH             ((int32)0xc6000002)
 
 /*
 **  FS filename string is too long
 **
 */
-#define CFE_FS_FNAME_TOO_LONG           (0xc6000003L)
+#define CFE_FS_FNAME_TOO_LONG           ((int32)0xc6000003)
 
 /*
 ** The GZIP file contains invalid data and cannot be read
 */
-#define CFE_FS_GZIP_BAD_DATA            (0xc6000004L)
+#define CFE_FS_GZIP_BAD_DATA            ((int32)0xc6000004)
 
 /*
 ** The GZIP file codeblock is bad, which means the file is 
 ** most likely corrupted
 */
-#define CFE_FS_GZIP_BAD_CODE_BLOCK      (0xc6000005L)
+#define CFE_FS_GZIP_BAD_CODE_BLOCK      ((int32)0xc6000005)
 
 /*
 ** The memory buffer used by the decompression routine is 
 ** exhausted.
 */
-#define CFE_FS_GZIP_NO_MEMORY           (0xc6000006L)
+#define CFE_FS_GZIP_NO_MEMORY           ((int32)0xc6000006)
 
 /*
 ** There is a CRC error in the GZIP file, which means the 
 ** file is most likely corrupted.
 */
-#define CFE_FS_GZIP_CRC_ERROR           (0xc6000007L)
+#define CFE_FS_GZIP_CRC_ERROR           ((int32)0xc6000007)
 
 /*
 ** There is a length error in the GZIP internal data 
 ** structures, which means the file is most likely corrupted.
 */
-#define CFE_FS_GZIP_LENGTH_ERROR        (0xc6000008L)
+#define CFE_FS_GZIP_LENGTH_ERROR        ((int32)0xc6000008)
 
 /*
 ** An error occurred trying to write the uncompressed 
 ** file.
 */
-#define CFE_FS_GZIP_WRITE_ERROR         (0xc6000009L)
+#define CFE_FS_GZIP_WRITE_ERROR         ((int32)0xc6000009)
 
 /*
 ** An error occurred trying to read the GZIP file
 */ 
-#define CFE_FS_GZIP_READ_ERROR          (0xc600000AL)
+#define CFE_FS_GZIP_READ_ERROR          ((int32)0xc600000A)
 
 /* 
 ** An error occurred trying to open the DestinationFile
@@ -560,7 +566,7 @@
 ** function must be able to open a new write-only file to
 ** store the uncompressed file in.
 */
-#define CFE_FS_GZIP_OPEN_OUTPUT         (0xc600000BL)
+#define CFE_FS_GZIP_OPEN_OUTPUT         ((int32)0xc600000B)
 
 /*
 ** An error occurred trying to open the GZIP file 
@@ -568,25 +574,25 @@
 ** the GZIP file as read-only in order to decompress it 
 ** to a new file ( most likely in a RAM disk )
 */
-#define CFE_FS_GZIP_OPEN_INPUT          (0xc600000CL)
+#define CFE_FS_GZIP_OPEN_INPUT          ((int32)0xc600000C)
 
 /*
 ** An error occured trying to read the GZIP file header,
 ** which means the file is most likely corrupted or 
 ** not a valid GZIP file.
 */
-#define CFE_FS_GZIP_READ_ERROR_HEADER   (0xc600000DL)
+#define CFE_FS_GZIP_READ_ERROR_HEADER   ((int32)0xc600000D)
 
 /*
 ** An error occurred trying to read the GZIP index, 
 ** which means the file is most likely corrupted.
 */
-#define CFE_FS_GZIP_INDEX_ERROR         (0xc600000EL)
+#define CFE_FS_GZIP_INDEX_ERROR         ((int32)0xc600000E)
 
 /*
 ** The file to be decompressed is not a valid GZIP file
 */
-#define CFE_FS_GZIP_NON_ZIP_FILE        (0xc600000FL) 
+#define CFE_FS_GZIP_NON_ZIP_FILE        ((int32)0xc600000F)
 
 /**
 **  Current version of cFE does not have the function or the feature
@@ -595,7 +601,7 @@
 **  the specified feature.
 **
 */
-#define CFE_FS_NOT_IMPLEMENTED  (0xc600ffffL)
+#define CFE_FS_NOT_IMPLEMENTED  ((int32)0xc600ffff)
 
 /*
 ************* OSAPI STATUS CODES *************
@@ -775,7 +781,7 @@
 **  been received in the time given in the "timeout" parameter.
 **
 */
-#define CFE_SB_TIME_OUT         (0xca000001L)
+#define CFE_SB_TIME_OUT         ((int32)0xca000001)
 
 
 /**
@@ -783,7 +789,7 @@
 **  value indicates that there was not a message on the pipe.
 **
 */
-#define CFE_SB_NO_MESSAGE       (0xca000002L)
+#define CFE_SB_NO_MESSAGE       ((int32)0xca000002)
 
 
 /**
@@ -791,7 +797,7 @@
 **  validation checks.
 **
 */
-#define CFE_SB_BAD_ARGUMENT     (0xca000003L)
+#define CFE_SB_BAD_ARGUMENT     ((int32)0xca000003)
 
 
 /**
@@ -801,7 +807,7 @@
 **  parameter is defined in the cfe_platform_cfg.h file.
 **
 */
-#define CFE_SB_MAX_PIPES_MET    (0xca000004L)
+#define CFE_SB_MAX_PIPES_MET    ((int32)0xca000004)
 
 
 /**
@@ -811,7 +817,7 @@
 **  code displayed in the event must be tracked.       
 **
 */
-#define CFE_SB_PIPE_CR_ERR      (0xca000005L)
+#define CFE_SB_PIPE_CR_ERR      ((int32)0xca000005)
 
 
 /**
@@ -823,7 +829,7 @@
 **  will be caught by higher level code in the Software Bus.
 **
 */
-#define CFE_SB_PIPE_RD_ERR      (0xca000006L)
+#define CFE_SB_PIPE_RD_ERR      ((int32)0xca000006)
 
 
 /**
@@ -832,7 +838,7 @@
 **  configuration parameter #CFE_SB_MAX_SB_MSG_SIZE in cfe_mission_cfg.h
 **
 */
-#define CFE_SB_MSG_TOO_BIG      (0xca000007L)
+#define CFE_SB_MSG_TOO_BIG      ((int32)0xca000007)
 
 
 /**
@@ -845,7 +851,7 @@
 **  a Software Bus command to send the SB statistics packet.
 **
 */
-#define CFE_SB_BUF_ALOC_ERR     (0xca000008L)
+#define CFE_SB_BUF_ALOC_ERR     ((int32)0xca000008)
 
 
 /**
@@ -854,7 +860,7 @@
 **  the platform configuration parameter #CFE_SB_MAX_MSG_IDS has been met.
 **
 */
-#define CFE_SB_MAX_MSGS_MET     (0xca000009L)
+#define CFE_SB_MAX_MSGS_MET     ((int32)0xca000009)
 
 
 /**
@@ -865,7 +871,7 @@
 **  #CFE_SB_MAX_DEST_PER_PKT.
 **
 */
-#define CFE_SB_MAX_DESTS_MET    (0xca00000aL)
+#define CFE_SB_MAX_DESTS_MET    ((int32)0xca00000a)
 
 
 /**
@@ -873,7 +879,7 @@
 **  not been an entry in the routing tables for the MsgId/PipeId given as
 **  parameters.
 */
-#define CFE_SB_NO_SUBSCRIBERS   (0xca00000bL)
+#define CFE_SB_NO_SUBSCRIBERS   ((int32)0xca00000b)
 
 
 /**
@@ -882,7 +888,7 @@
 **  cause would be a Single Event Upset.
 **
 */
-#define CFE_SB_INTERNAL_ERR     (0xca00000cL)
+#define CFE_SB_INTERNAL_ERR     ((int32)0xca00000c)
 
 
 /**
@@ -890,7 +896,7 @@
 **  is made on a packet that does not include a field for msg time.
 **
 */
-#define CFE_SB_WRONG_MSG_TYPE     (0xca00000dL)
+#define CFE_SB_WRONG_MSG_TYPE     ((int32)0xca00000d)
 
 
 /**
@@ -899,7 +905,7 @@
 **  correct or the buffer was previously released.
 **
 */
-#define CFE_SB_BUFFER_INVALID     (0xca00000eL)
+#define CFE_SB_BUFFER_INVALID     ((int32)0xca00000e)
 
 
 /**
@@ -909,7 +915,7 @@
 **  the specified feature.
 **
 */
-#define CFE_SB_NOT_IMPLEMENTED  (0xca00ffffL)
+#define CFE_SB_NOT_IMPLEMENTED  ((int32)0xca00ffff)
 
 /*
 ************* TABLE SERVICES STATUS CODES *************
@@ -921,7 +927,7 @@
 **  identified a Table Access Descriptor that was not used.
 **
 */
-#define CFE_TBL_ERR_INVALID_HANDLE (int32)(0xcc000001L)
+#define CFE_TBL_ERR_INVALID_HANDLE ((int32)0xcc000001)
 
 /** 
 **  The calling Application attempted to register a table whose
@@ -929,7 +935,7 @@
 **  #CFE_TBL_MAX_NAME_LENGTH or was zero characters long.
 **
 */
-#define CFE_TBL_ERR_INVALID_NAME (int32)(0xcc000002L)
+#define CFE_TBL_ERR_INVALID_NAME ((int32)0xcc000002)
 
 /**
 **  The calling Application attempted to register a table:
@@ -938,13 +944,13 @@
 **    c) that had a size of zero
 **
 */
-#define CFE_TBL_ERR_INVALID_SIZE (int32)(0xcc000003L)
+#define CFE_TBL_ERR_INVALID_SIZE ((int32)0xcc000003)
 
 /**
 **   The calling Application has identified a table that has a load pending.
 **
 */
-#define CFE_TBL_INFO_UPDATE_PENDING (int32)(0x4c000004L)
+#define CFE_TBL_INFO_UPDATE_PENDING ((int32)0x4c000004)
 
 /**
 **  This is an error indicating that the table has never been loaded from
@@ -955,14 +961,14 @@
 **  #CFE_TBL_ReleaseAddress API before the table can be loaded with data. </B>
 **
 */
-#define CFE_TBL_ERR_NEVER_LOADED (int32)(0xcc000005L)
+#define CFE_TBL_ERR_NEVER_LOADED ((int32)0xcc000005)
 
 /**
 **  An application attempted to create a table and the Table
 **  registry already contained #CFE_TBL_MAX_NUM_TABLES in it.
 **
 */
-#define CFE_TBL_ERR_REGISTRY_FULL (int32)(0xcc000006L)
+#define CFE_TBL_ERR_REGISTRY_FULL ((int32)0xcc000006)
 
 /**
 **  This is an error that the registration is trying to replace
@@ -970,21 +976,21 @@
 **  stays in place and the new table is rejected.
 **
 */
-#define CFE_TBL_WARN_DUPLICATE (int32)(0x4c000007L)
+#define CFE_TBL_WARN_DUPLICATE ((int32)0x4c000007)
 
 /**
 **   The calling application either failed when calling #CFE_TBL_Register,
 **   failed when calling #CFE_TBL_Share or forgot to call either one.
 **
 */
-#define CFE_TBL_ERR_NO_ACCESS   (int32)(0xcc000008L)
+#define CFE_TBL_ERR_NO_ACCESS   ((int32)0xcc000008)
 
 /**
 **  The calling application is trying to access a table that has
 **  been unregistered.
 **
 */
-#define CFE_TBL_ERR_UNREGISTERED (int32)(0xcc000009L)
+#define CFE_TBL_ERR_UNREGISTERED ((int32)0xcc000009)
 
 /**
 **  The calling application does not have a legitimate Application ID.
@@ -992,14 +998,14 @@
 **  #CFE_ES_RegisterApp function.
 **
 */
-#define CFE_TBL_ERR_BAD_APP_ID (int32)(0xcc00000AL)
+#define CFE_TBL_ERR_BAD_APP_ID ((int32)0xcc00000A)
 
 /**
 **   An application attempted to create a table and the Table
 **   Handle Array already used all CFE_TBL_MAX_NUM_HANDLES in it.
 **
 */
-#define CFE_TBL_ERR_HANDLES_FULL (int32)(0xcc00000BL)
+#define CFE_TBL_ERR_HANDLES_FULL ((int32)0xcc00000B)
 
 /**
 **  An application attempted to register a table with the same name
@@ -1007,7 +1013,7 @@
 **  table is different from the size already in the registry.
 **
 */
-#define CFE_TBL_ERR_DUPLICATE_DIFF_SIZE (int32)(0xcc00000CL)
+#define CFE_TBL_ERR_DUPLICATE_DIFF_SIZE ((int32)0xcc00000C)
 
 /**
 **  An application attempted to register a table with the same name
@@ -1015,7 +1021,7 @@
 **  table is owned by a different application.
 **
 */
-#define CFE_TBL_ERR_DUPLICATE_NOT_OWNED (int32)(0xcc00000DL)
+#define CFE_TBL_ERR_DUPLICATE_NOT_OWNED ((int32)0xcc00000D)
 
 /**
 **  The calling Application has identified a table that has been updated.<BR>
@@ -1024,41 +1030,41 @@
 **  the last time the application obtained its address or status.
 **
 */
-#define CFE_TBL_INFO_UPDATED (int32)(0x4c00000EL)
+#define CFE_TBL_INFO_UPDATED ((int32)0x4c00000E)
 
 /**
 **  The calling Application has tried to allocate a working buffer but
 **  none were available.
 **
 */
-#define CFE_TBL_ERR_NO_BUFFER_AVAIL (int32)(0xcc00000FL)
+#define CFE_TBL_ERR_NO_BUFFER_AVAIL ((int32)0xcc00000F)
 
 /**
 **  The calling Application has attempted to perform a load on a
 **  table that was created with "Dump Only" attributes.
 **
 */
-#define CFE_TBL_ERR_DUMP_ONLY (int32)(0xcc000010L)
+#define CFE_TBL_ERR_DUMP_ONLY ((int32)0xcc000010)
 
 /**
 **  The calling Application called #CFE_TBL_Load with an illegal
 **  value for the second parameter.
 **
 */
-#define CFE_TBL_ERR_ILLEGAL_SRC_TYPE (int32)(0xcc000011L)
+#define CFE_TBL_ERR_ILLEGAL_SRC_TYPE ((int32)0xcc000011)
 
 /**
 **  The calling Application called #CFE_TBL_Load when another Application
 **  was trying to load the table.
 **
 */
-#define CFE_TBL_ERR_LOAD_IN_PROGRESS (int32)(0xcc000012L)
+#define CFE_TBL_ERR_LOAD_IN_PROGRESS ((int32)0xcc000012)
 
 /**
 **  The calling Application called #CFE_TBL_Load with a bad filename.
 **
 */
-#define CFE_TBL_ERR_FILE_NOT_FOUND (int32)(0xcc000013L)
+#define CFE_TBL_ERR_FILE_NOT_FOUND ((int32)0xcc000013)
 
 /**
 **  The calling Application called #CFE_TBL_Load with a filename that specified a file
@@ -1066,7 +1072,7 @@
 **  than specified in the table header.
 **
 */
-#define CFE_TBL_ERR_FILE_TOO_LARGE (int32)(0xcc000014L)
+#define CFE_TBL_ERR_FILE_TOO_LARGE ((int32)0xcc000014)
 
 /**
 **  The calling Application called #CFE_TBL_Load with a filename that specified a file
@@ -1075,65 +1081,65 @@
 **  at a non-zero offset).
 **
 */
-#define CFE_TBL_WARN_SHORT_FILE (int32)(0x4c000015L)
+#define CFE_TBL_WARN_SHORT_FILE ((int32)0x4c000015)
 
 /**
 **  The calling Application called #CFE_TBL_Load with a filename that specified a file
 **  whose content ID was not that of a table image.
 **
 */
-#define CFE_TBL_ERR_BAD_CONTENT_ID (int32)(0xcc000016L)
+#define CFE_TBL_ERR_BAD_CONTENT_ID ((int32)0xcc000016)
 
 /**
 **  The calling Application has attempted to update a table without a pending load.
 **
 */
-#define CFE_TBL_INFO_NO_UPDATE_PENDING (int32)(0x4c000017L)
+#define CFE_TBL_INFO_NO_UPDATE_PENDING ((int32)0x4c000017)
 
 /**
 **  The calling Application tried to update a table that is locked by another user.
 **
 */
-#define CFE_TBL_INFO_TABLE_LOCKED (int32)(0x4c000018L)
+#define CFE_TBL_INFO_TABLE_LOCKED ((int32)0x4c000018)
 
 /**
 **   The calling Application should call #CFE_TBL_Validate for the specified table.
 **
 */
-#define CFE_TBL_INFO_VALIDATION_PENDING (int32)(0x4c000019L)
+#define CFE_TBL_INFO_VALIDATION_PENDING ((int32)0x4c000019)
 
 /**
 **  The calling Application tried to validate a table that did not have a validation request pending.
 **
 */
-#define CFE_TBL_INFO_NO_VALIDATION_PENDING (int32)(0x4c00001AL)
+#define CFE_TBL_INFO_NO_VALIDATION_PENDING ((int32)0x4c00001A)
 
 /**
 **  The calling Application tried to access a table file whose Subtype identifier indicated it was not
 **  a table image file.
 **
 */
-#define CFE_TBL_ERR_BAD_SUBTYPE_ID (int32)(0xcc00001BL)
+#define CFE_TBL_ERR_BAD_SUBTYPE_ID ((int32)0xcc00001B)
 
 /**
 **  The calling Application tried to access a table file whose Subtype identifier indicated it was not
 **  a table image file.
 **
 */
-#define CFE_TBL_ERR_FILE_SIZE_INCONSISTENT (int32)(0xcc00001CL)
+#define CFE_TBL_ERR_FILE_SIZE_INCONSISTENT ((int32)0xcc00001C)
 
 /**
 **  The calling Application tried to access a table file whose standard cFE File Header was the wrong size, etc.
 **
 */
-#define CFE_TBL_ERR_NO_STD_HEADER (int32)(0xcc00001DL)
+#define CFE_TBL_ERR_NO_STD_HEADER ((int32)0xcc00001D)
 
 /**
 **  The calling Application tried to access a table file whose standard cFE
 **  Table File Header was the wrong size, etc.
 **
 */
-#define CFE_TBL_ERR_NO_TBL_HEADER (int32)(0xcc00001EL)
+#define CFE_TBL_ERR_NO_TBL_HEADER ((int32)0xcc00001E)
 
 
 /**
@@ -1141,7 +1147,7 @@
 **  that was too long.
 **
 */
-#define CFE_TBL_ERR_FILENAME_TOO_LONG (int32)(0xcc00001FL)
+#define CFE_TBL_ERR_FILENAME_TOO_LONG ((int32)0xcc00001F)
 
 
 /**
@@ -1149,7 +1155,7 @@
 **  header indicated that it was for a different table.
 **
 */
-#define CFE_TBL_ERR_FILE_FOR_WRONG_TABLE (int32)(0xcc000020L)
+#define CFE_TBL_ERR_FILE_FOR_WRONG_TABLE ((int32)0xcc000020)
 
 
 /**
@@ -1157,7 +1163,7 @@
 **  claimed the load was larger than what was actually read from the file.
 **
 */
-#define CFE_TBL_ERR_LOAD_INCOMPLETE (int32)(0xcc000021L)
+#define CFE_TBL_ERR_LOAD_INCOMPLETE ((int32)0xcc000021)
 
 
 /**
@@ -1166,7 +1172,7 @@
 **  that #CFE_TBL_WARN_SHORT_FILE also indicates a partial load.
 **
 */
-#define CFE_TBL_WARN_PARTIAL_LOAD (int32)(0x4c000022L)
+#define CFE_TBL_WARN_PARTIAL_LOAD ((int32)0x4c000022)
 
 
 /**
@@ -1177,7 +1183,7 @@
 **  #CFE_TBL_WARN_SHORT_FILE also indicates a partial load.
 **
 */
-#define CFE_TBL_ERR_PARTIAL_LOAD (int32)(0xcc000023L)
+#define CFE_TBL_ERR_PARTIAL_LOAD ((int32)0xcc000023)
 
 
 /**
@@ -1186,7 +1192,7 @@
 **  with the owning application.
 **
 */
-#define CFE_TBL_INFO_DUMP_PENDING (int32)(0x4c000024L)
+#define CFE_TBL_INFO_DUMP_PENDING ((int32)0x4c000024)
 
 
 /**
@@ -1201,7 +1207,7 @@
 **             -# #CFE_TBL_OPT_DUMP_ONLY
 **
 */
-#define CFE_TBL_ERR_INVALID_OPTIONS (int32)(0xcc000025L)
+#define CFE_TBL_ERR_INVALID_OPTIONS ((int32)0xcc000025)
 
 
 /**
@@ -1211,7 +1217,7 @@
 **  will be treated as a normal table from now on.
 **
 */
-#define CFE_TBL_WARN_NOT_CRITICAL (int32)(0x4c000026L)
+#define CFE_TBL_WARN_NOT_CRITICAL ((int32)0x4c000026)
 
 
 /**
@@ -1223,7 +1229,7 @@
 **  validated using the table's validation function.
 **
 */
-#define CFE_TBL_INFO_RECOVERED_TBL (int32)(0x4c000027L)
+#define CFE_TBL_INFO_RECOVERED_TBL ((int32)0x4c000027)
 
 
 /**
@@ -1253,7 +1259,7 @@
 **  the specified feature.
 **
 */
-#define CFE_TBL_NOT_IMPLEMENTED (int32)(0xcc00ffffL)
+#define CFE_TBL_NOT_IMPLEMENTED ((int32)0xcc00ffff)
 
 
 /*
@@ -1267,7 +1273,7 @@
 **  the specified feature.
 **
 */
-#define CFE_TIME_NOT_IMPLEMENTED (0xce00ffffL)
+#define CFE_TIME_NOT_IMPLEMENTED ((int32)0xce00ffff)
 
 /**
 **  One of the TIME Services API functions to set the time with data
@@ -1277,7 +1283,7 @@
 **  a "time at the tone" command packet using internal data.
 **
 */
-#define CFE_TIME_INTERNAL_ONLY (0xce000001L)
+#define CFE_TIME_INTERNAL_ONLY ((int32)0xce000001)
 
 /**
 **  One of the TIME Services API functions to set the time with data
@@ -1290,7 +1296,7 @@
 **        Services has previously been commanded to set the clock state
 **        to "valid".
 */
-#define CFE_TIME_OUT_OF_RANGE (0xce000002L)
+#define CFE_TIME_OUT_OF_RANGE ((int32)0xce000002)
 
 /**
 **  An attempt to register too many cFE Time Services Synchronization
@@ -1298,7 +1304,7 @@
 **  configuration parameter, recompile and try again.
 **
 */
-#define CFE_TIME_TOO_MANY_SYNCH_CALLBACKS (0xce000003L)
+#define CFE_TIME_TOO_MANY_SYNCH_CALLBACKS ((int32)0xce000003)
 
 /**
 **  An attempt to unregister a cFE Time Services Synchronization
@@ -1306,6 +1312,6 @@
 **  located in the Synchronization Callback Registry.
 **
 */
-#define CFE_TIME_CALLBACK_NOT_REGISTERED (0xce000004L)
+#define CFE_TIME_CALLBACK_NOT_REGISTERED ((int32)0xce000004)
 
 #endif  /* _cfe_error_ */

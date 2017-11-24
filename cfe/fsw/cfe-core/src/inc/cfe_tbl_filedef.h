@@ -75,6 +75,15 @@
 
 typedef struct
 {
+    uint32                   Reserved;                             /**< Future Use: NumTblSegments in File?   */
+    uint32                   Offset;                               /**< Byte Offset at which load should commence */
+    uint32                   NumBytes;                             /**< Number of bytes to load into table */
+    char                     TableName[CFE_TBL_MAX_FULL_NAME_LEN]; /**< Fully qualified name of table to load */
+} CFE_TBL_File_Hdr_t;
+
+
+typedef struct
+{
     char        ObjectName[64];                           /**< \brief Name of instantiated variable that contains desired table image */
     char        TableName[CFE_TBL_FILDEF_MAX_NAME_LEN];   /**< \brief Name of Table as defined onboard */
     char        Description[CFE_TBL_FILDEF_FS_HDR_LEN];   /**< \brief Description of table image that is included in cFE File Header */

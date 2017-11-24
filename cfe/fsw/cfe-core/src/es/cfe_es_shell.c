@@ -61,8 +61,7 @@
 /*
  ** Includes
  */
-#include "cfe.h"
-#include "cfe_platform_cfg.h"
+#include "private/cfe_private.h"
 #include "cfe_es_global.h"
 #include "cfe_es_apps.h"
 #include "cfe_es_shell.h"
@@ -72,13 +71,12 @@
 
 #include <string.h>
 
-extern CFE_ES_TaskData_t CFE_ES_TaskData;
 #define  CFE_ES_CHECKSIZE 3
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /* CFE_ES_ShellOutputCommand() -- Pass thru string to O/S shell or to ES */
 /*                                                                       */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-int32 CFE_ES_ShellOutputCommand(char * CmdString, char *Filename)
+int32 CFE_ES_ShellOutputCommand(const char * CmdString, const char *Filename)
 {
     int32 Result;
     int32 ReturnCode = CFE_SUCCESS;
@@ -94,12 +92,13 @@ int32 CFE_ES_ShellOutputCommand(char * CmdString, char *Filename)
 
     /* Use default filename if not provided */
     if (Filename[0] == '\0')
-    {
-        strncpy(OutputFilename, CFE_ES_DEFAULT_SHELL_FILENAME, OS_MAX_PATH_LEN);
+    {   
+        (void) CFE_SB_MessageStringGet(OutputFilename, CFE_ES_DEFAULT_SHELL_FILENAME, NULL, 
+                                       sizeof(OutputFilename), sizeof(CFE_ES_DEFAULT_SHELL_FILENAME));
     }
     else
-    {
-        strncpy(OutputFilename, Filename, OS_MAX_PATH_LEN);
+    { 
+        (void) CFE_SB_MessageStringGet(OutputFilename, Filename, NULL, sizeof(OutputFilename), strlen(Filename));  
     }
 
     /* Make sure string is null terminated */
@@ -117,11 +116,11 @@ int32 CFE_ES_ShellOutputCommand(char * CmdString, char *Filename)
 
     else
     {
-        strncpy(CheckCmd,CmdString,CFE_ES_CHECKSIZE);
+        (void) CFE_SB_MessageStringGet(CheckCmd, CmdString, NULL, sizeof(CheckCmd), sizeof(CmdString));
     
         CheckCmd[CFE_ES_CHECKSIZE]  = '\0';
-    
-        strncpy(Cmd,CmdString, CFE_ES_MAX_SHELL_CMD);
+        
+        (void) CFE_SB_MessageStringGet(Cmd, CmdString, NULL, sizeof(Cmd), sizeof(CmdString));
     
         /* We need to check if this command is directed at ES, or at the 
         operating system */
@@ -219,7 +218,7 @@ int32 CFE_ES_ShellOutputCommand(char * CmdString, char *Filename)
         
                 for (CurrFilePtr=0; CurrFilePtr < (FileSize - CFE_ES_MAX_SHELL_PKT); CurrFilePtr += CFE_ES_MAX_SHELL_PKT)
                 {
-                    OS_read(fd, CFE_ES_TaskData.ShellPacket.ShellOutput, CFE_ES_MAX_SHELL_PKT);
+                    OS_read(fd, CFE_ES_TaskData.ShellPacket.Payload.ShellOutput, CFE_ES_MAX_SHELL_PKT);
 
                     /* Send the packet */
                     CFE_SB_TimeStampMsg((CFE_SB_Msg_t *) &CFE_ES_TaskData.ShellPacket);
@@ -234,10 +233,10 @@ int32 CFE_ES_ShellOutputCommand(char * CmdString, char *Filename)
                * part of the packet will be spaces */
                 for (i =0; i < CFE_ES_MAX_SHELL_PKT; i++)
                 {
-                    CFE_ES_TaskData.ShellPacket.ShellOutput[i] = ' ';
+                    CFE_ES_TaskData.ShellPacket.Payload.ShellOutput[i] = ' ';
                 }
   
-                OS_read(fd, CFE_ES_TaskData.ShellPacket.ShellOutput, ( FileSize - CurrFilePtr));
+                OS_read(fd, CFE_ES_TaskData.ShellPacket.Payload.ShellOutput, ( FileSize - CurrFilePtr));
 
                 /* From our check above, we are assured that there are at least 3 free
                  * characters to write our data into at the end of this last packet 
@@ -247,9 +246,9 @@ int32 CFE_ES_ShellOutputCommand(char * CmdString, char *Filename)
                  */
 
         
-                CFE_ES_TaskData.ShellPacket.ShellOutput[ CFE_ES_MAX_SHELL_PKT - 3] = '\n';
-                CFE_ES_TaskData.ShellPacket.ShellOutput[ CFE_ES_MAX_SHELL_PKT - 2] = '$';
-                CFE_ES_TaskData.ShellPacket.ShellOutput[ CFE_ES_MAX_SHELL_PKT - 1] = '\0';
+                CFE_ES_TaskData.ShellPacket.Payload.ShellOutput[ CFE_ES_MAX_SHELL_PKT - 3] = '\n';
+                CFE_ES_TaskData.ShellPacket.Payload.ShellOutput[ CFE_ES_MAX_SHELL_PKT - 2] = '$';
+                CFE_ES_TaskData.ShellPacket.Payload.ShellOutput[ CFE_ES_MAX_SHELL_PKT - 1] = '\0';
 
                 /* Send the last packet */
                 CFE_SB_TimeStampMsg((CFE_SB_Msg_t *) &CFE_ES_TaskData.ShellPacket);
@@ -262,6 +261,7 @@ int32 CFE_ES_ShellOutputCommand(char * CmdString, char *Filename)
     }/* if fd < OS_FS_SUCCESS */
 
 
+    /* cppcheck-suppress duplicateExpression */
     if (Result != OS_SUCCESS && Result != CFE_SUCCESS )
     {
         ReturnCode = CFE_ES_ERR_SHELL_CMD;
@@ -366,6 +366,29 @@ int32 CFE_ES_ListTasks(int32 fd)
     return Result;
 } /* end ES_ListTasks */
 
+
+#if defined(OSAL_OPAQUE_OBJECT_IDS)
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/*                                                                 */
+/* CFE_ES_ShellCountObjectCallback() -- Helper function            */
+/*  (used by CFE_ES_ListResources() below)                         */
+/*                                                                 */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+static void CFE_ES_ShellCountObjectCallback(uint32 object_id, void *arg)
+{
+    uint32                 *CountState;
+    uint32                 idtype;
+
+    CountState = (uint32 *)arg;
+    idtype = OS_IdentifyObject(object_id);
+    if (idtype < OS_OBJECT_TYPE_USER)
+    {
+        ++CountState[idtype];
+    }
+}
+#endif
+
+
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /*                                                                 */
 /* CFE_ES_ListResources() -- List All OS Resources, put in fd      */
@@ -373,72 +396,94 @@ int32 CFE_ES_ListTasks(int32 fd)
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 int32 CFE_ES_ListResources(int32 fd)
 {
-    OS_task_prop_t          TaskProp;
-    OS_queue_prop_t         QueueProp;
-    OS_bin_sem_prop_t       SemProp;
-    OS_count_sem_prop_t     CountSemProp;
-    OS_mut_sem_prop_t       MutProp;
-    OS_FDTableEntry         FileProp;
-    
-    int32 Result = CFE_SUCCESS;
-    int32 NumSemaphores = 0;
-    int32 NumCountSems =0;
-    int32 NumMutexes = 0;
-    int32 NumQueues = 0;
-    int32 NumTasks = 0;
-    int32 NumFiles = 0;
-    uint32 i;
-    char Line[35];
+   int32 Result = CFE_SUCCESS;
+   int32 NumSemaphores = 0;
+   int32 NumCountSems =0;
+   int32 NumMutexes = 0;
+   int32 NumQueues = 0;
+   int32 NumTasks = 0;
+   int32 NumFiles = 0;
+   char Line[35];
+
+#if defined(OSAL_OPAQUE_OBJECT_IDS)
+   {
+      /*
+       * The new "ForEachObject" OSAL call makes this process easier.
+       */
+      uint32 CountState[OS_OBJECT_TYPE_USER];
+
+      memset(&CountState,0,sizeof(CountState));
+      OS_ForEachObject (0, CFE_ES_ShellCountObjectCallback, CountState);
+
+      NumSemaphores = CountState[OS_OBJECT_TYPE_OS_BINSEM];
+      NumCountSems = CountState[OS_OBJECT_TYPE_OS_COUNTSEM];
+      NumMutexes = CountState[OS_OBJECT_TYPE_OS_MUTEX];
+      NumQueues = CountState[OS_OBJECT_TYPE_OS_QUEUE];
+      NumTasks = CountState[OS_OBJECT_TYPE_OS_TASK];
+      NumFiles = CountState[OS_OBJECT_TYPE_OS_STREAM];
+   }
+#else
+   {
+      OS_task_prop_t          TaskProp;
+      OS_queue_prop_t         QueueProp;
+      OS_bin_sem_prop_t       SemProp;
+      OS_count_sem_prop_t     CountSemProp;
+      OS_mut_sem_prop_t       MutProp;
+      OS_FDTableEntry         FileProp;
+
+      uint32 i;
 
 
-    for ( i= 0; i < OS_MAX_TASKS; i++)
-    {
-        if (OS_TaskGetInfo(i, &TaskProp) == OS_SUCCESS)
-        {
+      for ( i= 0; i < OS_MAX_TASKS; i++)
+      {
+         if (OS_TaskGetInfo(i, &TaskProp) == OS_SUCCESS)
+         {
             NumTasks++;
-        }
-    }
+         }
+      }
 
-    for ( i= 0; i < OS_MAX_QUEUES; i++)
-    {
-        if (OS_QueueGetInfo(i, &QueueProp) == OS_SUCCESS)
-        {
+      for ( i= 0; i < OS_MAX_QUEUES; i++)
+      {
+         if (OS_QueueGetInfo(i, &QueueProp) == OS_SUCCESS)
+         {
             NumQueues++;
-        }
-    }
+         }
+      }
 
 
-    for ( i= 0; i < OS_MAX_COUNT_SEMAPHORES; i++)
-    {
-       if (OS_CountSemGetInfo(i, &CountSemProp) == OS_SUCCESS)
-        {
+      for ( i= 0; i < OS_MAX_COUNT_SEMAPHORES; i++)
+      {
+         if (OS_CountSemGetInfo(i, &CountSemProp) == OS_SUCCESS)
+         {
             NumCountSems++;
-        }
-    }
-    for ( i= 0; i < OS_MAX_BIN_SEMAPHORES; i++)
-    {
-        if (OS_BinSemGetInfo(i, &SemProp) == OS_SUCCESS)
-        {
+         }
+      }
+      for ( i= 0; i < OS_MAX_BIN_SEMAPHORES; i++)
+      {
+         if (OS_BinSemGetInfo(i, &SemProp) == OS_SUCCESS)
+         {
             NumSemaphores++;
-        }
-    }
+         }
+      }
 
 
-    for ( i= 0; i < OS_MAX_MUTEXES; i++)
-    {
-        if (OS_MutSemGetInfo(i, &MutProp) == OS_SUCCESS)
-        {
+      for ( i= 0; i < OS_MAX_MUTEXES; i++)
+      {
+         if (OS_MutSemGetInfo(i, &MutProp) == OS_SUCCESS)
+         {
             NumMutexes++;
-        }
-    }
+         }
+      }
 
-    for ( i= 0; i < OS_MAX_NUM_OPEN_FILES; i++)
-    {
-        if (OS_FDGetInfo(i, &FileProp) == OS_FS_SUCCESS)
-        {
+      for ( i= 0; i < OS_MAX_NUM_OPEN_FILES; i++)
+      {
+         if (OS_FDGetInfo(i, &FileProp) == OS_FS_SUCCESS)
+         {
             NumFiles++;
-        }
-    }
+         }
+      }
+   }
+#endif
 
     sprintf(Line,"OS Resources in Use:\n");
     Result = OS_write(fd, Line, strlen(Line));

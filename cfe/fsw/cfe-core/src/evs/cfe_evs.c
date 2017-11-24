@@ -75,7 +75,6 @@
 #include <string.h>
 
 /* External Data */
-extern CFE_EVS_GlobalData_t   CFE_EVS_GlobalData;
 
 /* Local Function Prototypes */
 
@@ -233,21 +232,21 @@ int32 CFE_EVS_SendEvent (uint16 EventID, uint16 EventType, const char *Spec, ...
       {
          /* Initialize EVS event packet */
          CFE_SB_InitMsg(&EVS_Packet, CFE_EVS_EVENT_MSG_MID, sizeof(CFE_EVS_Packet_t), TRUE);
-         EVS_Packet.PacketID.EventID   = EventID;
-         EVS_Packet.PacketID.EventType = EventType;
+         EVS_Packet.Payload.PacketID.EventID   = EventID;
+         EVS_Packet.Payload.PacketID.EventType = EventType;
 
          /* vsnprintf() returns the total expanded length of the formatted string */
          /* vsnprintf() copies and zero terminates portion that fits in the buffer */
          va_start(Ptr, Spec);
-         ExpandedLength = vsnprintf(EVS_Packet.Message, CFE_EVS_MAX_MESSAGE_LENGTH, Spec, Ptr);
+         ExpandedLength = vsnprintf((char *)EVS_Packet.Payload.Message, sizeof(EVS_Packet.Payload.Message), Spec, Ptr);
          va_end(Ptr);
 
          /* Were any characters truncated in the buffer? */
-         if (ExpandedLength >= CFE_EVS_MAX_MESSAGE_LENGTH)
+         if (ExpandedLength >= sizeof(EVS_Packet.Payload.Message))
          {
             /* Mark character before zero terminator to indicate truncation */
-            EVS_Packet.Message[CFE_EVS_MAX_MESSAGE_LENGTH - 2] = CFE_EVS_MSG_TRUNCATED;
-            CFE_EVS_GlobalData.EVS_TlmPkt.MessageTruncCounter++;
+            EVS_Packet.Payload.Message[sizeof(EVS_Packet.Payload.Message) - 2] = CFE_EVS_MSG_TRUNCATED;
+            CFE_EVS_GlobalData.EVS_TlmPkt.Payload.MessageTruncCounter++;
          }
 
          /* Get current spacecraft time */
@@ -295,21 +294,21 @@ int32 CFE_EVS_SendEventWithAppID (uint16 EventID, uint16 EventType, uint32 AppID
    {
       /* Initialize EVS event packet */
       CFE_SB_InitMsg(&EVS_Packet, CFE_EVS_EVENT_MSG_MID, sizeof(CFE_EVS_Packet_t), TRUE);
-      EVS_Packet.PacketID.EventID   = EventID;
-      EVS_Packet.PacketID.EventType = EventType;
+      EVS_Packet.Payload.PacketID.EventID   = EventID;
+      EVS_Packet.Payload.PacketID.EventType = EventType;
 
       /* vsnprintf() returns the total expanded length of the formatted string */
       /* vsnprintf() copies and zero terminates portion that fits in the buffer */
       va_start(Ptr, Spec);
-      ExpandedLength = vsnprintf(EVS_Packet.Message, CFE_EVS_MAX_MESSAGE_LENGTH, Spec, Ptr);
+      ExpandedLength = vsnprintf((char *)EVS_Packet.Payload.Message, sizeof(EVS_Packet.Payload.Message), Spec, Ptr);
       va_end(Ptr);
 
       /* Were any characters truncated in the buffer? */
-      if (ExpandedLength >= CFE_EVS_MAX_MESSAGE_LENGTH)
+      if (ExpandedLength >= sizeof(EVS_Packet.Payload.Message))
       {
          /* Mark character before zero terminator to indicate truncation */
-         EVS_Packet.Message[CFE_EVS_MAX_MESSAGE_LENGTH - 2] = CFE_EVS_MSG_TRUNCATED;
-         CFE_EVS_GlobalData.EVS_TlmPkt.MessageTruncCounter++;
+         EVS_Packet.Payload.Message[sizeof(EVS_Packet.Payload.Message) - 2] = CFE_EVS_MSG_TRUNCATED;
+         CFE_EVS_GlobalData.EVS_TlmPkt.Payload.MessageTruncCounter++;
       }
 
       /* Get current spacecraft time */
@@ -356,21 +355,21 @@ int32 CFE_EVS_SendTimedEvent (CFE_TIME_SysTime_t Time, uint16 EventID, uint16 Ev
       {
          /* Initialize EVS event packet */
          CFE_SB_InitMsg(&EVS_Packet, CFE_EVS_EVENT_MSG_MID, sizeof(CFE_EVS_Packet_t), TRUE);
-         EVS_Packet.PacketID.EventID   = EventID;
-         EVS_Packet.PacketID.EventType = EventType;
+         EVS_Packet.Payload.PacketID.EventID   = EventID;
+         EVS_Packet.Payload.PacketID.EventType = EventType;
 
          /* vsnprintf() returns the total expanded length of the formatted string */
          /* vsnprintf() copies and zero terminates portion that fits in the buffer */
          va_start(Ptr, Spec);
-         ExpandedLength = vsnprintf(EVS_Packet.Message, CFE_EVS_MAX_MESSAGE_LENGTH, Spec, Ptr);
+         ExpandedLength = vsnprintf((char *)EVS_Packet.Payload.Message, sizeof(EVS_Packet.Payload.Message), Spec, Ptr);
          va_end(Ptr);
 
          /* Were any characters truncated in the buffer? */
-         if (ExpandedLength >= CFE_EVS_MAX_MESSAGE_LENGTH)
+         if (ExpandedLength >= sizeof(EVS_Packet.Payload.Message))
          {
             /* Mark character before zero terminator to indicate truncation */
-            EVS_Packet.Message[CFE_EVS_MAX_MESSAGE_LENGTH - 2] = CFE_EVS_MSG_TRUNCATED;
-            CFE_EVS_GlobalData.EVS_TlmPkt.MessageTruncCounter++;
+            EVS_Packet.Payload.Message[sizeof(EVS_Packet.Payload.Message) - 2] = CFE_EVS_MSG_TRUNCATED;
+            CFE_EVS_GlobalData.EVS_TlmPkt.Payload.MessageTruncCounter++;
          }
 
          /* Send the event packet */

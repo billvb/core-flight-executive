@@ -73,14 +73,9 @@ typedef struct
     uint32                   ObjectType;                   /* The type of object being created */
     char                     ObjectName[OS_MAX_API_NAME];  /* task or OS object name */
     CFE_ES_FuncPtrUnion_t    FuncPtrUnion;                 /* task or function reference */
-    int                     *ObjectPtr;                    /* The reference to the object */
-    uint32                   ObjectKey;                    /* The ID of the Object being created */
-    uint32                   ObjectId;                     /* The ID assigned by the OS for the object */
     uint32                   ObjectPriority;               /* object priority */
     uint32                   ObjectSize;                   /* size used for stack, queue size, etc. */
     uint32                   ObjectFlags;                  /* extra flags to pass */
-    char                    *StackPtr;                     /* Stack pointer */
-    void                    *TcbPtr;                       /* Task control block pointer */
 
 } CFE_ES_ObjectTable_t;
 

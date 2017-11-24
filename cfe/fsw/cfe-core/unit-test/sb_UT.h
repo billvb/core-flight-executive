@@ -84,12 +84,6 @@ typedef struct {
 */
 extern char cMsg[];
 
-/*
-** Function prototypes
-*/
-/* cFE functions */
-void CFE_SB_TaskMain(void);
-
 /* SB unit test functions */
 /*****************************************************************************/
 /**
@@ -2405,6 +2399,69 @@ void Test_SendMsg_SendWithMetadata(void);
 
 /*****************************************************************************/
 /**
+** \brief Test response to sending a message with an invalid ID and ZeroCopy is
+**        set
+**
+** \par Description
+**        This function tests the response to sending a message with an invalid
+**        ID.
+**
+** \par Assumptions, External Events, and Notes:
+**        None
+**
+** \returns
+**        This function does not return a value.
+**
+** \sa #UT_Text, #SB_ResetUnitTest, #CFE_SB_InitMsg, #CFE_SB_SendMsg,
+** \sa #UT_GetNumEventsSent, #UT_EventIsInHistory, #UT_Report
+**
+******************************************************************************/
+void Test_SendMsg_InvalidMsgId_ZeroCopy(void);
+
+/*****************************************************************************/
+/**
+** \brief Test response to sending a message which has no subscribers and
+**        ZeroCopy is set
+**
+** \par Description
+**        This function tests the response to sending a message which has no
+**        subscribers.
+**
+** \par Assumptions, External Events, and Notes:
+**        None
+**
+** \returns
+**        This function does not return a value.
+**
+** \sa #UT_Text, #SB_ResetUnitTest, #CFE_SB_InitMsg, #CFE_SB_SendMsg,
+** \sa #UT_GetNumEventsSent, #UT_EventIsInHistory, #UT_Report
+**
+******************************************************************************/
+void Test_SendMsg_NoSubscribers_ZeroCopy(void);
+
+/*****************************************************************************/
+/**
+** \brief Test response to sending a message with the message size larger
+**        than allowed and ZeroCopy is set
+**
+** \par Description
+**        This function tests the response to sending a message with the
+**        message size larger than allowed.
+**
+** \par Assumptions, External Events, and Notes:
+**        None
+**
+** \returns
+**        This function does not return a value.
+**
+** \sa #UT_Text, #SB_ResetUnitTest, #CFE_SB_InitMsg, #CFE_SB_SendMsg,
+** \sa #UT_GetNumEventsSent, #UT_EventIsInHistory, #UT_Report
+**
+******************************************************************************/
+void Test_SendMsg_MaxMsgSizePlusOne_ZeroCopy(void);
+
+/*****************************************************************************/
+/**
 ** \brief Function for calling SB receive message API test functions
 **
 ** \par Description
@@ -2635,6 +2692,27 @@ void Test_RcvMsg_PipeReadError(void);
 **
 ******************************************************************************/
 void Test_RcvMsg_PendForever(void);
+
+/*****************************************************************************/
+/**
+** \brief Test receiving a message response to an invalid buffer pointer (null)
+**
+** \par Description
+**        This function tests receiving a message response to an invalid buffer
+**        pointer (null).
+**
+** \par Assumptions, External Events, and Notes:
+**        None
+**
+** \returns
+**        This function does not return a value.
+**
+** \sa #UT_Text, #SB_ResetUnitTest, #CFE_SB_CreatePipe, #CFE_SB_RcvMsg,
+** \sa #UT_GetNumEventsSent, #UT_EventIsInHistory, #CFE_SB_DeletePipe,
+** \sa #UT_Report
+**
+******************************************************************************/
+void Test_RcvMsg_InvalidBufferPtr(void);
 
 /*****************************************************************************/
 /**
@@ -3015,4 +3093,126 @@ void Test_ReqToSendEvent_ErrLogic(void);
 ******************************************************************************/
 void Test_PutDestBlk_ErrLogic(void);
 
+/*****************************************************************************/
+/**
+** \brief Test internal function to get the pipe table index for the given pipe
+**        ID
+**
+** \par Description
+**        This function tests the internal function to get the pipe table index
+**        for the given pipe ID when the ID is not in use.
+**
+** \par Assumptions, External Events, and Notes:
+**        None
+**
+** \returns
+**        This function does not return a value.
+**
+** \sa #UT_Text, #SB_ResetUnitTest, #CFE_SB_GetPipeIdx, #UT_GetNumEventsSent,
+** \sa #UT_Report
+**
+******************************************************************************/
+void Test_CFE_SB_GetPipeIdx(void);
+
+/*****************************************************************************/
+/**
+** \brief Test functions that involve a buffer in the SB buffer pool
+**
+** \par Description
+**        This function tests the functions that involve a buffer in the SB
+**        buffer pool.
+**
+** \par Assumptions, External Events, and Notes:
+**        None
+**
+** \returns
+**        This function does not return a value.
+**
+** \sa #UT_Text, #SB_ResetUnitTest, #CFE_SB_GetBufferFromPool,
+** \sa #CFE_SB_ReturnBufferToPool, #CFE_SB_DecrBufUseCnt,
+** \sa #CFE_SB_PutDestinationBlk, #UT_GetNumEventsSent, #UT_Report
+**
+******************************************************************************/
+void Test_CFE_SB_Buffers(void);
+
+/*****************************************************************************/
+/**
+** \brief Test functions that involve bad pipe information
+**
+** \par Description
+**        This function tests the functions that involve bad pipe information.
+**
+** \par Assumptions, External Events, and Notes:
+**        None
+**
+** \returns
+**        This function does not return a value.
+**
+** \sa #UT_Text, #SB_ResetUnitTest, #CFE_SB_CreatePipe, #CFE_SB_DeletePipeFull,
+** \sa #CFE_SB_SubscribeFull, #UT_GetNumEventsSent, #UT_Report
+**
+******************************************************************************/
+void Test_CFE_SB_BadPipeInfo(void);
+
+/*****************************************************************************/
+/**
+** \brief Test SendMsgFull function paths
+**
+** \par Description
+**        This function tests branch paths in the SendMsgFull function.
+**
+** \par Assumptions, External Events, and Notes:
+**        None
+**
+** \returns
+**        This function does not return a value.
+**
+** \sa #UT_Text, #SB_ResetUnitTest, #CFE_SB_InitMsg, #CFE_SB_ProcessCmdPipePkt,
+** \sa #UT_EventIsInHistory, #CFE_SB_GetMsgId, #UT_SetRtnCode,
+** \sa #UT_GetNumEventsSent, #CFE_SB_CreatePipe, #CFE_SB_Subscribe,
+** \sa #CFE_SB_SendMsg, #CFE_SB_DeletePipe, #CFE_SB_SubscribeEx, #UT_Report
+**
+******************************************************************************/
+void Test_SB_SendMsgPaths(void);
+
+/*****************************************************************************/
+/**
+** \brief Test RcvMsg function unsubscribe/resubscribe path
+**
+** \par Description
+**        This function tests the branch path in the RcvMsg function when a
+**        message in the pipe is unsubscribed, then resubscribed.
+**
+** \par Assumptions, External Events, and Notes:
+**        None
+**
+** \returns
+**        This function does not return a value.
+**
+** \sa #UT_Text, #SB_ResetUnitTest, #CFE_SB_CreatePipe, #CFE_SB_InitMsg,
+** \sa #CFE_SB_Subscribe, #CFE_SB_SendMsg, #CFE_SB_Unsubscribe,
+** \sa #CFE_SB_RcvMsg, #UT_GetNumEventsSent, #UT_EventIsInHistory,
+** \sa #CFE_SB_DeletePipe, #UT_Report
+**
+******************************************************************************/
+void Test_RcvMsg_UnsubResubPath(void);
+
+/*****************************************************************************/
+/**
+** \brief Test MessageStringSet and MessageStringGet function paths
+**
+** \par Description
+**        This function tests the branch paths in the MessageStringSet and
+**        MessageStringGet functions.
+**
+** \par Assumptions, External Events, and Notes:
+**        None
+**
+** \returns
+**        This function does not return a value.
+**
+** \sa #UT_Report
+**
+******************************************************************************/
+void Test_MessageString(void);
 #endif /* _sb_ut_h_ */

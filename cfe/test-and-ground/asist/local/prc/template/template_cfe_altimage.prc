@@ -37,7 +37,7 @@ PROC $sc_$cpu_cfe_altimage
 ;		then the cFE shall initiate a <PLATFORM_DEFINED> response.
 ;    cTIME2502	Upon a Processor Reset the cFE shall verify the Critical Data
 ;		Store used to store time values.
-;   cTIME2502.1	If the critical data store is not valid, all of the timei
+;   cTIME2502.1	If the critical data store is not valid, all of the time
 ;		elements shall be initialized in the same fashion as following a
 ;		power-on reset.
 ;
@@ -94,6 +94,9 @@ global ut_requirement[0 .. ut_req_array_size]
 ;**********************************************************************
 LOCAL i,j, numMaxErrors
 LOCAL cmdcnt, errcnt
+
+local ramDir = "RAM:0"
+local hostCPU = "$CPU"
 
 ;**********************************************************************
 ; Initialize the global requirement values to "U" for Untested.
@@ -164,7 +167,7 @@ write ";           contents of the volatile file system. This step is performed"
 write ";           here because Step 2.4 should cause a Processor Reset."
 write ";*********************************************************************"
 ;; ftp a test file to the volatile file system
-s ftp_file ("RAM:0","es_testfile_1","es_testfile_1","$CPU","P")
+s ftp_file (ramDir,"es_testfile_1","es_testfile_1",hostCPU,"P")
 wait 5
 
 write ";*********************************************************************"
@@ -237,7 +240,7 @@ write "    LeapSecs   = ", leapSecs
 write "    Clock Sig  = ", clkSig
 
 ;; Dump the ERLog to verify that
-s get_file_to_cvt("RAM:0","cfe_erlog.log","$sc_$cpu_cfe_erlog.log","$CPU")
+s get_file_to_cvt(ramDir,"cfe_erlog.log","$sc_$cpu_cfe_erlog.log",hostCPU)
 wait 10
 
 write ";*********************************************************************"
@@ -248,7 +251,7 @@ write ";           entry exists in the System Log indicating that the Volatile"
 write ";           file system check failed and that it was reformatted."
 write ";*********************************************************************"
 ;; ftp the file uploaded in Step 2.1 to see if it exists
-s ftp_file ("RAM:0","es_testfile_1","es_altimage_file1","$CPU","G")
+s ftp_file (ramDir,"es_testfile_1","es_altimage_file1",hostCPU,"G")
 wait 5
 
 local work_dir = %env("WORK")

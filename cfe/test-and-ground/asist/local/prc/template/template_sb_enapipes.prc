@@ -195,6 +195,7 @@ global ing_result
 LOCAL errorcounter, errorcounter2, cmdCtr, timeoutcounter, stream, expectedresult[1..4], numberOfInitialPipes
 
 local ramDir = "RAM:0"
+local hostCPU = "$CPU"
 
 write ";**********************************************************************"
 write "; Step 1.0:  Initialize the CPU for this test."
@@ -229,7 +230,7 @@ endif
 
 ;Determine the number of registered pipes before the test app is started.
 numberOfInitialPipes=0
-s get_file_to_cvt (ramDir, "cfe_sb_pipe.dat", "$sc_$cpu_cfe_sb_pipe_step-1_0.dat", "$CPU") 
+s get_file_to_cvt (ramDir, "cfe_sb_pipe.dat", "$sc_$cpu_cfe_sb_pipe_step-1_0.dat", hostCPU) 
 
 %liv (log_procedure) = FALSE
 
@@ -248,7 +249,7 @@ write ";  Step 1.2:  Start the test application."
 write ";**********************************************************************"
 ut_setupevents $SC, $CPU, CFE_SB, CFE_SB_MAX_PIPES_MET_EID, ERROR, 1
 ut_setupevents $SC, $CPU, TST_SB, TST_SB_INIT_INF_EID, INFO, 2
-s load_start_app ("TST_SB", "$CPU")
+s load_start_app ("TST_SB", hostCPU)
 
 ut_tlmwait $sc_$CPU_find_event[1].num_found_messages 1 60
 
@@ -286,11 +287,11 @@ write ";**********************************************************************"
 ;; CPU1 is the default
 stream = x'900'
 
-if ("$CPU" = "CPU2") then
-   stream = x'A00'
-elseif ("$CPU" = "CPU3") then
-   stream = x'B00'
-endif
+;;if ("$CPU" = "CPU2") then
+;;   stream = x'A00'
+;;elseif ("$CPU" = "CPU3") then
+;;   stream = x'B00'
+;;endif
 
 start $sc_$CPU_print_sb_pipes("rout_1-2-0", 5)
 
@@ -632,7 +633,7 @@ write ";**********************************************************************"
 ut_setupevents $SC, $CPU, CFE_SB, CFE_SB_SND_RTG_EID, DEBUG, 1
 
 local numFound=0
-s get_file_to_cvt (ramDir, "cfe_sb_pipe.dat", "$sc_$cpu_cfe_sb_pipe_step-5_0.dat", "$CPU") 
+s get_file_to_cvt (ramDir, "cfe_sb_pipe.dat", "$sc_$cpu_cfe_sb_pipe_step-5_0.dat", hostCPU) 
 wait 5
 
 if ($SC_$CPU_find_event[1].num_found_messages = 1) then
@@ -691,7 +692,7 @@ else
 endif
 
 ;; Get the file to the ground whether or not the event msg was rcv'd
-s ftp_file (ramDir,"cfe_sb_pipe.dat","$sc_$cpu_sb_pipe51.dat","$CPU","G")
+s ftp_file (ramDir,"cfe_sb_pipe.dat","$sc_$cpu_sb_pipe51.dat",hostCPU,"G")
 wait 10
                                                                                 
 ;; Check if the file above exists and pass the requirement if it does

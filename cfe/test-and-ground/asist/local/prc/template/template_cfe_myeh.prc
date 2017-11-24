@@ -79,6 +79,7 @@ global ut_requirement[0 .. ut_req_array_size]
 LOCAL i,j, numMaxErrors
 LOCAL cmdcnt, errcnt
 local ramDir = "RAM:0"
+local hostCPU = "$CPU"
 
 ;**********************************************************************
 ; Initialize the global requirement values to "U" for Untested.
@@ -162,11 +163,11 @@ write "; Step 3.0: Non-Core Application Exception Test."
 write ";*********************************************************************"
 write "; Step 3.1: Start the TST_ES application"
 write ";*********************************************************************"
-s load_start_app ("TST_ES", "$CPU")
+s load_start_app ("TST_ES", hostCPU)
 wait 5
 
 ;; Dump the App Info to verify TST_ES started
-s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log","$CPU")
+s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log",hostCPU)
 wait 5
 
 ;; Loop thru the table of apps again to verify that the TST_ES app is running
@@ -187,11 +188,11 @@ if (found_app = TRUE) then
   ;; CPU1 is the default
   stream = x'90D'
 
-  if ("$CPU" = "CPU2") then
-    stream = x'A0D'
-  elseif ("$CPU" = "CPU3") then
-    stream = x'B0D'
-  endif
+;;  if ("$CPU" = "CPU2") then
+;;    stream = x'A0D'
+;;  elseif ("$CPU" = "CPU3") then
+;;    stream = x'B0D'
+;;  endif
 
   /$SC_$CPU_TO_ADDPACKET STREAM=stream PKT_SIZE=X'ffff' PRIORITY=X'0' RELIABILITY=X'0' BUFLIMIT=x'4'
 

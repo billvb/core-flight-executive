@@ -74,13 +74,10 @@
 #include "cfe_psp.h"
 #include "cfe_error.h"
 #include "cfe_sb_events.h"
-#include "cfe_platform_cfg.h"
 
 /*
 **  External Declarations
 */
-
-extern cfe_sb_t         CFE_SB;
 
 uint32 CFE_SB_MemPoolDefSize[CFE_ES_MAX_MEMPOOL_BLOCK_SIZES] = 
 {
@@ -127,7 +124,7 @@ int32 CFE_SB_EarlyInit (void) {
 
     Stat = OS_MutSemCreate(&CFE_SB.SharedDataMutexId, "CFE_SB_DataMutex", 0);
     if(Stat != OS_SUCCESS){
-      CFE_ES_WriteToSysLog("SB shared data mutex creation failed! RC=0x%08x\n",Stat);
+      CFE_ES_WriteToSysLog("SB shared data mutex creation failed! RC=0x%08x\n",(unsigned int)Stat);
       return Stat;
     }/* end if */
     
@@ -193,8 +190,8 @@ int32  CFE_SB_InitBuffers(void) {
                                 CFE_ES_NO_MUTEX);
     
     if(Stat != CFE_SUCCESS){
-        CFE_ES_WriteToSysLog("PoolCreate failed for SB Buffers, gave adr 0x%x,size %d,stat=0x%x\n",
-                             CFE_SB.Mem.Partition,CFE_SB_BUF_MEMORY_BYTES,Stat);
+        CFE_ES_WriteToSysLog("PoolCreate failed for SB Buffers, gave adr 0x%lx,size %d,stat=0x%x\n",
+              (unsigned long)CFE_SB.Mem.Partition,CFE_SB_BUF_MEMORY_BYTES,(unsigned int)Stat);
         return Stat;
     }
     

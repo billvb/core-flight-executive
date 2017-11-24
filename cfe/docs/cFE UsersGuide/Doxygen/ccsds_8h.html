@@ -38,6 +38,8 @@
 <tr><td class="memItemLeft" nowrap align="right" valign="top">struct &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c_c_s_d_s___tlm_pkt__t.html">CCSDS_TlmPkt_t</a></td></tr>
 
 <tr><td colspan="2"><br><h2>Defines</h2></td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top">#define&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ccsds_8h.html#7d40e3c0e166428b169fab366a68f7ae">CFE_MAKE_BIG16</a>(n)&nbsp;&nbsp;&nbsp;( (((n) &lt;&lt; 8) &amp; 0xFF00) | (((n) &gt;&gt; 8) &amp; 0x00FF) )</td></tr>
+
 <tr><td class="memItemLeft" nowrap align="right" valign="top">#define&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ccsds_8h.html#538d72b0ef8d2fb268338bc9d69eaf1a">CCSDS_TIME_SIZE</a>&nbsp;&nbsp;&nbsp;6</td></tr>
 
 <tr><td class="memItemLeft" nowrap align="right" valign="top">#define&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ccsds_8h.html#0a633a99973b86d11f13f4314ccfc2dd">CCSDS_TLM</a>&nbsp;&nbsp;&nbsp;0</td></tr>
@@ -96,17 +98,17 @@
 
 <tr><td class="memItemLeft" nowrap align="right" valign="top">#define&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ccsds_8h.html#94ec18434d66e673370f423967a4ea73">CCSDS_WR_LEN</a>(phdr, value)</td></tr>
 
-<tr><td class="memItemLeft" nowrap align="right" valign="top">#define&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ccsds_8h.html#a27a0ed08e133af9083d9a16073525b5">CCSDS_RD_FC</a>(shdr)&nbsp;&nbsp;&nbsp;((shdr).Fc &amp; 0x7F)</td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top">#define&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ccsds_8h.html#a27a0ed08e133af9083d9a16073525b5">CCSDS_RD_FC</a>(shdr)&nbsp;&nbsp;&nbsp;CCSDS_RD_BITS((shdr).Command, 0x7F00, 8)</td></tr>
 
-<tr><td class="memItemLeft" nowrap align="right" valign="top">#define&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ccsds_8h.html#261df3618e9e34c54db0a99b6ee93357">CCSDS_WR_FC</a>(shdr, value)&nbsp;&nbsp;&nbsp;((shdr).Fc = ((shdr).Fc &amp; 0x80) | (value &amp; 0x7F))</td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top">#define&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ccsds_8h.html#261df3618e9e34c54db0a99b6ee93357">CCSDS_WR_FC</a>(shdr, value)&nbsp;&nbsp;&nbsp;CCSDS_WR_BITS((shdr).Command, 0x7F00, 8, value)</td></tr>
 
-<tr><td class="memItemLeft" nowrap align="right" valign="top">#define&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ccsds_8h.html#c1953e80795d4eb726e3390f24b6ac36">CCSDS_RD_CHECKSUM</a>(shdr)&nbsp;&nbsp;&nbsp;((shdr).Checksum)</td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top">#define&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ccsds_8h.html#c1953e80795d4eb726e3390f24b6ac36">CCSDS_RD_CHECKSUM</a>(shdr)&nbsp;&nbsp;&nbsp;CCSDS_RD_BITS((shdr).Command, 0x00FF, 0)</td></tr>
 
-<tr><td class="memItemLeft" nowrap align="right" valign="top">#define&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ccsds_8h.html#a870fd6a5fb411c4498ea4bf1270d910">CCSDS_WR_CHECKSUM</a>(shdr, val)&nbsp;&nbsp;&nbsp;((shdr).Checksum = val)</td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top">#define&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ccsds_8h.html#a870fd6a5fb411c4498ea4bf1270d910">CCSDS_WR_CHECKSUM</a>(shdr, val)&nbsp;&nbsp;&nbsp;CCSDS_WR_BITS((shdr).Command, 0x00FF, 0, val)</td></tr>
 
 <tr><td class="memItemLeft" nowrap align="right" valign="top">#define&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ccsds_8h.html#5ef1b59f37effb6078c69a0b0fa6983b">CCSDS_CLR_PRI_HDR</a>(phdr)</td></tr>
 
-<tr><td class="memItemLeft" nowrap align="right" valign="top">#define&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ccsds_8h.html#2242ab93c9196c469818b24003e268ab">CCSDS_CLR_CMDSEC_HDR</a>(shdr)</td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top">#define&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ccsds_8h.html#2242ab93c9196c469818b24003e268ab">CCSDS_CLR_CMDSEC_HDR</a>(shdr)&nbsp;&nbsp;&nbsp;( (shdr).Command = (CCSDS_INIT_CHECKSUM &lt;&lt; 0) | (CCSDS_INIT_FC &lt;&lt; 8) )</td></tr>
 
 <tr><td class="memItemLeft" nowrap align="right" valign="top">#define&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ccsds_8h.html#24650c0c52e7989794efee42b689b686">CCSDS_WR_SEC_HDR_SEC</a>(shdr, value)</td></tr>
 
@@ -149,18 +151,16 @@
           <td class="paramtype">shdr&nbsp;</td>
           <td class="paramname">          </td>
           <td>&nbsp;)&nbsp;</td>
-          <td width="100%"></td>
+          <td width="100%">&nbsp;&nbsp;&nbsp;( (shdr).Command = (CCSDS_INIT_CHECKSUM &lt;&lt; 0) | (CCSDS_INIT_FC &lt;&lt; 8) )</td>
         </tr>
       </table>
 </div>
 <div class="memdoc">
 
 <p>
-<b>Value:</b><div class="fragment"><pre class="fragment">( (shdr).Fc = <a class="code" href="ccsds_8h.html#2160313303df5086cf3e6f0dc076a9ae">CCSDS_INIT_FC</a>, \
-    (shdr).Checksum = <a class="code" href="ccsds_8h.html#91ee74a1b2e43d54c9f53ef368b9ab47">CCSDS_INIT_CHECKSUM</a> )
-</pre></div>
+
 <p>
-Definition at line <a class="el" href="ccsds_8h-source.html#l00274">274</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
+Definition at line <a class="el" href="ccsds_8h-source.html#l00283">283</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
 </div>
 </div><p>
 <a class="anchor" name="5ef1b59f37effb6078c69a0b0fa6983b"></a><!-- doxytag: member="ccsds.h::CCSDS_CLR_PRI_HDR" ref="5ef1b59f37effb6078c69a0b0fa6983b" args="(phdr)" -->
@@ -188,7 +188,7 @@ Definition at line <a class="el" href="ccsds_8h-source.html#l00274">274</a> of f
     (phdr).Length[1] = 0 )
 </pre></div>
 <p>
-Definition at line <a class="el" href="ccsds_8h-source.html#l00265">265</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
+Definition at line <a class="el" href="ccsds_8h-source.html#l00274">274</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
 </div>
 </div><p>
 <a class="anchor" name="5a2b428567bdb8c260511b236e9f07e7"></a><!-- doxytag: member="ccsds.h::CCSDS_CLR_TLMSEC_HDR" ref="5a2b428567bdb8c260511b236e9f07e7" args="(shdr)" -->
@@ -216,7 +216,7 @@ Definition at line <a class="el" href="ccsds_8h-source.html#l00265">265</a> of f
     (shdr).Time[5] = 0 )
 </pre></div>
 <p>
-Definition at line <a class="el" href="ccsds_8h-source.html#l00292">292</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
+Definition at line <a class="el" href="ccsds_8h-source.html#l00300">300</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
 </div>
 </div><p>
 <a class="anchor" name="039a04cf7c755355ab0f25b8f274ee4b"></a><!-- doxytag: member="ccsds.h::CCSDS_CMD" ref="039a04cf7c755355ab0f25b8f274ee4b" args="" -->
@@ -233,7 +233,7 @@ Definition at line <a class="el" href="ccsds_8h-source.html#l00292">292</a> of f
 <p>
 
 <p>
-Definition at line <a class="el" href="ccsds_8h-source.html#l00145">145</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
+Definition at line <a class="el" href="ccsds_8h-source.html#l00154">154</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
 </div>
 </div><p>
 <a class="anchor" name="eb956a00af5e544cb993da7c7f9e4bcb"></a><!-- doxytag: member="ccsds.h::CCSDS_HAS_SEC_HDR" ref="eb956a00af5e544cb993da7c7f9e4bcb" args="" -->
@@ -250,7 +250,7 @@ Definition at line <a class="el" href="ccsds_8h-source.html#l00145">145</a> of f
 <p>
 
 <p>
-Definition at line <a class="el" href="ccsds_8h-source.html#l00150">150</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
+Definition at line <a class="el" href="ccsds_8h-source.html#l00159">159</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
 </div>
 </div><p>
 <a class="anchor" name="ae6ed399296f15e48cccbae927e1cf85"></a><!-- doxytag: member="ccsds.h::CCSDS_INC_SEQ" ref="ae6ed399296f15e48cccbae927e1cf85" args="(phdr)" -->
@@ -272,7 +272,7 @@ Definition at line <a class="el" href="ccsds_8h-source.html#l00150">150</a> of f
 <p>
 
 <p>
-Definition at line <a class="el" href="ccsds_8h-source.html#l00359">359</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
+Definition at line <a class="el" href="ccsds_8h-source.html#l00367">367</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
 </div>
 </div><p>
 <a class="anchor" name="91ee74a1b2e43d54c9f53ef368b9ab47"></a><!-- doxytag: member="ccsds.h::CCSDS_INIT_CHECKSUM" ref="91ee74a1b2e43d54c9f53ef368b9ab47" args="" -->
@@ -289,7 +289,7 @@ Definition at line <a class="el" href="ccsds_8h-source.html#l00359">359</a> of f
 <p>
 
 <p>
-Definition at line <a class="el" href="ccsds_8h-source.html#l00167">167</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
+Definition at line <a class="el" href="ccsds_8h-source.html#l00176">176</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
 </div>
 </div><p>
 <a class="anchor" name="2160313303df5086cf3e6f0dc076a9ae"></a><!-- doxytag: member="ccsds.h::CCSDS_INIT_FC" ref="2160313303df5086cf3e6f0dc076a9ae" args="" -->
@@ -306,7 +306,7 @@ Definition at line <a class="el" href="ccsds_8h-source.html#l00167">167</a> of f
 <p>
 
 <p>
-Definition at line <a class="el" href="ccsds_8h-source.html#l00165">165</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
+Definition at line <a class="el" href="ccsds_8h-source.html#l00174">174</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
 </div>
 </div><p>
 <a class="anchor" name="4a9990a780f2f8b0ac5210045e5c8c29"></a><!-- doxytag: member="ccsds.h::CCSDS_INIT_SEQ" ref="4a9990a780f2f8b0ac5210045e5c8c29" args="" -->
@@ -323,7 +323,7 @@ Definition at line <a class="el" href="ccsds_8h-source.html#l00165">165</a> of f
 <p>
 
 <p>
-Definition at line <a class="el" href="ccsds_8h-source.html#l00161">161</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
+Definition at line <a class="el" href="ccsds_8h-source.html#l00170">170</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
 </div>
 </div><p>
 <a class="anchor" name="c47b6b0a4dd6b6fe2d925bbf71bcf8b6"></a><!-- doxytag: member="ccsds.h::CCSDS_INIT_SEQFLG" ref="c47b6b0a4dd6b6fe2d925bbf71bcf8b6" args="" -->
@@ -340,7 +340,7 @@ Definition at line <a class="el" href="ccsds_8h-source.html#l00161">161</a> of f
 <p>
 
 <p>
-Definition at line <a class="el" href="ccsds_8h-source.html#l00163">163</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
+Definition at line <a class="el" href="ccsds_8h-source.html#l00172">172</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
 </div>
 </div><p>
 <a class="anchor" name="65ab5f0fc17127af6fec243ba4e0845c"></a><!-- doxytag: member="ccsds.h::CCSDS_NO_SEC_HDR" ref="65ab5f0fc17127af6fec243ba4e0845c" args="" -->
@@ -357,7 +357,7 @@ Definition at line <a class="el" href="ccsds_8h-source.html#l00163">163</a> of f
 <p>
 
 <p>
-Definition at line <a class="el" href="ccsds_8h-source.html#l00148">148</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
+Definition at line <a class="el" href="ccsds_8h-source.html#l00157">157</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
 </div>
 </div><p>
 <a class="anchor" name="4342d7521791f8b295f17085d651c964"></a><!-- doxytag: member="ccsds.h::CCSDS_RD_APID" ref="4342d7521791f8b295f17085d651c964" args="(phdr)" -->
@@ -379,7 +379,7 @@ Definition at line <a class="el" href="ccsds_8h-source.html#l00148">148</a> of f
 <p>
 
 <p>
-Definition at line <a class="el" href="ccsds_8h-source.html#l00210">210</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
+Definition at line <a class="el" href="ccsds_8h-source.html#l00219">219</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
 </div>
 </div><p>
 <a class="anchor" name="31b960e050211f5373db7cb0ba8e40da"></a><!-- doxytag: member="ccsds.h::CCSDS_RD_BITS" ref="31b960e050211f5373db7cb0ba8e40da" args="(word, mask, shift)" -->
@@ -407,7 +407,7 @@ Definition at line <a class="el" href="ccsds_8h-source.html#l00210">210</a> of f
 <p>
 
 <p>
-Definition at line <a class="el" href="ccsds_8h-source.html#l00179">179</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
+Definition at line <a class="el" href="ccsds_8h-source.html#l00188">188</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
 </div>
 </div><p>
 <a class="anchor" name="c1953e80795d4eb726e3390f24b6ac36"></a><!-- doxytag: member="ccsds.h::CCSDS_RD_CHECKSUM" ref="c1953e80795d4eb726e3390f24b6ac36" args="(shdr)" -->
@@ -420,7 +420,7 @@ Definition at line <a class="el" href="ccsds_8h-source.html#l00179">179</a> of f
           <td class="paramtype">shdr&nbsp;</td>
           <td class="paramname">          </td>
           <td>&nbsp;)&nbsp;</td>
-          <td width="100%">&nbsp;&nbsp;&nbsp;((shdr).Checksum)</td>
+          <td width="100%">&nbsp;&nbsp;&nbsp;CCSDS_RD_BITS((shdr).Command, 0x00FF, 0)</td>
         </tr>
       </table>
 </div>
@@ -429,7 +429,7 @@ Definition at line <a class="el" href="ccsds_8h-source.html#l00179">179</a> of f
 <p>
 
 <p>
-Definition at line <a class="el" href="ccsds_8h-source.html#l00253">253</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
+Definition at line <a class="el" href="ccsds_8h-source.html#l00262">262</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
 </div>
 </div><p>
 <a class="anchor" name="a27a0ed08e133af9083d9a16073525b5"></a><!-- doxytag: member="ccsds.h::CCSDS_RD_FC" ref="a27a0ed08e133af9083d9a16073525b5" args="(shdr)" -->
@@ -442,7 +442,7 @@ Definition at line <a class="el" href="ccsds_8h-source.html#l00253">253</a> of f
           <td class="paramtype">shdr&nbsp;</td>
           <td class="paramname">          </td>
           <td>&nbsp;)&nbsp;</td>
-          <td width="100%">&nbsp;&nbsp;&nbsp;((shdr).Fc &amp; 0x7F)</td>
+          <td width="100%">&nbsp;&nbsp;&nbsp;CCSDS_RD_BITS((shdr).Command, 0x7F00, 8)</td>
         </tr>
       </table>
 </div>
@@ -451,7 +451,7 @@ Definition at line <a class="el" href="ccsds_8h-source.html#l00253">253</a> of f
 <p>
 
 <p>
-Definition at line <a class="el" href="ccsds_8h-source.html#l00248">248</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
+Definition at line <a class="el" href="ccsds_8h-source.html#l00257">257</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
 </div>
 </div><p>
 <a class="anchor" name="410fb70c08741e7edad1de6d3fceff21"></a><!-- doxytag: member="ccsds.h::CCSDS_RD_LEN" ref="410fb70c08741e7edad1de6d3fceff21" args="(phdr)" -->
@@ -473,7 +473,7 @@ Definition at line <a class="el" href="ccsds_8h-source.html#l00248">248</a> of f
 <p>
 
 <p>
-Definition at line <a class="el" href="ccsds_8h-source.html#l00242">242</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
+Definition at line <a class="el" href="ccsds_8h-source.html#l00251">251</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
 </div>
 </div><p>
 <a class="anchor" name="4bcebf42a78983a52a6813c4ebd0b439"></a><!-- doxytag: member="ccsds.h::CCSDS_RD_SEC_HDR_SEC" ref="4bcebf42a78983a52a6813c4ebd0b439" args="(shdr)" -->
@@ -499,7 +499,7 @@ Definition at line <a class="el" href="ccsds_8h-source.html#l00242">242</a> of f
                                              ((<a class="code" href="common__types_8h.html#9560e25c315bae45d1ed4e2ce49ce55a">uint32</a>)shdr.Time[3])
 </pre></div>
 <p>
-Definition at line <a class="el" href="ccsds_8h-source.html#l00284">284</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
+Definition at line <a class="el" href="ccsds_8h-source.html#l00292">292</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
 </div>
 </div><p>
 <a class="anchor" name="6543f9e86e6609d757c6ca8683a8aca6"></a><!-- doxytag: member="ccsds.h::CCSDS_RD_SEC_HDR_SUBSEC" ref="6543f9e86e6609d757c6ca8683a8aca6" args="(shdr)" -->
@@ -523,7 +523,7 @@ Definition at line <a class="el" href="ccsds_8h-source.html#l00284">284</a> of f
                                              ((<a class="code" href="common__types_8h.html#9560e25c315bae45d1ed4e2ce49ce55a">uint32</a>)shdr.Time[5])
 </pre></div>
 <p>
-Definition at line <a class="el" href="ccsds_8h-source.html#l00304">304</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
+Definition at line <a class="el" href="ccsds_8h-source.html#l00312">312</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
 </div>
 </div><p>
 <a class="anchor" name="ab1f13c533770a658839747053ed939b"></a><!-- doxytag: member="ccsds.h::CCSDS_RD_SEQ" ref="ab1f13c533770a658839747053ed939b" args="(phdr)" -->
@@ -545,7 +545,7 @@ Definition at line <a class="el" href="ccsds_8h-source.html#l00304">304</a> of f
 <p>
 
 <p>
-Definition at line <a class="el" href="ccsds_8h-source.html#l00231">231</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
+Definition at line <a class="el" href="ccsds_8h-source.html#l00240">240</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
 </div>
 </div><p>
 <a class="anchor" name="9cbee5f327dffa6b0ad73c583544ac8c"></a><!-- doxytag: member="ccsds.h::CCSDS_RD_SEQFLG" ref="9cbee5f327dffa6b0ad73c583544ac8c" args="(phdr)" -->
@@ -567,7 +567,7 @@ Definition at line <a class="el" href="ccsds_8h-source.html#l00231">231</a> of f
 <p>
 
 <p>
-Definition at line <a class="el" href="ccsds_8h-source.html#l00237">237</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
+Definition at line <a class="el" href="ccsds_8h-source.html#l00246">246</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
 </div>
 </div><p>
 <a class="anchor" name="c3af2999da0fef78307d0bc579a00b03"></a><!-- doxytag: member="ccsds.h::CCSDS_RD_SHDR" ref="c3af2999da0fef78307d0bc579a00b03" args="(phdr)" -->
@@ -589,7 +589,7 @@ Definition at line <a class="el" href="ccsds_8h-source.html#l00237">237</a> of f
 <p>
 
 <p>
-Definition at line <a class="el" href="ccsds_8h-source.html#l00216">216</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
+Definition at line <a class="el" href="ccsds_8h-source.html#l00225">225</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
 </div>
 </div><p>
 <a class="anchor" name="1fdb761634d8b7ee3f071064b707018d"></a><!-- doxytag: member="ccsds.h::CCSDS_RD_SID" ref="1fdb761634d8b7ee3f071064b707018d" args="(phdr)" -->
@@ -611,7 +611,7 @@ Definition at line <a class="el" href="ccsds_8h-source.html#l00216">216</a> of f
 <p>
 
 <p>
-Definition at line <a class="el" href="ccsds_8h-source.html#l00204">204</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
+Definition at line <a class="el" href="ccsds_8h-source.html#l00213">213</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
 </div>
 </div><p>
 <a class="anchor" name="372232e613df79393389cb7e2643a580"></a><!-- doxytag: member="ccsds.h::CCSDS_RD_TYPE" ref="372232e613df79393389cb7e2643a580" args="(phdr)" -->
@@ -633,7 +633,7 @@ Definition at line <a class="el" href="ccsds_8h-source.html#l00204">204</a> of f
 <p>
 
 <p>
-Definition at line <a class="el" href="ccsds_8h-source.html#l00221">221</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
+Definition at line <a class="el" href="ccsds_8h-source.html#l00230">230</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
 </div>
 </div><p>
 <a class="anchor" name="f808f734c02d14094223a960f144c083"></a><!-- doxytag: member="ccsds.h::CCSDS_RD_VERS" ref="f808f734c02d14094223a960f144c083" args="(phdr)" -->
@@ -655,7 +655,7 @@ Definition at line <a class="el" href="ccsds_8h-source.html#l00221">221</a> of f
 <p>
 
 <p>
-Definition at line <a class="el" href="ccsds_8h-source.html#l00226">226</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
+Definition at line <a class="el" href="ccsds_8h-source.html#l00235">235</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
 </div>
 </div><p>
 <a class="anchor" name="b5d874415259704bca13dddee809c72f"></a><!-- doxytag: member="ccsds.h::CCSDS_SID_APID" ref="b5d874415259704bca13dddee809c72f" args="(sid)" -->
@@ -677,7 +677,7 @@ Definition at line <a class="el" href="ccsds_8h-source.html#l00226">226</a> of f
 <p>
 
 <p>
-Definition at line <a class="el" href="ccsds_8h-source.html#l00340">340</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
+Definition at line <a class="el" href="ccsds_8h-source.html#l00348">348</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
 </div>
 </div><p>
 <a class="anchor" name="855c9c5c09bc2cf1bfd7ab590ec21479"></a><!-- doxytag: member="ccsds.h::CCSDS_SID_SHDR" ref="855c9c5c09bc2cf1bfd7ab590ec21479" args="(sid)" -->
@@ -699,7 +699,7 @@ Definition at line <a class="el" href="ccsds_8h-source.html#l00340">340</a> of f
 <p>
 
 <p>
-Definition at line <a class="el" href="ccsds_8h-source.html#l00343">343</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
+Definition at line <a class="el" href="ccsds_8h-source.html#l00351">351</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
 </div>
 </div><p>
 <a class="anchor" name="6abb9bf7623a058dda50467607025287"></a><!-- doxytag: member="ccsds.h::CCSDS_SID_TYPE" ref="6abb9bf7623a058dda50467607025287" args="(sid)" -->
@@ -721,7 +721,7 @@ Definition at line <a class="el" href="ccsds_8h-source.html#l00343">343</a> of f
 <p>
 
 <p>
-Definition at line <a class="el" href="ccsds_8h-source.html#l00346">346</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
+Definition at line <a class="el" href="ccsds_8h-source.html#l00354">354</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
 </div>
 </div><p>
 <a class="anchor" name="f61e715423e179cc289a9fb6f4036343"></a><!-- doxytag: member="ccsds.h::CCSDS_SID_VERS" ref="f61e715423e179cc289a9fb6f4036343" args="(sid)" -->
@@ -743,7 +743,7 @@ Definition at line <a class="el" href="ccsds_8h-source.html#l00346">346</a> of f
 <p>
 
 <p>
-Definition at line <a class="el" href="ccsds_8h-source.html#l00349">349</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
+Definition at line <a class="el" href="ccsds_8h-source.html#l00357">357</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
 </div>
 </div><p>
 <a class="anchor" name="538d72b0ef8d2fb268338bc9d69eaf1a"></a><!-- doxytag: member="ccsds.h::CCSDS_TIME_SIZE" ref="538d72b0ef8d2fb268338bc9d69eaf1a" args="" -->
@@ -760,7 +760,7 @@ Definition at line <a class="el" href="ccsds_8h-source.html#l00349">349</a> of f
 <p>
 
 <p>
-Definition at line <a class="el" href="ccsds_8h-source.html#l00051">51</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
+Definition at line <a class="el" href="ccsds_8h-source.html#l00063">63</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
 </div>
 </div><p>
 <a class="anchor" name="0a633a99973b86d11f13f4314ccfc2dd"></a><!-- doxytag: member="ccsds.h::CCSDS_TLM" ref="0a633a99973b86d11f13f4314ccfc2dd" args="" -->
@@ -777,7 +777,7 @@ Definition at line <a class="el" href="ccsds_8h-source.html#l00051">51</a> of fi
 <p>
 
 <p>
-Definition at line <a class="el" href="ccsds_8h-source.html#l00143">143</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
+Definition at line <a class="el" href="ccsds_8h-source.html#l00152">152</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
 </div>
 </div><p>
 <a class="anchor" name="94ea336c223d6e573ac37c76729519b5"></a><!-- doxytag: member="ccsds.h::CCSDS_WR_APID" ref="94ea336c223d6e573ac37c76729519b5" args="(phdr, value)" -->
@@ -804,7 +804,7 @@ Definition at line <a class="el" href="ccsds_8h-source.html#l00143">143</a> of f
                                    (((phdr).StreamId[1]  = ((value)) &amp; 0xff)) )
 </pre></div>
 <p>
-Definition at line <a class="el" href="ccsds_8h-source.html#l00212">212</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
+Definition at line <a class="el" href="ccsds_8h-source.html#l00221">221</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
 </div>
 </div><p>
 <a class="anchor" name="f18809d724d7d04108351f8bdb5228f6"></a><!-- doxytag: member="ccsds.h::CCSDS_WR_BITS" ref="f18809d724d7d04108351f8bdb5228f6" args="(word, mask, shift, value)" -->
@@ -835,7 +835,7 @@ Definition at line <a class="el" href="ccsds_8h-source.html#l00212">212</a> of f
 <p>
 
 <p>
-Definition at line <a class="el" href="ccsds_8h-source.html#l00184">184</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
+Definition at line <a class="el" href="ccsds_8h-source.html#l00193">193</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
 </div>
 </div><p>
 <a class="anchor" name="a870fd6a5fb411c4498ea4bf1270d910"></a><!-- doxytag: member="ccsds.h::CCSDS_WR_CHECKSUM" ref="a870fd6a5fb411c4498ea4bf1270d910" args="(shdr, val)" -->
@@ -851,7 +851,7 @@ Definition at line <a class="el" href="ccsds_8h-source.html#l00184">184</a> of f
           <td class="paramtype">val&nbsp;</td>
           <td class="paramname">          </td>
           <td>&nbsp;)&nbsp;</td>
-          <td width="100%">&nbsp;&nbsp;&nbsp;((shdr).Checksum = val)</td>
+          <td width="100%">&nbsp;&nbsp;&nbsp;CCSDS_WR_BITS((shdr).Command, 0x00FF, 0, val)</td>
         </tr>
       </table>
 </div>
@@ -860,7 +860,7 @@ Definition at line <a class="el" href="ccsds_8h-source.html#l00184">184</a> of f
 <p>
 
 <p>
-Definition at line <a class="el" href="ccsds_8h-source.html#l00255">255</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
+Definition at line <a class="el" href="ccsds_8h-source.html#l00264">264</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
 </div>
 </div><p>
 <a class="anchor" name="261df3618e9e34c54db0a99b6ee93357"></a><!-- doxytag: member="ccsds.h::CCSDS_WR_FC" ref="261df3618e9e34c54db0a99b6ee93357" args="(shdr, value)" -->
@@ -876,7 +876,7 @@ Definition at line <a class="el" href="ccsds_8h-source.html#l00255">255</a> of f
           <td class="paramtype">value&nbsp;</td>
           <td class="paramname">          </td>
           <td>&nbsp;)&nbsp;</td>
-          <td width="100%">&nbsp;&nbsp;&nbsp;((shdr).Fc = ((shdr).Fc &amp; 0x80) | (value &amp; 0x7F))</td>
+          <td width="100%">&nbsp;&nbsp;&nbsp;CCSDS_WR_BITS((shdr).Command, 0x7F00, 8, value)</td>
         </tr>
       </table>
 </div>
@@ -885,7 +885,7 @@ Definition at line <a class="el" href="ccsds_8h-source.html#l00255">255</a> of f
 <p>
 
 <p>
-Definition at line <a class="el" href="ccsds_8h-source.html#l00250">250</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
+Definition at line <a class="el" href="ccsds_8h-source.html#l00259">259</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
 </div>
 </div><p>
 <a class="anchor" name="94ec18434d66e673370f423967a4ea73"></a><!-- doxytag: member="ccsds.h::CCSDS_WR_LEN" ref="94ec18434d66e673370f423967a4ea73" args="(phdr, value)" -->
@@ -912,7 +912,7 @@ Definition at line <a class="el" href="ccsds_8h-source.html#l00250">250</a> of f
                                    (((phdr).Length[1] = ((value) - 7) &amp; 0xff)) )
 </pre></div>
 <p>
-Definition at line <a class="el" href="ccsds_8h-source.html#l00244">244</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
+Definition at line <a class="el" href="ccsds_8h-source.html#l00253">253</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
 </div>
 </div><p>
 <a class="anchor" name="24650c0c52e7989794efee42b689b686"></a><!-- doxytag: member="ccsds.h::CCSDS_WR_SEC_HDR_SEC" ref="24650c0c52e7989794efee42b689b686" args="(shdr, value)" -->
@@ -941,7 +941,7 @@ Definition at line <a class="el" href="ccsds_8h-source.html#l00244">244</a> of f
                                              shdr.Time[3] = ((value)     &amp; 0xFF)
 </pre></div>
 <p>
-Definition at line <a class="el" href="ccsds_8h-source.html#l00279">279</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
+Definition at line <a class="el" href="ccsds_8h-source.html#l00287">287</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
 </div>
 </div><p>
 <a class="anchor" name="044ae324638c9ddc25ba1f59c9de23fc"></a><!-- doxytag: member="ccsds.h::CCSDS_WR_SEC_HDR_SUBSEC" ref="044ae324638c9ddc25ba1f59c9de23fc" args="(shdr, value)" -->
@@ -968,7 +968,7 @@ Definition at line <a class="el" href="ccsds_8h-source.html#l00279">279</a> of f
                                              shdr.Time[5] = ((value)     &amp; 0xFF)
 </pre></div>
 <p>
-Definition at line <a class="el" href="ccsds_8h-source.html#l00301">301</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
+Definition at line <a class="el" href="ccsds_8h-source.html#l00309">309</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
 </div>
 </div><p>
 <a class="anchor" name="5843082f40ceb361f8ad62bed77c5348"></a><!-- doxytag: member="ccsds.h::CCSDS_WR_SEQ" ref="5843082f40ceb361f8ad62bed77c5348" args="(phdr, value)" -->
@@ -995,7 +995,7 @@ Definition at line <a class="el" href="ccsds_8h-source.html#l00301">301</a> of f
                                    (((phdr).Sequence[1]  = ((value)) &amp; 0xff)) )
 </pre></div>
 <p>
-Definition at line <a class="el" href="ccsds_8h-source.html#l00233">233</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
+Definition at line <a class="el" href="ccsds_8h-source.html#l00242">242</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
 </div>
 </div><p>
 <a class="anchor" name="3d5ce56271bbcd81f6e937a2112f3a86"></a><!-- doxytag: member="ccsds.h::CCSDS_WR_SEQFLG" ref="3d5ce56271bbcd81f6e937a2112f3a86" args="(phdr, value)" -->
@@ -1020,7 +1020,7 @@ Definition at line <a class="el" href="ccsds_8h-source.html#l00233">233</a> of f
 <p>
 
 <p>
-Definition at line <a class="el" href="ccsds_8h-source.html#l00239">239</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
+Definition at line <a class="el" href="ccsds_8h-source.html#l00248">248</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
 </div>
 </div><p>
 <a class="anchor" name="9370de4630fb08ce56c697556c2a225c"></a><!-- doxytag: member="ccsds.h::CCSDS_WR_SHDR" ref="9370de4630fb08ce56c697556c2a225c" args="(phdr, value)" -->
@@ -1045,7 +1045,7 @@ Definition at line <a class="el" href="ccsds_8h-source.html#l00239">239</a> of f
 <p>
 
 <p>
-Definition at line <a class="el" href="ccsds_8h-source.html#l00218">218</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
+Definition at line <a class="el" href="ccsds_8h-source.html#l00227">227</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
 </div>
 </div><p>
 <a class="anchor" name="f074cabfda43b65af0d6f837ec906aa2"></a><!-- doxytag: member="ccsds.h::CCSDS_WR_SID" ref="f074cabfda43b65af0d6f837ec906aa2" args="(phdr, value)" -->
@@ -1072,7 +1072,7 @@ Definition at line <a class="el" href="ccsds_8h-source.html#l00218">218</a> of f
                                      ((phdr).StreamId[1] = (value &amp; 0xff) ) )
 </pre></div>
 <p>
-Definition at line <a class="el" href="ccsds_8h-source.html#l00206">206</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
+Definition at line <a class="el" href="ccsds_8h-source.html#l00215">215</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
 </div>
 </div><p>
 <a class="anchor" name="fbd824feec4f25630edccfa33f73db96"></a><!-- doxytag: member="ccsds.h::CCSDS_WR_TYPE" ref="fbd824feec4f25630edccfa33f73db96" args="(phdr, value)" -->
@@ -1097,7 +1097,7 @@ Definition at line <a class="el" href="ccsds_8h-source.html#l00206">206</a> of f
 <p>
 
 <p>
-Definition at line <a class="el" href="ccsds_8h-source.html#l00223">223</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
+Definition at line <a class="el" href="ccsds_8h-source.html#l00232">232</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
 </div>
 </div><p>
 <a class="anchor" name="061c1dc503e7b649bdbb036c4eddce4a"></a><!-- doxytag: member="ccsds.h::CCSDS_WR_VERS" ref="061c1dc503e7b649bdbb036c4eddce4a" args="(phdr, value)" -->
@@ -1122,7 +1122,29 @@ Definition at line <a class="el" href="ccsds_8h-source.html#l00223">223</a> of f
 <p>
 
 <p>
-Definition at line <a class="el" href="ccsds_8h-source.html#l00228">228</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
+Definition at line <a class="el" href="ccsds_8h-source.html#l00237">237</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
+</div>
+</div><p>
+<a class="anchor" name="7d40e3c0e166428b169fab366a68f7ae"></a><!-- doxytag: member="ccsds.h::CFE_MAKE_BIG16" ref="7d40e3c0e166428b169fab366a68f7ae" args="(n)" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define CFE_MAKE_BIG16          </td>
+          <td>(</td>
+          <td class="paramtype">n&nbsp;</td>
+          <td class="paramname">          </td>
+          <td>&nbsp;)&nbsp;</td>
+          <td width="100%">&nbsp;&nbsp;&nbsp;( (((n) &lt;&lt; 8) &amp; 0xFF00) | (((n) &gt;&gt; 8) &amp; 0x00FF) )</td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+
+<p>
+Definition at line <a class="el" href="ccsds_8h-source.html#l00056">56</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
 </div>
 </div><p>
 <a class="anchor" name="c0c77bcfa358c0745da6e3ae93e141f0"></a><!-- doxytag: member="ccsds.h::NUM_CCSDS_APIDS" ref="c0c77bcfa358c0745da6e3ae93e141f0" args="" -->
@@ -1139,7 +1161,7 @@ Definition at line <a class="el" href="ccsds_8h-source.html#l00228">228</a> of f
 <p>
 
 <p>
-Definition at line <a class="el" href="ccsds_8h-source.html#l00152">152</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
+Definition at line <a class="el" href="ccsds_8h-source.html#l00161">161</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
 </div>
 </div><p>
 <a class="anchor" name="4ff3fdf6aeff9d028c8a696e8b8df447"></a><!-- doxytag: member="ccsds.h::NUM_CCSDS_PKT_TYPES" ref="4ff3fdf6aeff9d028c8a696e8b8df447" args="" -->
@@ -1156,7 +1178,7 @@ Definition at line <a class="el" href="ccsds_8h-source.html#l00152">152</a> of f
 <p>
 
 <p>
-Definition at line <a class="el" href="ccsds_8h-source.html#l00153">153</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
+Definition at line <a class="el" href="ccsds_8h-source.html#l00162">162</a> of file <a class="el" href="ccsds_8h-source.html">ccsds.h</a>.
 </div>
 </div><p>
 <hr><h2>Function Documentation</h2>
@@ -1261,7 +1283,7 @@ Definition at line <a class="el" href="ccsds_8h-source.html#l00153">153</a> of f
 
 </div>
 </div><p>
-<hr size="1"><address style="align: right;"><small>Generated on Tue Sep 30 17:11:57 2014 for Core Flight Executive on  by&nbsp;
+<hr size="1"><address style="align: right;"><small>Generated on Mon Jun 29 12:31:31 2015 for Core Flight Executive on  by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img src="doxygen.png" alt="doxygen" align="middle" border="0"></a> 1.4.7 </small></address>
 </body>

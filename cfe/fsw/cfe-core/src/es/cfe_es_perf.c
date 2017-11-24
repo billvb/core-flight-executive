@@ -71,6 +71,7 @@
 */
 
 #include "osapi.h"
+#include "private/cfe_private.h"
 #include "cfe_es_perf.h"
 #include "cfe_es_log.h"
 #include "cfe_es_global.h"
@@ -78,15 +79,9 @@
 #include "cfe_es_events.h"
 #include "cfe_es_task.h"
 #include "cfe_fs.h"
-#include "cfe.h"
 #include "cfe_psp.h"
 #include <string.h>
 
-
-/*
-** Executive Services (ES) task global data.
-*/
-extern CFE_ES_TaskData_t CFE_ES_TaskData;
 
 /*
 ** Pointer to performance log in the reset area
@@ -106,6 +101,16 @@ CFE_ES_PerfLogDump_t    CFE_ES_PerfLogDumpStatus;
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 void CFE_ES_SetupPerfVariables(uint32 ResetType)
 {
+    /* Create a constant union -
+     * The "Endian" field will have "0x01" on a big endian processor
+     * and will have value "0x00" on a little endian processor.
+     */
+    const union
+    {
+        uint16 Word;
+        uint8  Endian;
+    } EndianCheck = { .Word = 0x0100 };
+
 
     uint32      i;
 
@@ -114,7 +119,7 @@ void CFE_ES_SetupPerfVariables(uint32 ResetType)
     */
     Perf = (CFE_ES_PerfData_t *)&(CFE_ES_ResetDataPtr->Perf);
 
-    if ( ResetType == CFE_ES_PROCESSOR_RESET )
+    if ( ResetType == CFE_PSP_RST_TYPE_PROCESSOR )
     {
        /*
        ** On a processor reset, just IDLE the data
@@ -126,11 +131,7 @@ void CFE_ES_SetupPerfVariables(uint32 ResetType)
     {
 
        Perf->MetaData.Version = 1;
-#ifdef SOFTWARE_BIG_BIT_ORDER
-       Perf->MetaData.Endian = 1;
-#else
-       Perf->MetaData.Endian = 0;
-#endif
+       Perf->MetaData.Endian = EndianCheck.Endian;
        Perf->MetaData.TimerTicksPerSecond = CFE_PSP_GetTimerTicksPerSecond();
        Perf->MetaData.TimerLow32Rollover = CFE_PSP_GetTimerLow32Rollover();
 
@@ -165,7 +166,7 @@ void CFE_ES_SetupPerfVariables(uint32 ResetType)
 void CFE_ES_PerfStartDataCmd(CFE_SB_MsgPtr_t msg){
 
    uint16 ExpectedLength = sizeof(CFE_ES_PerfStartCmd_t);
-   CFE_ES_PerfStartCmd_t *CmdPtr = (CFE_ES_PerfStartCmd_t *)msg;
+   CFE_ES_PerfStartCmd_Payload_t *CmdPtr = (CFE_ES_PerfStartCmd_Payload_t *)&msg->Byte[CFE_SB_CMD_HDR_SIZE];
 
    /*
     ** Verify command packet length.
@@ -176,6 +177,7 @@ void CFE_ES_PerfStartDataCmd(CFE_SB_MsgPtr_t msg){
       if(CFE_ES_PerfLogDumpStatus.DataToWrite == 0)
       {
           /* Make sure Trigger Mode is valid */
+          /* cppcheck-suppress unsignedPositive */
           if ((CmdPtr->TriggerMode >= CFE_ES_PERF_TRIGGER_START) && (CmdPtr->TriggerMode < CFE_ES_PERF_MAX_MODES))
           {
 
@@ -191,14 +193,14 @@ void CFE_ES_PerfStartDataCmd(CFE_SB_MsgPtr_t msg){
 
              CFE_EVS_SendEvent(CFE_ES_PERF_STARTCMD_EID, CFE_EVS_DEBUG,
                                  "Start collecting performance data cmd received, trigger mode = %d", 
-                                 CmdPtr->TriggerMode);
+                              (int)CmdPtr->TriggerMode);
           }
           else
           {
              CFE_ES_TaskData.ErrCounter++;
              CFE_EVS_SendEvent(CFE_ES_PERF_STARTCMD_TRIG_ERR_EID, CFE_EVS_ERROR,
                   "Cannot start collecting performance data, trigger mode (%d) out of range (%d to %d)", 
-                  CmdPtr->TriggerMode, CFE_ES_PERF_TRIGGER_START, CFE_ES_PERF_TRIGGER_END);
+               (int)CmdPtr->TriggerMode, (int)CFE_ES_PERF_TRIGGER_START, (int)CFE_ES_PERF_TRIGGER_END);
           }/* end if */
        }
        else
@@ -219,7 +221,7 @@ void CFE_ES_PerfStartDataCmd(CFE_SB_MsgPtr_t msg){
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 void CFE_ES_PerfStopDataCmd(CFE_SB_MsgPtr_t Msg){
 
-    CFE_ES_PerfStopCmd_t  *CmdPtr = (CFE_ES_PerfStopCmd_t *)Msg;
+    CFE_ES_PerfStopCmd_Payload_t  *CmdPtr = (CFE_ES_PerfStopCmd_Payload_t *)&Msg->Byte[CFE_SB_CMD_HDR_SIZE];
     uint16 ExpectedLength = sizeof(CFE_ES_PerfStopCmd_t);
     int32 Stat;
     
@@ -234,19 +236,10 @@ void CFE_ES_PerfStopDataCmd(CFE_SB_MsgPtr_t Msg){
       {
           Perf->MetaData.State = CFE_ES_PERF_IDLE;
 
-          if(CmdPtr->DataFileName[0]=='\0')
-          {
-              strncpy(&CFE_ES_PerfLogDumpStatus.DataFileName[0],
-                      CFE_ES_DEFAULT_PERF_DUMP_FILENAME,OS_MAX_PATH_LEN);
-          }
-          else
-          {
-              CmdPtr->DataFileName[OS_MAX_PATH_LEN - 1] = '\0';
-              strncpy(&CFE_ES_PerfLogDumpStatus.DataFileName[0], &CmdPtr->DataFileName[0],OS_MAX_PATH_LEN);
-          }/* end if */
-          
-          
-          
+          /* Copy out the string, using default if unspecified */
+          CFE_SB_MessageStringGet(CFE_ES_PerfLogDumpStatus.DataFileName, CmdPtr->DataFileName,
+                  CFE_ES_DEFAULT_PERF_DUMP_FILENAME, OS_MAX_PATH_LEN, sizeof(CmdPtr->DataFileName));
+
           /* Create the file to dump to */
           CFE_ES_PerfLogDumpStatus.DataFileDescriptor = OS_creat(&CFE_ES_PerfLogDumpStatus.DataFileName[0], OS_WRITE_ONLY);
           
@@ -256,7 +249,7 @@ void CFE_ES_PerfStopDataCmd(CFE_SB_MsgPtr_t Msg){
               CFE_ES_TaskData.ErrCounter++;
               CFE_EVS_SendEvent(CFE_ES_PERF_LOG_ERR_EID,CFE_EVS_ERROR,
                                 "Error creating file %s, RC = 0x%08X",
-                                &CFE_ES_PerfLogDumpStatus.DataFileName[0], CFE_ES_PerfLogDumpStatus.DataFileDescriptor);
+                             &CFE_ES_PerfLogDumpStatus.DataFileName[0], (unsigned int)CFE_ES_PerfLogDumpStatus.DataFileDescriptor);
           }
           else
           {
@@ -276,8 +269,8 @@ void CFE_ES_PerfStopDataCmd(CFE_SB_MsgPtr_t Msg){
                   CFE_ES_TaskData.CmdCounter++;
                   CFE_EVS_SendEvent(CFE_ES_PERF_STOPCMD_EID,CFE_EVS_DEBUG,
                                     "Perf Stop Cmd Rcvd,%s will write %d entries.%dmS dly every %d entries",
-                                    CFE_ES_PERF_CHILD_NAME,Perf->MetaData.DataCount,
-                                    CFE_ES_PERF_CHILD_MS_DELAY,CFE_ES_PERF_ENTRIES_BTWN_DLYS);
+                                 CFE_ES_PERF_CHILD_NAME,(int)Perf->MetaData.DataCount,
+                                 (int)CFE_ES_PERF_CHILD_MS_DELAY,(int)CFE_ES_PERF_ENTRIES_BTWN_DLYS);
               }
               else
               {
@@ -285,7 +278,7 @@ void CFE_ES_PerfStopDataCmd(CFE_SB_MsgPtr_t Msg){
                   OS_close( CFE_ES_PerfLogDumpStatus.DataFileDescriptor);
                   CFE_ES_TaskData.ErrCounter++;
                   CFE_EVS_SendEvent(CFE_ES_PERF_STOPCMD_ERR1_EID, CFE_EVS_ERROR,
-                                    "Stop performance data cmd,Error creating child task RC=0x%08X",Stat);
+                                 "Stop performance data cmd,Error creating child task RC=0x%08X",(unsigned int)Stat);
               }/* end if */
 
           }/* end if fd < 0 */
@@ -325,9 +318,7 @@ void CFE_ES_PerfLogDump(void){
 
 
     /* Zero cFE header, then fill in fields */
-    CFE_PSP_MemSet(&FileHdr, 0, sizeof(CFE_FS_Header_t));
-    strcpy(&FileHdr.Description[0], CFE_ES_PERF_LOG_DESC);
-    FileHdr.SubType = CFE_FS_ES_PERFDATA_SUBTYPE;
+    CFE_FS_InitHeader(&FileHdr, CFE_ES_PERF_LOG_DESC, CFE_FS_ES_PERFDATA_SUBTYPE);
 
     /* write the cFE header to the file */
     WriteStat = CFE_FS_WriteHeader( CFE_ES_PerfLogDumpStatus.DataFileDescriptor, &FileHdr);
@@ -338,17 +329,21 @@ void CFE_ES_PerfLogDump(void){
         
         OS_close(CFE_ES_PerfLogDumpStatus.DataFileDescriptor);
         CFE_ES_ExitChildTask();
+        /* normally ExitChildTask() does not return, but it DOES under UT */
+        return;
     }/* end if */
     FileSize = WriteStat;
 
     /* write the performance metadata to the file */
-    WriteStat = OS_write(CFE_ES_PerfLogDumpStatus.DataFileDescriptor,(uint8 *)&Perf->MetaData,sizeof(CFE_ES_PerfMetaData_t));
+    WriteStat = OS_write(CFE_ES_PerfLogDumpStatus.DataFileDescriptor,&Perf->MetaData,sizeof(CFE_ES_PerfMetaData_t));
     if(WriteStat != sizeof(CFE_ES_PerfMetaData_t))
     {
         CFE_ES_FileWriteByteCntErr(&CFE_ES_PerfLogDumpStatus.DataFileName[0],
                                    sizeof(CFE_ES_PerfMetaData_t),WriteStat);
         OS_close(CFE_ES_PerfLogDumpStatus.DataFileDescriptor);
         CFE_ES_ExitChildTask();
+        /* normally ExitChildTask() does not return, but it DOES under UT */
+        return;
     }/* end if */
     FileSize += WriteStat;
 
@@ -365,6 +360,8 @@ void CFE_ES_PerfLogDump(void){
         /* Reset the DataToWrite variable, so a new file can be written */
         CFE_ES_PerfLogDumpStatus.DataToWrite = 0;
         CFE_ES_ExitChildTask();
+        /* normally ExitChildTask() does not return, but it DOES under UT */
+        return;
       }/* end if */
       FileSize += WriteStat;
       CFE_ES_PerfLogDumpStatus.DataToWrite--;
@@ -378,8 +375,8 @@ void CFE_ES_PerfLogDump(void){
 
     CFE_EVS_SendEvent(CFE_ES_PERF_DATAWRITTEN_EID,CFE_EVS_DEBUG,
                       "%s written:Size=%d,EntryCount=%d",
-                       &CFE_ES_PerfLogDumpStatus.DataFileName[0],FileSize,
-                       Perf->MetaData.DataCount);
+                       &CFE_ES_PerfLogDumpStatus.DataFileName[0],(int)FileSize,
+                       (int)Perf->MetaData.DataCount);
 
     CFE_ES_ExitChildTask();
 
@@ -393,7 +390,8 @@ void CFE_ES_PerfLogDump(void){
 void CFE_ES_PerfSetFilterMaskCmd(CFE_SB_MsgPtr_t msg){
 
     uint16 ExpectedLength = sizeof(CFE_ES_PerfSetFilterMaskCmd_t);
-    CFE_ES_PerfSetFilterMaskCmd_t *cmd = (CFE_ES_PerfSetFilterMaskCmd_t *) msg;
+    CFE_ES_PerfSetFilterMaskCmd_Payload_t *cmd =
+            (CFE_ES_PerfSetFilterMaskCmd_Payload_t *) &msg->Byte[CFE_SB_CMD_HDR_SIZE];
 
     /*
     ** Verify command packet length.
@@ -407,13 +405,13 @@ void CFE_ES_PerfSetFilterMaskCmd(CFE_SB_MsgPtr_t msg){
 
             CFE_EVS_SendEvent(CFE_ES_PERF_FILTMSKCMD_EID, CFE_EVS_DEBUG,
                         "Set Performance Filter Mask Cmd rcvd, num %d, val 0x%x",
-                        cmd->FilterMaskNum,cmd->FilterMaskNum);
+            (int)cmd->FilterMaskNum,(unsigned int)cmd->FilterMaskNum);
 
             CFE_ES_TaskData.CmdCounter++;
          }else{
             CFE_EVS_SendEvent(CFE_ES_PERF_FILTMSKERR_EID, CFE_EVS_ERROR,
                       "Performance Filter Mask Cmd Error,Index(%d)out of range(%d)",
-                      cmd->FilterMaskNum,CFE_ES_PERF_32BIT_WORDS_IN_MASK);
+            (int)cmd->FilterMaskNum,(int)CFE_ES_PERF_32BIT_WORDS_IN_MASK);
 
             CFE_ES_TaskData.ErrCounter++;
 
@@ -429,7 +427,7 @@ void CFE_ES_PerfSetFilterMaskCmd(CFE_SB_MsgPtr_t msg){
 void CFE_ES_PerfSetTriggerMaskCmd(CFE_SB_MsgPtr_t msg){
 
    uint16 ExpectedLength = sizeof(CFE_ES_PerfSetTrigMaskCmd_t);
-   CFE_ES_PerfSetTrigMaskCmd_t *cmd = (CFE_ES_PerfSetTrigMaskCmd_t *) msg;
+   CFE_ES_PerfSetTrigMaskCmd_Payload_t *cmd = (CFE_ES_PerfSetTrigMaskCmd_Payload_t *) &msg->Byte[CFE_SB_CMD_HDR_SIZE];
 
    /*
     ** Verify command packet length.
@@ -443,14 +441,14 @@ void CFE_ES_PerfSetTriggerMaskCmd(CFE_SB_MsgPtr_t msg){
 
             CFE_EVS_SendEvent(CFE_ES_PERF_TRIGMSKCMD_EID, CFE_EVS_DEBUG,
                       "Set Performance Trigger Mask Cmd rcvd,num %d, val 0x%x",
-                      cmd->TriggerMaskNum,cmd->TriggerMaskNum);
+                   (int)cmd->TriggerMaskNum,(int)cmd->TriggerMaskNum);
 
             CFE_ES_TaskData.CmdCounter++;
 
        }else{
            CFE_EVS_SendEvent(CFE_ES_PERF_TRIGMSKERR_EID, CFE_EVS_ERROR,
                       "Performance Trigger Mask Cmd Error,Index(%d)out of range(%d)",
-                      cmd->TriggerMaskNum,CFE_ES_PERF_32BIT_WORDS_IN_MASK);
+                   (int)cmd->TriggerMaskNum,(int)CFE_ES_PERF_32BIT_WORDS_IN_MASK);
 
             CFE_ES_TaskData.ErrCounter++;
        }
@@ -493,7 +491,7 @@ void CFE_ES_PerfLogAdd(uint32 Marker, uint32 EntryExit)
           /* if marker has not been reported previously ... */
           if(Perf->MetaData.InvalidMarkerReported == FALSE){
             CFE_ES_WriteToSysLog("ES PERF:Invalid performance marker %d,max is %d\n",
-                                  Marker,(CFE_ES_PERF_MAX_IDS - 1));
+                    (unsigned int)Marker,(CFE_ES_PERF_MAX_IDS - 1));
             Perf->MetaData.InvalidMarkerReported = TRUE;
           }/* end if */
 

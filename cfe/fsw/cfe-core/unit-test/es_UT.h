@@ -46,6 +46,7 @@
 #include "cfe_es.h"
 #include "cfe_es_cds.h"
 #include "cfe_es_cds_mempool.h"
+#include "cfe_esmempool.h"
 #include "cfe_es_global.h"
 #include "cfe_es_log.h"
 #include "cfe_es_perf.h"
@@ -54,20 +55,7 @@
 #include "cfe_es_verify.h"
 #include "cfe_es_start.h"
 #include "ut_stubs.h"
-
-/*
-** Function prototypes
-*/
-/* cFE functions */
-int32 CFE_ES_ValidateCDS(void);
-int32 CFE_ES_InitializeCDS(uint32 CDSSize);
-int32 CFE_ES_InitCDSRegistry(void);
-int32 CFE_ES_RebuildCDS(void);
-int32 CFE_ES_ListResourcesDebug(void);
-void CFE_ES_OSPerfLog_Add(uint32 Address, uint32 EntryExit);
-void CFE_ES_WriteToFile(char *FileName);
-void CFE_ES_ProcessCoreException(uint32 HostTaskId, uint8 *ReasonString,
-                                 uint32 *ContextPointer, uint32 ContextSize);
+#include "ut_osprintf_stubs.h"
 
 /* ES unit test functions */
 /*****************************************************************************/

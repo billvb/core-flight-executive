@@ -1,7 +1,7 @@
 /*
 **  File: 
 **  cfe_es_version.h
-**  $Id: cfe_version.h 1.8.2.3 2014/09/30 14:56:42GMT-05:00 sstrege Exp  $
+**  $Id: cfe_version.h 1.8.2.5 2014/12/02 19:26:21GMT-05:00 sstrege Exp  $
 **
 **
 **      Copyright (c) 2004-2012, United States government as represented by the 
@@ -24,7 +24,11 @@
 **
 **  Modification History:
 **  $Log: cfe_version.h  $
-**  Revision 1.8.2.3 2014/09/30 14:56:42GMT-05:00 sstrege 
+**  Revision 1.8.2.5 2014/12/02 19:26:21GMT-05:00 sstrege 
+**  Changing version number for the branch to 6.4.1
+**  Revision 1.8.2.4 2014/09/30 17:39:28EDT sstrege 
+**  Changing the version number for the branch tip to 9.9.9
+**  Revision 1.8.2.3 2014/09/30 15:56:42EDT sstrege 
 **  Changing version number for 6.4.0 release
 **  Revision 1.8.2.2 2014/09/10 22:36:45EDT sstrege 
 **  Changing the version number for the branch tip to 9.9.9
@@ -52,12 +56,26 @@
 #ifndef _cfe_es_version_
 #define _cfe_es_version_
 
+/*
+ * The "enhanced build" (cmake-driven) instantiates a configuration
+ * object that contains extended version information within it.
+ *
+ * This information is generated automatically by the build using
+ * git to determine the most recent tag and commitid.
+ *
+ * This is only available when compiling with the cmake scripts which
+ * is why it is conditionally included.
+ */
+#ifdef _ENHANCED_BUILD_
+#include <target_config.h>
+#endif
+
 
 /*
 ** Macro Definitions
 */
 #define CFE_MAJOR_VERSION         6
-#define CFE_MINOR_VERSION         4
+#define CFE_MINOR_VERSION         5
 #define CFE_REVISION              0
 
 

@@ -53,7 +53,6 @@
 */
 #include <string.h>
 #include "cfe_fs.h"
-#include "common_types.h"
 #include "ut_stubs.h"
 
 /*
@@ -73,6 +72,26 @@ extern UT_SetRtn_t FSExtractRtn;
 /*
 ** Functions
 */
+/*****************************************************************************/
+/**
+** \brief CFE_FS_InitHeader stub function
+**
+** \par Description
+**        This function is used to mimic the response of the cFE FS function
+**        CFE_FS_InitHeader.
+**
+** \par Assumptions, External Events, and Notes:
+**        None
+**
+** \returns
+**        None
+**
+******************************************************************************/
+void CFE_FS_InitHeader(CFE_FS_Header_t *hdr, const char *Description, uint32 SubType)
+{
+   memset(hdr,0,sizeof(CFE_FS_Header_t));
+}
+
 /*****************************************************************************/
 /**
 ** \brief CFE_FS_WriteHeader stub function
@@ -118,7 +137,7 @@ int32 CFE_FS_WriteHeader(int32 filedes, CFE_FS_Header_t *hdr)
 #ifdef UT_VERBOSE
     if (flag == FALSE)
     {
-        SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
+        snprintf(cMsg, UT_MAX_MESSAGE_LENGTH,
                  "  CFE_FS_WriteHeader called: %ld; %s",
                  filedes, hdr->Description);
         UT_Text(cMsg);
@@ -171,7 +190,7 @@ int32 CFE_FS_ReadHeader(CFE_FS_Header_t *Hdr, int32 FileDes)
         memcpy(Hdr, &UT_ReadHdr[UT_ReadHdrOffset], sizeof(CFE_FS_Header_t));
         UT_ReadHdrOffset += sizeof(CFE_FS_Header_t);
 #ifdef UT_VERBOSE
-        SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
+        snprintf(cMsg, UT_MAX_MESSAGE_LENGTH,
                  "  CFE_FS_ReadHeader called: %ld; %s",
                  FileDes, Hdr->Description);
         UT_Text(cMsg);
@@ -274,7 +293,7 @@ int32 CFE_FS_EarlyInit(void)
 **        CFE_FS_INVALID_PATH, CFE_FS_FNAME_TOO_LONG, or CFE_SUCCESS.
 **
 ******************************************************************************/
-int32 CFE_FS_ExtractFilenameFromPath(char *OriginalPath, char *FileNameOnly)
+int32 CFE_FS_ExtractFilenameFromPath(const char *OriginalPath, char *FileNameOnly)
 {
     int   i,j;
     int   StringLength;
@@ -312,7 +331,7 @@ int32 CFE_FS_ExtractFilenameFromPath(char *OriginalPath, char *FileNameOnly)
                     DirMarkIdx = i;
                 }
             }
-    
+
             /* Verify the filename isn't too long */
             if ((StringLength - (DirMarkIdx + 1)) < OS_MAX_PATH_LEN)
             {
@@ -365,7 +384,7 @@ int32 CFE_FS_ExtractFilenameFromPath(char *OriginalPath, char *FileNameOnly)
 **        Returns either a user-defined status flag or CFE_SUCCESS.
 **
 ******************************************************************************/
-int32 CFE_FS_Decompress(char * SourceFile, char * DestinationFile)
+int32 CFE_FS_Decompress(const char * SourceFile, const char * DestinationFile)
 {    
 
     int32 status = CFE_SUCCESS;
@@ -403,7 +422,7 @@ int32 CFE_FS_Decompress(char * SourceFile, char * DestinationFile)
 **        Returns either a user-defined status flag or FALSE.
 **
 ******************************************************************************/
-boolean CFE_FS_IsGzFile(char *FileName)
+boolean CFE_FS_IsGzFile(const char *FileName)
 {
     int32 status = FALSE;
 

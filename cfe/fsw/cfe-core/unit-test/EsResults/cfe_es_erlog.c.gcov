@@ -1,5 +1,8 @@
-        -:    0:Source:/home/acudmore/Projects/cFE-6.4-development/cfe/fsw/cfe-core/src/es/cfe_es_erlog.c
-        -:    0:Programs:10
+        -:    0:Source:/home/wmoleski/CFS/mission_2014/cfe/fsw/cfe-core/src/es/cfe_es_erlog.c
+        -:    0:Graph:cfe_es_erlog.gcno
+        -:    0:Data:cfe_es_erlog.gcda
+        -:    0:Runs:1
+        -:    0:Programs:5
         -:    1:/*
         -:    2:**  File:  
         -:    3:**    cfe_es_erlog.c
@@ -24,8 +27,8 @@
         -:   22:**  Modification History:
         -:   23:**
         -:   24:** $Log: cfe_es_erlog.c.gcov  $
-        -:   24:** Revision 1.5 2014/09/23 15:04:41GMT-05:00 acudmore 
-        -:   24:** Updated ES unit test results for cFE build 6.4.0
+        -:   24:** Revision 1.6 2015/06/24 12:19:51EDT wmoleski 
+        -:   24:** Checking in the unit-test results for cFE 6.4.2.0
         -:   25:** Revision 1.3 2012/01/13 11:50:02GMT-05:00 acudmore 
         -:   26:** Changed license text to reflect open source
         -:   27:** Revision 1.2 2009/06/10 09:08:56EDT acudmore 
@@ -70,9 +73,9 @@
         -:   66:** Purpose:  Create an entry in the ES Exception and Reset Log. 
         -:   67:**
         -:   68:*/
-       22:   69:int32 CFE_ES_WriteToERLog( uint32 EntryType,   uint32  ResetType, uint32 ResetSubtype,
+        -:   69:int32 CFE_ES_WriteToERLog( uint32 EntryType,   uint32  ResetType, uint32 ResetSubtype,
         -:   70:                           char  *Description, uint32 *Context,   uint32 ContextSize )
-        -:   71:{
+       22:   71:{
         -:   72:   uint32 LogIdx;
         -:   73:
         -:   74:   /*
@@ -111,10 +114,10 @@
        22:  107:   CFE_ES_ResetDataPtr->ERLog[LogIdx].ResetType    = ResetType;
        22:  108:   CFE_ES_ResetDataPtr->ERLog[LogIdx].ResetSubtype = ResetSubtype;
        22:  109:   CFE_ES_ResetDataPtr->ERLog[LogIdx].BootSource   = CFE_ES_ResetDataPtr->ResetVars.BootSource;
-       44:  110:   CFE_ES_ResetDataPtr->ERLog[LogIdx].ProcessorResetCount = 
-       22:  111:                               CFE_ES_ResetDataPtr->ResetVars.ProcessorResetCount;
-       44:  112:   CFE_ES_ResetDataPtr->ERLog[LogIdx].MaxProcessorResetCount = 
-       22:  113:                               CFE_ES_ResetDataPtr->ResetVars.MaxProcessorResetCount;
+       22:  110:   CFE_ES_ResetDataPtr->ERLog[LogIdx].ProcessorResetCount = 
+        -:  111:                               CFE_ES_ResetDataPtr->ResetVars.ProcessorResetCount;
+       22:  112:   CFE_ES_ResetDataPtr->ERLog[LogIdx].MaxProcessorResetCount = 
+        -:  113:                               CFE_ES_ResetDataPtr->ResetVars.MaxProcessorResetCount;
         -:  114:
         -:  115:   /*
         -:  116:   ** Copy the ES Reset variables to the log (before they are modified by the log entry).

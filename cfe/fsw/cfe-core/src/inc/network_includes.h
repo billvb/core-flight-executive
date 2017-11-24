@@ -59,8 +59,9 @@
     #include <netinet/tcp.h>
     #include <fcntl.h>
     #define _HAVE_FCNTL_
-    #define MSG_DONTWAIT 0
-
+    #ifndef MSG_DONTWAIT
+      #define MSG_DONTWAIT 0
+    #endif
 #elif  _MAC_OS_
     #include <unistd.h>
     #include <sys/types.h>

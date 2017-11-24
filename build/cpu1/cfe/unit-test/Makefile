@@ -6,6 +6,9 @@
 # Rule to build all unit tests for cfe core
 #
 default:
+	make -C libut_assert
+	make -C libut_bsp
+	make -C libut_osapi_stubs
 	make -C sb
 	make -C es 
 	make -C evs 
@@ -28,6 +31,9 @@ gcov:
 # Rule to clean out all unit tests
 #
 clean:
+	make -C libut_assert clean
+	make -C libut_bsp clean
+	make -C libut_osapi_stubs clean
 	make -C sb clean
 	make -C es clean
 	make -C evs clean

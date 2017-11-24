@@ -157,13 +157,18 @@ int32 CFE_EVS_SendEvent(uint16 EventID,
     int32   status = CFE_SUCCESS;
     boolean flag = FALSE;
 #ifdef UT_VERBOSE
-    char    BigBuf[CFE_EVS_MAX_MESSAGE_LENGTH];
-    VA_LIST Ptr;
+    char    BigBuf[CFE_EVS_MAX_MESSAGE_LENGTH*2];
+    va_list Ptr;
 
-    VA_START(Ptr, Spec, UT_OFFSET_CFE_EVS_SENDEVENT,
+#ifdef OSP_ARINC653
+    va_start(Ptr, Spec, UT_OFFSET_CFE_EVS_SENDEVENT,
              UT_BREAK_CFE_EVS_SENDEVENT, UT_SKIP_CFE_EVS_SENDEVENT);
-    VSNPRINTF(BigBuf, CFE_EVS_MAX_MESSAGE_LENGTH, Spec, Ptr);
-    VA_END(Ptr);
+#else
+    va_start(Ptr, Spec);
+#endif
+
+    vsnprintf(BigBuf, CFE_EVS_MAX_MESSAGE_LENGTH, Spec, Ptr);
+    va_end(Ptr);
 #endif
 
     if (EVS_SendEventRtn.count > 0)
@@ -182,7 +187,7 @@ int32 CFE_EVS_SendEvent(uint16 EventID,
         UT_AddEventToHistory(EventID);
         SendMsgEventIDRtn.value = EventID;
 #ifdef UT_VERBOSE
-        SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
+        snprintf(cMsg, UT_MAX_MESSAGE_LENGTH,
                  "  CFE_EVS_SendEvent: %u, %u - %s",
                  EventID, EventType, BigBuf);
         UT_Text(cMsg);
@@ -253,7 +258,7 @@ int32 CFE_EVS_Register(void *Filters,
             status = EVS_RegisterRtn.value;
 #ifdef UT_VERBOSE
             flag = TRUE;
-            SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
+            snprintf(cMsg, UT_MAX_MESSAGE_LENGTH,
                      "  CFE_EVS_Register called: %ld", EVS_RegisterRtn.value);
             UT_Text(cMsg);
 #endif
@@ -303,12 +308,16 @@ int32 CFE_EVS_SendEventWithAppID(uint16 EventID,
 #ifdef UT_VERBOSE
     boolean flag = FALSE;
     char    BigBuf[CFE_EVS_MAX_MESSAGE_LENGTH];
-    VA_LIST Ptr;
+    va_list Ptr;
 
-    VA_START(Ptr, Spec, UT_OFFSET_CFE_SENDEVENTWITHAPPID,
+#ifdef OSP_ARINC653
+    va_start(Ptr, Spec, UT_OFFSET_CFE_SENDEVENTWITHAPPID,
              UT_BREAK_CFE_SENDEVENTWITHAPPID, UT_SKIP_CFE_SENDEVENTWITHAPPID);
-    VSNPRINTF(BigBuf, CFE_EVS_MAX_MESSAGE_LENGTH, Spec, Ptr);
-    VA_END(Ptr);
+#else
+    va_start(Ptr, Spec);
+#endif
+    vsnprintf(BigBuf, CFE_EVS_MAX_MESSAGE_LENGTH, Spec, Ptr);
+    va_end(Ptr);
 #endif
     UT_AddEventToHistory(EventID);
   
@@ -328,7 +337,7 @@ int32 CFE_EVS_SendEventWithAppID(uint16 EventID,
 #ifdef UT_VERBOSE
     if (flag == FALSE)
     {
-        SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
+        snprintf(cMsg, UT_MAX_MESSAGE_LENGTH,
                  "  CFE_EVS_SendEvent from app %lu: %u, %u - %s",
                  AppID, EventID, EventType, BigBuf);
         UT_Text(cMsg);

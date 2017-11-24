@@ -1,4 +1,4 @@
-CFE_APP, /cf/apps/sample_lib.so,  SAMPLE_LibInit,  SAMPLE_LIB,    0,   0,    0x0, 0;
+CFE_LIB, /cf/apps/sample_lib.so,  SAMPLE_LibInit,  SAMPLE_LIB,    0,   0,    0x0, 0;
 CFE_APP, /cf/apps/sample_app.so,  SAMPLE_AppMain,  SAMPLE_APP,   50,   8192, 0x0, 0;
 CFE_APP, /cf/apps/ci_lab.so,      CI_Lab_AppMain,  CI_LAB_APP,   60,   8192, 0x0, 0;
 CFE_APP, /cf/apps/to_lab.so,      TO_Lab_AppMain,  TO_LAB_APP,   70,   8192, 0x0, 0;

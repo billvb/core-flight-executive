@@ -134,37 +134,37 @@
 /*
 ** Macro Definitions
 */
+
+/* 
+** The OS_PRINTF macro may be defined by OSAL to enable
+** printf-style argument checking.  If using a version of OSAL
+** that does not define this then define it as a no-op.
+*/
+#ifndef OS_PRINTF
+#define OS_PRINTF(m,n)
+#endif
+
 #define CFE_ES_DBIT(x) (1L << (x))                                    /* Places a one at bit positions 0 thru 31 */
 #define CFE_ES_DTEST(i,x) (((i) & CFE_ES_DBIT(x)) != 0)               /* TRUE iff bit x of i is set */
 #define CFE_ES_TEST_LONG_MASK(m,s)  (CFE_ES_DTEST(m[(s)/32],(s)%32))  /* Test a bit within an array of 32-bit integers. */
 #define CFE_ES_MAX_MEMPOOL_BLOCK_SIZES     17    /**< Max number of size divisions allowed in a memory pool */
 
 /*
-**  Reset types
+** Note about reset type and subtypes:
+**
+** These values come from the PSP so the actual definition of these enumerations
+** was moved to the PSP header file <cfe_psp.h>.
+**
+** In the future the Electronic Data sheets (EDS) for PSP/ES
+** will define the exact values to use in telemetry messages.
 */
-/** \name Reset Types */
-/** \{ */
-#define CFE_ES_PROCESSOR_RESET   1       /**< Volatile disk, Critical Data Store and User Reserved memory could still be valid */
-#define CFE_ES_POWERON_RESET     2       /**< All memory has been cleared */
-
-#define CFE_ES_APP_RESTART       3       /**< Application only was reset */
-
-/** \} */
 
 /*
-** Reset Sub-Types
+**  Reset types
 */
-/** \name Reset Sub-Types */
+/** \name Reset Type extensions */
 /** \{ */
-#define CFE_ES_POWER_CYCLE           1   /**< \brief  Reset caused by power having been removed and restored */
-#define CFE_ES_PUSH_BUTTON           2   /**< \brief  Reset caused by reset button on the board having been pressed */
-#define CFE_ES_HW_SPECIAL_COMMAND    3   /**< \brief  Reset was caused by a reset line having been stimulated by a hardware special command */
-#define CFE_ES_HW_WATCHDOG           4   /**< \brief  Reset was caused by a watchdog timer expiring */
-#define CFE_ES_RESET_COMMAND         5   /**< \brief  Reset was caused by cFE ES processing a \link #CFE_ES_RESTART_CC Reset Command \endlink */
-#define CFE_ES_EXCEPTION             6   /**< \brief  Reset was caused by a Processor Exception */
-#define CFE_ES_UNDEFINED_RESET       7   /**< \brief  Reset was caused in an unknown manner */
-#define CFE_ES_HWDEBUG_RESET         8   /**< \brief  Reset was caused by a JTAG or BDM connection */
-#define CFE_ES_BANKSWITCH_RESET      9   /**< \brief  Reset reverted to a cFE POWERON due to a boot bank switch */
+#define CFE_ES_APP_RESTART       CFE_PSP_RST_TYPE_MAX       /**< Application only was reset (extend the PSP enumeration here) */
 /** \} */
 
 
@@ -182,15 +182,15 @@
 */
 /** \name Run Status and Exit Status identifiers */
 /** \{ */
-#define CFE_ES_APP_RUN                  1   /**< \brief Indicates that the Application should continue to run */
-#define CFE_ES_APP_EXIT                 2  /**< \brief Indicates that the Application wants to exit normally */
-#define CFE_ES_APP_ERROR                3  /**< \brief Indicates that the Application is quitting with an error */
-#define CFE_ES_SYS_EXCEPTION            4  /**< \brief The cFE App caused an exception */
-#define CFE_ES_SYS_RESTART              5  /**< \brief The system is requesting a restart of the cFE App */
-#define CFE_ES_SYS_RELOAD               6  /**< \brief The system is requesting a reload of the cFE App */
-#define CFE_ES_SYS_DELETE               7  /**< \brief The system is requesting that the cFE App is stopped */
-#define CFE_ES_CORE_APP_INIT_ERROR      8 /**< \brief Indicates that the Core Application could not Init */
-#define CFE_ES_CORE_APP_RUNTIME_ERROR   9 /**< \brief Indicates that the Core Application had a runtime failure */
+#define CFE_ES_RUNSTATUS_APP_RUN                  1   /**< \brief Indicates that the Application should continue to run */
+#define CFE_ES_RUNSTATUS_APP_EXIT                 2  /**< \brief Indicates that the Application wants to exit normally */
+#define CFE_ES_RUNSTATUS_APP_ERROR                3  /**< \brief Indicates that the Application is quitting with an error */
+#define CFE_ES_RUNSTATUS_SYS_EXCEPTION            4  /**< \brief The cFE App caused an exception */
+#define CFE_ES_RUNSTATUS_SYS_RESTART              5  /**< \brief The system is requesting a restart of the cFE App */
+#define CFE_ES_RUNSTATUS_SYS_RELOAD               6  /**< \brief The system is requesting a reload of the cFE App */
+#define CFE_ES_RUNSTATUS_SYS_DELETE               7  /**< \brief The system is requesting that the cFE App is stopped */
+#define CFE_ES_RUNSTATUS_CORE_APP_INIT_ERROR      8 /**< \brief Indicates that the Core Application could not Init */
+#define CFE_ES_RUNSTATUS_CORE_APP_RUNTIME_ERROR   9 /**< \brief Indicates that the Core Application had a runtime failure */
 /** \} */
 
 #define CFE_ES_APP_KILL_TIMEOUT         5 /**< \brief Number of cycles that ES will wait before killing an app */
@@ -205,6 +205,49 @@
 #define CFE_ES_MAX_SYSLOG_MSG_SIZE (CFE_EVS_MAX_MESSAGE_LENGTH + CFE_TIME_PRINTED_STRING_SIZE + 1)
 
 
+/*
+ * To preserve source-code compatibility with existing code,
+ * this allows the old enum names to still work.  This should
+ * be turned off after the new names are established.
+ *  (sed -i -e 's/<old-name>/<new-name>/g' should take care of it)
+ *
+ * Note about why this is a good idea to do --
+ * In the list below there are two values with similar names:
+ *   CFE_ES_EXCEPTION, CFE_ES_SYS_EXCEPTION
+ *
+ * But these map to different values for two different purposes,
+ * one is a app status and the other is a reset subtype.  Using the
+ * new names makes it much clearer as to which is which, will
+ * greatly reduce the chance of getting them mixed up, and make it
+ * much more obvious to a code reviewer if the ARE mixed up somewhere.
+ */
+#ifndef CFE_ES_ENABLE_NEW_ENUM_NAMES
+
+#define CFE_ES_PROCESSOR_RESET            CFE_PSP_RST_TYPE_PROCESSOR
+#define CFE_ES_POWERON_RESET              CFE_PSP_RST_TYPE_POWERON
+
+#define CFE_ES_POWER_CYCLE                CFE_PSP_RST_SUBTYPE_POWER_CYCLE
+#define CFE_ES_PUSH_BUTTON                CFE_PSP_RST_SUBTYPE_PUSH_BUTTON
+#define CFE_ES_HW_SPECIAL_COMMAND         CFE_PSP_RST_SUBTYPE_HW_SPECIAL_COMMAND
+#define CFE_ES_HW_WATCHDOG                CFE_PSP_RST_SUBTYPE_HW_WATCHDOG
+#define CFE_ES_RESET_COMMAND              CFE_PSP_RST_SUBTYPE_RESET_COMMAND
+#define CFE_ES_EXCEPTION                  CFE_PSP_RST_SUBTYPE_EXCEPTION
+#define CFE_ES_UNDEFINED_RESET            CFE_PSP_RST_SUBTYPE_UNDEFINED_RESET
+#define CFE_ES_HWDEBUG_RESET              CFE_PSP_RST_SUBTYPE_HWDEBUG_RESET
+#define CFE_ES_BANKSWITCH_RESET           CFE_PSP_RST_SUBTYPE_BANKSWITCH_RESET
+
+#define CFE_ES_APP_RUN                    CFE_ES_RUNSTATUS_APP_RUN
+#define CFE_ES_APP_EXIT                   CFE_ES_RUNSTATUS_APP_EXIT
+#define CFE_ES_APP_ERROR                  CFE_ES_RUNSTATUS_APP_ERROR
+#define CFE_ES_SYS_EXCEPTION              CFE_ES_RUNSTATUS_SYS_EXCEPTION
+#define CFE_ES_SYS_RESTART                CFE_ES_RUNSTATUS_SYS_RESTART
+#define CFE_ES_SYS_RELOAD                 CFE_ES_RUNSTATUS_SYS_RELOAD
+#define CFE_ES_SYS_DELETE                 CFE_ES_RUNSTATUS_SYS_DELETE
+#define CFE_ES_CORE_APP_INIT_ERROR        CFE_ES_RUNSTATUS_CORE_APP_INIT_ERROR
+#define CFE_ES_CORE_APP_RUNTIME_ERROR     CFE_ES_RUNSTATUS_CORE_APP_RUNTIME_ERROR
+
+#endif
+
 /*****************************************************************************/
 /*
 ** Type Definitions
@@ -213,20 +256,7 @@
 /*
 ** Memory Handle type
 */
-typedef uint32 CFE_ES_MemHandle_t;  /**< \brief Data type used to hold Handles of Memory Pools created via CFE_ES_PoolCreate and CFE_ES_PoolCreateNoSem */
-
-/*
-** Device driver type
-*/
-typedef struct
-{
-   uint32   InterruptId;            /**< \brief Identifier for interrupt that device driver is attached to */
-   void    *IntInitFuncPtr;         /**< \brief Pointer to function used to initialize device */
-   void    *IntHWHandshakeFuncPtr;  /**< \brief Pointer to function executed when servicing device interrupts */
-   void    *IntIsrFuncPtr;          /**< \brief Pointer to function that performs most ISR processing but done in a task context */
-   
-} CFE_ES_DeviceDriver_t;
-
+typedef cpuaddr CFE_ES_MemHandle_t;  /**< \brief Data type used to hold Handles of Memory Pools created via CFE_ES_PoolCreate and CFE_ES_PoolCreateNoSem */
 
 /*
 ** 
@@ -241,12 +271,12 @@ typedef struct
                                                  \brief Application ID for this Application */
    uint32   Type;                           /**< \cfetlmmnemonic \ES_APPTYPE
                                                  \brief The type of App: CORE or EXTERNAL */
-   
-   uint8    Name[OS_MAX_API_NAME];          /**< \cfetlmmnemonic \ES_APPNAME
+
+   char     Name[OS_MAX_API_NAME];          /**< \cfetlmmnemonic \ES_APPNAME
                                                  \brief The Registered Name of the Application */
-   uint8    EntryPoint[OS_MAX_API_NAME];    /**< \cfetlmmnemonic \ES_APPENTRYPT
+   char     EntryPoint[OS_MAX_API_NAME];    /**< \cfetlmmnemonic \ES_APPENTRYPT
                                                  \brief The Entry Point label for the Application */
-   uint8    FileName[OS_MAX_PATH_LEN];      /**< \cfetlmmnemonic \ES_APPFILENAME
+   char     FileName[OS_MAX_PATH_LEN];      /**< \cfetlmmnemonic \ES_APPFILENAME
                                                  \brief The Filename of the file containing the Application */
 
    uint32   StackSize;                      /**< \cfetlmmnemonic \ES_STACKSIZE
@@ -277,13 +307,12 @@ typedef struct
    uint32   MainTaskId;                     /**< \cfetlmmnemonic \ES_MAINTASKID
                                                  \brief The Application's Main Task ID */
    uint32   ExecutionCounter;               /**< \cfetlmmnemonic \ES_MAINTASKEXECNT
-                                                 \brief The Application's Main Task Execution Counter */                        
-   uint8    MainTaskName[OS_MAX_API_NAME];  /**< \cfetlmmnemonic \ES_MAINTASKNAME
+                                                 \brief The Application's Main Task Execution Counter */
+   char     MainTaskName[OS_MAX_API_NAME];  /**< \cfetlmmnemonic \ES_MAINTASKNAME
                                                  \brief The Application's Main Task ID */
    uint32   NumOfChildTasks;                /**< \cfetlmmnemonic \ES_CHILDTASKS
                                                  \brief Number of Child tasks for an App */
 
-   
 } CFE_ES_AppInfo_t;
 
 /*
@@ -323,9 +352,14 @@ typedef struct
                                                                            \brief Contains stats on each block size */
 } CFE_ES_MemPoolStats_t;
 
+/*
+** CDS Handle type
+*/
+typedef cpuaddr CFE_ES_CDSHandle_t;    /**< \brief Data type used to hold Handles of Critical Data Stores. See CFE_ES_RegisterCDS */
+
 typedef struct
 {
-    uint32                Handle;          /**< \brief Handle of CDS */
+    CFE_ES_CDSHandle_t    Handle;          /**< \brief Handle of CDS */
     uint32                Size;            /**< \brief Size, in bytes, of the CDS memory block */
     boolean               Table;           /**< \brief Flag that indicates whether CDS contains a Critical Table */
     char                  Name[CFE_ES_CDS_MAX_FULL_NAME_LEN]; /**< \brief Processor Unique Name of CDS */
@@ -333,19 +367,93 @@ typedef struct
 } CFE_ES_CDSRegDumpRec_t;
 
 /*
-** CDS Handle type
-*/
-typedef uint32 CFE_ES_CDSHandle_t;    /**< \brief Data type used to hold Handles of Critical Data Stores. See CFE_ES_RegisterCDS */
-
-/*
 ** Child Task Main Function Prototype
 */
 typedef void (*CFE_ES_ChildTaskMainFuncPtr_t)(void); /**< \brief Required Prototype of Child Task Main Functions */
+typedef int32 (*CFE_ES_LibraryEntryFuncPtr_t)(void); /**< \brief Required Prototype of Library Initialization Functions */
+
+typedef enum
+{
+    CFE_ES_STATICENTRYTYPE_INVALID      = 0,
+    CFE_ES_STATICENTRYTYPE_FIRST_VALID  = 2000,
+    CFE_ES_STATICENTRYTYPE_APPLICATION,
+    CFE_ES_STATICENTRYTYPE_LIBRARY,
+    CFE_ES_STATICENTRYTYPE_MAX
+} CFE_ES_StaticEntryType_t;
+
+/*
+** API Structure for statically linked CFS Applications
+*/
+typedef const struct
+{
+    CFE_ES_StaticEntryType_t EntryType;
+    union
+    {
+        CFE_ES_ChildTaskMainFuncPtr_t AppEntryFunc;     /**< \brief Entry point for Application */
+        CFE_ES_LibraryEntryFuncPtr_t LibInitFunc;       /**< \brief Initialization function for Library */
+        cpuaddr EntryFuncAddr;
+    } Ptrs;
+    uint32  Priority;
+    uint32  StackSize;
+} CFE_ES_AppStaticModuleApi_t;
+
+#ifdef CFS_STATIC_MODULE
+
+#define CFS_MODULE_DECLARE_APP(name,pri,stack)              \
+    void name##_Main(void);                                 \
+    CFE_ES_AppStaticModuleApi_t CFS_##name##_API =          \
+    {                                                       \
+        .EntryType = CFE_ES_STATICENTRYTYPE_APPLICATION,    \
+        .Ptrs.AppEntryFunc = name##_Main,                   \
+        .Priority = pri,                                    \
+        .StackSize = stack,                                 \
+    }
+
+#define CFS_MODULE_DECLARE_LIB(name)                        \
+    int32 name##_Init(void);                                \
+    CFE_ES_AppStaticModuleApi_t CFS_##name##_API =          \
+    {                                                       \
+        .EntryType = CFE_ES_STATICENTRYTYPE_LIBRARY,        \
+        .Ptrs.LibInitFunc = name##_Init,                    \
+    }
+#else
+#define CFS_MODULE_DECLARE_APP(name,pri,stack)
+#define CFS_MODULE_DECLARE_LIB(name)
+#endif
+
 
 /*****************************************************************************/
 /*
 ** Exported Functions
 */
+
+/*****************************************************************************/
+
+#if !defined(OSAL_OPAQUE_OBJECT_IDS)
+/*
+** \brief Compatibility wrapper for older versions of OSAL
+**
+** \par Description
+**   In future versions of OSAL the task/object ID values might not be zero based
+**   If that is the case then the OSAL must also define a function to convert back
+**   to zero-based numbers such that the value can be used as an array index.
+**
+**   When using an existing/older version of OSAL, this inline function is defined
+**   to mimic this call for backward compatibility.  It just passes through the same
+**   value without modification.
+**
+** \param[in]  ObjectId     The object ID from OSAL
+** \param[out] ArrayIndex   A zero-based value suitable for use as an array index
+** \returns    OS_SUCCESS (a real version might return an error code).
+*/
+static inline int32 OS_ConvertToArrayIndex(uint32 ObjectId, uint32 *ArrayIndex)
+{
+   *ArrayIndex = ObjectId;
+   return OS_SUCCESS;
+}
+#endif
+
+
 
 /*****************************************************************************/
 /**
@@ -358,7 +466,7 @@ typedef void (*CFE_ES_ChildTaskMainFuncPtr_t)(void); /**< \brief Required Protot
 ** \par Assumptions, External Events, and Notes:
 **          None
 **
-** \param[in]  StartType     Identifies whether this was a #CFE_ES_POWERON_RESET or #CFE_ES_PROCESSOR_RESET.
+** \param[in]  StartType     Identifies whether this was a #CFE_PSP_RST_TYPE_POWERON or #CFE_PSP_RST_TYPE_PROCESSOR.
 **
 ** \param[in]  StartSubtype  Specifies, in more detail, what caused the \c StartType identified above.
 **                           See #CFE_ES_POWER_CYCLE for possible examples.
@@ -370,7 +478,7 @@ typedef void (*CFE_ES_ChildTaskMainFuncPtr_t)(void); /**< \brief Required Protot
 ** \sa #CFE_ES_ResetCFE
 **
 ******************************************************************************/
-void CFE_ES_Main(uint32 StartType, uint32 StartSubtype, uint32 ModeId , uint8 *StartFilePath );
+void CFE_ES_Main(uint32 StartType, uint32 StartSubtype, uint32 ModeId , const char *StartFilePath );
 
 /*****************************************************************************/
 /**
@@ -392,8 +500,8 @@ void CFE_ES_Main(uint32 StartType, uint32 StartSubtype, uint32 ModeId , uint8 *S
 **                                 For a list of possible Sub-Type values, see \link #CFE_ES_POWER_CYCLE "Reset Sub-Types" \endlink.
 **
 ** \returns
-** \retcode #CFE_ES_POWERON_RESET   \retdesc \copydoc CFE_ES_POWERON_RESET    \endcode
-** \retcode #CFE_ES_PROCESSOR_RESET \retdesc \copydoc CFE_ES_PROCESSOR_RESET  \endcode
+** \retcode #CFE_PSP_RST_TYPE_POWERON   \retdesc \copydoc CFE_PSP_RST_TYPE_POWERON    \endcode
+** \retcode #CFE_PSP_RST_TYPE_PROCESSOR \retdesc \copydoc CFE_PSP_RST_TYPE_PROCESSOR  \endcode
 ** \endreturns
 **
 ** \sa #CFE_ES_GetAppID, #CFE_ES_GetAppIDByName, #CFE_ES_GetAppName, #CFE_ES_GetTaskInfo
@@ -407,15 +515,15 @@ int32 CFE_ES_GetResetType(uint32 *ResetSubtypePtr);
 **
 ** \par Description
 **        This API causes an immediate reset of the cFE Kernel and all cFE Applications.
-**        The caller can specify whether the reset should clear all memory (#CFE_ES_POWERON_RESET)
-**        or try to retain volatile memory areas (#CFE_ES_PROCESSOR_RESET).
+**        The caller can specify whether the reset should clear all memory (#CFE_PSP_RST_TYPE_POWERON)
+**        or try to retain volatile memory areas (#CFE_PSP_RST_TYPE_PROCESSOR).
 **
 ** \par Assumptions, External Events, and Notes:
 **          None
 **
 ** \param[in]  ResetType    Identifies the type of reset desired.  Allowable settings are:
-**                          \arg #CFE_ES_POWERON_RESET     - Causes all memory to be cleared 
-**                          \arg #CFE_ES_PROCESSOR_RESET   - Attempts to retain volatile disk, critical data store and user reserved memory. 
+**                          \arg #CFE_PSP_RST_TYPE_POWERON     - Causes all memory to be cleared 
+**                          \arg #CFE_PSP_RST_TYPE_PROCESSOR   - Attempts to retain volatile disk, critical data store and user reserved memory. 
 **
 ** \returns
 ** \retcode #CFE_ES_BAD_ARGUMENT    \retdesc \copydoc CFE_ES_BAD_ARGUMENT     \endcode
@@ -648,7 +756,7 @@ int32 CFE_ES_GetAppID(uint32 *AppIdPtr);
 ** \sa #CFE_ES_GetResetType, #CFE_ES_GetAppID, #CFE_ES_GetAppName, #CFE_ES_GetTaskInfo
 **
 ******************************************************************************/
-int32 CFE_ES_GetAppIDByName(uint32 *AppIdPtr, char *AppName);
+int32 CFE_ES_GetAppIDByName(uint32 *AppIdPtr, const char *AppName);
 
 /*****************************************************************************/
 /**
@@ -813,7 +921,7 @@ int32  CFE_ES_RegisterChildTask(void);
 int32  CFE_ES_CreateChildTask(uint32                          *TaskIdPtr,
                               const char                      *TaskName,
                               CFE_ES_ChildTaskMainFuncPtr_t    FunctionPtr,
-                              const uint32                    *StackPtr,
+                              uint32                          *StackPtr,
                               uint32                           StackSize,
                               uint32                           Priority,
                               uint32                           Flags);
@@ -916,83 +1024,7 @@ void  CFE_ES_IncrementTaskCounter(void);
 ** \sa
 **
 ******************************************************************************/
-int32 CFE_ES_WriteToSysLog(const char *SpecStringPtr, ...);
-
-/*
-** Device Driver management functions
-*/
-
-/*****************************************************************************/
-/**
-** \brief Register a Device Driver
-**
-** \par Description
-**        This routine installs a device driver into the cFE system.  See section 
-**        TBD of the cFE Developer's Guide for a detailed description of the operation 
-**        of device drivers in the cFE system. 
-**
-** \par Assumptions, External Events, and Notes:
-**        None
-**
-** \param[in]   DriverIdPtr     A pointer to a variable that will be filled in with the new driver's ID.
-**
-** \param[in]   DriverDescPtr   A pointer to a structure that defines the characteristics of the device 
-**                              driver to be installed.  The contents of this structure are as follows:
-**                              \code
-**                              typedef struct
-**                              {
-**                                 uint32 interruptID;
-**                                 void  *intInitFuncPtr;
-**                                 void  *intHWHandshakeFuncPtr;
-**                                 void  *intIsrFuncPtr;
-**                               } CFE_ES_ DevDriver_t;
-**                               \endcode
-**
-**                              The definition of each item in the data structure is as follows:
-**
-**                              \arg \c interruptID - the interrupt level number the driver is to be associated with.
-**
-**                              \arg \c intInitFuncPtr - a pointer to a function that will be called to initialize the hardware.
-**
-**                              \arg \c intHWHandshakeFuncPtr - a pointer to a function that will be called whenever the specified interrupt occurs.  This function will be executing in an ISR context and will not be allowed to make any calls that could lead to a blocking situation.  Activities requiring precise timing or hardware handshaking should occur in this function.
-**
-**                              \arg \c intIsrFuncPtr - a pointer to a function that will be called whenever the specified interrupt occurs.  This function will be executing in a task context and will be allowed to make any type of system call.  Activities that require operating system or cFE API calls that could block must occur in this function.
-**
-**
-** \param[out] *DriverIdPtr     The new driver's ID.
-**
-** \returns
-** \retcode #CFE_ES_NOT_IMPLEMENTED \retdesc \copydoc CFE_ES_NOT_IMPLEMENTED  \endcode
-** \endreturns
-**
-** \sa #CFE_ES_UnloadDriver
-**
-******************************************************************************/
-int32 CFE_ES_RegisterDriver(uint32 *DriverIdPtr, CFE_ES_DeviceDriver_t *DriverDescPtr);
-
-/*****************************************************************************/
-/**
-** \brief Remove a Device Driver
-**
-** \par Description
-**        This routine removes a device driver from the cFE system. See section TBD of the cFE
-**        Application Developer's Guide for a detailed description of the operation of device drivers
-**        in the cFE system. 
-**
-** \par Assumptions, External Events, and Notes:
-**        None
-**
-** \param[in]   DriverId     The driver ID of the driver to remove.  
-**                           This must be the \c DriverID value filled in by the call to #CFE_ES_RegisterDriver().
-**
-** \returns
-** \retcode #CFE_ES_NOT_IMPLEMENTED \retdesc \copydoc CFE_ES_NOT_IMPLEMENTED \endcode
-** \endreturns
-**
-** \sa #CFE_ES_RegisterDriver
-**
-******************************************************************************/
-int32 CFE_ES_UnloadDriver(uint32 DriverId);
+int32 CFE_ES_WriteToSysLog(const char *SpecStringPtr, ...) OS_PRINTF(1,2);
 
 /*****************************************************************************/
 /**
@@ -1024,7 +1056,7 @@ int32 CFE_ES_UnloadDriver(uint32 DriverId);
 ** \endreturns
 **
 ******************************************************************************/
-uint32 CFE_ES_CalculateCRC(void *DataPtr, uint32 DataLength, uint32 InputCRC, uint32 TypeCRC);
+uint32 CFE_ES_CalculateCRC(const void *DataPtr, uint32 DataLength, uint32 InputCRC, uint32 TypeCRC);
 
 /*
 ** Critical Data Store API
@@ -1158,7 +1190,7 @@ int32 CFE_ES_RestoreFromCDS(void *RestoreToMemory, CFE_ES_CDSHandle_t Handle);
 ** \sa #CFE_ES_PoolCreate, #CFE_ES_PoolCreateEx, #CFE_ES_GetPoolBuf, #CFE_ES_PutPoolBuf, #CFE_ES_GetMemPoolStats
 **
 ******************************************************************************/
-int32 CFE_ES_PoolCreateNoSem(uint32 *HandlePtr, uint8 *MemPtr, uint32 Size);
+int32 CFE_ES_PoolCreateNoSem(CFE_ES_MemHandle_t *HandlePtr, uint8 *MemPtr, uint32 Size);
 
 /*****************************************************************************/
 /**
@@ -1190,7 +1222,7 @@ int32 CFE_ES_PoolCreateNoSem(uint32 *HandlePtr, uint8 *MemPtr, uint32 Size);
 ** \sa #CFE_ES_PoolCreateNoSem, #CFE_ES_PoolCreateEx, #CFE_ES_GetPoolBuf, #CFE_ES_PutPoolBuf, #CFE_ES_GetMemPoolStats
 **
 ******************************************************************************/
-int32 CFE_ES_PoolCreate(uint32 *HandlePtr, uint8 *MemPtr, uint32 Size);
+int32 CFE_ES_PoolCreate(CFE_ES_MemHandle_t *HandlePtr, uint8 *MemPtr, uint32 Size);
 
 /*****************************************************************************/
 /**
@@ -1231,7 +1263,7 @@ int32 CFE_ES_PoolCreate(uint32 *HandlePtr, uint8 *MemPtr, uint32 Size);
 ** \sa #CFE_ES_PoolCreate, #CFE_ES_PoolCreateNoSem, #CFE_ES_GetPoolBuf, #CFE_ES_PutPoolBuf, #CFE_ES_GetMemPoolStats
 **
 ******************************************************************************/
-int32 CFE_ES_PoolCreateEx(uint32 *HandlePtr, uint8 *MemPtr, uint32 Size, uint32 NumBlockSizes, uint32 *BlockSizes, uint16 UseMutex);
+int32 CFE_ES_PoolCreateEx(CFE_ES_MemHandle_t *HandlePtr, uint8 *MemPtr, uint32 Size, uint32 NumBlockSizes, uint32 *BlockSizes, uint16 UseMutex);
 
 /*****************************************************************************/
 /**
@@ -1430,7 +1462,7 @@ void CFE_ES_PerfLogAdd(uint32 Marker, uint32 EntryExit);
 ** \sa #CFE_ES_IncrementGenCounter, #CFE_ES_DeleteGenCounter, #CFE_ES_SetGenCount, #CFE_ES_GetGenCount, #CFE_ES_GetGenCounterIDByName
 **
 ******************************************************************************/
-int32 CFE_ES_RegisterGenCounter(uint32 *CounterIdPtr, char *CounterName);
+int32 CFE_ES_RegisterGenCounter(uint32 *CounterIdPtr, const char *CounterName);
 
 /*****************************************************************************/
 /**
@@ -1546,6 +1578,27 @@ int32 CFE_ES_GetGenCount(uint32 CounterId, uint32 *Count);
 **
 ** \sa #CFE_ES_RegisterGenCounter, #CFE_ES_DeleteGenCounter, #CFE_ES_SetGenCount, #CFE_ES_IncrementGenCounter, #CFE_ES_GetGenCount
 ******************************************************************************/
-int32 CFE_ES_GetGenCounterIDByName(uint32 *CounterIdPtr, char *CounterName);
+int32 CFE_ES_GetGenCounterIDByName(uint32 *CounterIdPtr, const char *CounterName);
+
+/*****************************************************************************/
+/**
+** \brief Process an exception detected by the underlying OS/PSP
+**
+** \par Description
+**        This hook routine is called from the PSP when an exception occurs
+**
+** \par Assumptions, External Events, and Notes:
+**        None.
+**
+** \param[in]   HostTaskId       The OS (not OSAL) task ID
+** \param[in]   ReasonString     Identifier from PSP
+** \param[in]   ContextPointer   Context data from PSP
+** \param[in]   ContextSize      Size of context data from PSP
+**
+******************************************************************************/
+void CFE_ES_ProcessCoreException(uint32  HostTaskId,     const char *ReasonString,
+                                 const uint32 *ContextPointer, uint32 ContextSize);
+
+
 
 #endif  /* _cfe_es_ */

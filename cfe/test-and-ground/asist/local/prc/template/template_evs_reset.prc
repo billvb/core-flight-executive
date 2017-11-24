@@ -92,6 +92,9 @@ PROC $sc_$cpu_evs_reset
 ;     04/11/07	NSS		Removed tests for deleted requirements CEVS3204,
 ;				CEVS3205, and CEVS3206.          
 ;     01/31/12	WFM		Added variable for ram disk and clean-up
+;     05/04/16  W. Moleski      Updated for 6.5.0 testing using CPU1 for
+;                               commanding and added a hostCPU variable for the
+;                               utility procs that connect to the host IP.
 ;
 ;  Procedures/Utilities Called
 ;      Name                  Description
@@ -165,6 +168,7 @@ local cfe_plus_tst_apps = 8
 local all_apps[1..cfe_plus_tst_apps] = ["CFE_EVS","CFE_SB","CFE_ES","CFE_TIME","CFE_TBL","CI_LAB_APP","TO_LAB_APP","TST_EVS"]
 
 local ramDir = "RAM:0"
+local hostCPU = "$CPU"
  
 ; variables used to save initial values for app names, evt msg gen enable status
 ; evt msg types and app evt msg counters and bin flt ctrs
@@ -217,7 +221,7 @@ write " Step 1.2: Retrieve the application data file "
 write "           Retrieve the number of applications registered."
 write "************************************************************************"
  
-s get_file_to_cvt (ramDir,"cfe_evs_app.dat","$sc_$cpu_evs12.tst_appdat","$CPU")
+s get_file_to_cvt (ramDir,"cfe_evs_app.dat","$sc_$cpu_evs12.tst_appdat",hostCPU)
 wait 5
 
 local cfe_evs_ndx=0, cfe_sb_ndx=0, cfe_es_ndx=0, cfe_time_ndx=0, cfe_tbl_ndx=0
@@ -254,7 +258,7 @@ write "************************************************************************"
  
 ut_setupevents "$SC", "$CPU", TST_EVS, TST_EVS_INIT_INF_EID, INFO, 1
 
-start load_start_app ("TST_EVS", "$CPU")
+start load_start_app ("TST_EVS", hostCPU)
 wait 25
  
 if ($sc_$cpu_find_event[1].num_found_messages = 1) then
@@ -272,7 +276,7 @@ write " Step 1.4: Retrieve the application data file "
 write "           Retrieve the number of applications registered."
 write "************************************************************************"
  
-s get_file_to_cvt (ramDir,"cfe_evs_app.dat","$sc_$cpu_evs14.tst_appdat","$CPU")
+s get_file_to_cvt (ramDir,"cfe_evs_app.dat","$sc_$cpu_evs14.tst_appdat",hostCPU)
 wait 5
 
 write "& & & & & & & & & & & & & & & & & & & & & & & & & & & & & & & & & & "
@@ -382,9 +386,9 @@ write " Step 2.1.1: Retrieve the application data file and the local event log"
 write "            examine and account for all values therein"
 write "************************************************************************"
  
-s get_file_to_cvt (ramDir,"cfe_evs_app.dat","$sc_$cpu_rst_211.tst_appdat","$CPU")
+s get_file_to_cvt (ramDir,"cfe_evs_app.dat","$sc_$cpu_rst_211.tst_appdat",hostCPU)
 
-s get_file_to_cvt (ramDir,"cfe_evs.log","$sc_$cpu_rst_211.log","$CPU")
+s get_file_to_cvt (ramDir,"cfe_evs.log","$sc_$cpu_rst_211.log",hostCPU)
 wait 5
 
 write "************************************************************************"
@@ -404,7 +408,7 @@ write " Step 2.2.1: Retrieve app data"
 write "             To verify app binary filter ctr increment"
 write "************************************************************************"
  
-s get_file_to_cvt (ramDir,"cfe_evs_app.dat","$sc_$cpu_rst_221.tst_appdat","$CPU")
+s get_file_to_cvt (ramDir,"cfe_evs_app.dat","$sc_$cpu_rst_221.tst_appdat",hostCPU)
 wait 5
 
 if ($sc_$cpu_EVS_AppData[test_app_lctn].BinFltr[1].Ctr <> 10) then
@@ -417,7 +421,7 @@ write "************************************************************************"
 write " Step 2.2.2: Retrieve local evt log"
 write "************************************************************************"
 
-s get_file_to_cvt (ramDir,"cfe_evs.log","$sc_$cpu_rst_222.log","$CPU")
+s get_file_to_cvt (ramDir,"cfe_evs.log","$sc_$cpu_rst_222.log",hostCPU)
 wait 5
 
 write "************************************************************************"
@@ -551,7 +555,7 @@ else
   endif
 endif
                     
-s get_file_to_cvt (ramDir,"cfe_evs.log","rst_237.log","$CPU")
+s get_file_to_cvt (ramDir,"cfe_evs.log","rst_237.log",hostCPU)
 wait 5
 
 write "************************************************************************"
@@ -597,10 +601,10 @@ write " Step 2.4.2: Retrieve the application data file and local event log "
 write "             and examine them and account for their contents"
 write "************************************************************************"
  
-s get_file_to_cvt (ramDir,"cfe_evs_app.dat","rst_242.tst_appdat","$CPU")
+s get_file_to_cvt (ramDir,"cfe_evs_app.dat","rst_242.tst_appdat",hostCPU)
 wait 5
 
-s get_file_to_cvt (ramDir,"cfe_evs.log","rst_242.log","$CPU")
+s get_file_to_cvt (ramDir,"cfe_evs.log","rst_242.log",hostCPU)
 wait 5
  
 write "************************************************************************"
@@ -625,7 +629,7 @@ write "************************************************************************"
 /$SC_$CPU_TST_EVS_SendEvtMsg CRIT EventId="1" Iters="10" MILLISECONDS = "150"
 wait 15
 
-s get_file_to_cvt (ramDir,"cfe_evs.log","rst_251.log","$CPU")
+s get_file_to_cvt (ramDir,"cfe_evs.log","rst_251.log",hostCPU)
 wait 5
 
 write "************************************************************************"
@@ -638,6 +642,10 @@ write "           Critical  ENA -> DIS"
 write "***********************************************************************"
  
 /$SC_$CPU_EVS_ENAEVENTTYPE DEBUG 
+wait 8
+
+;; Turn OFF SCH Debug events
+/$SC_$CPU_EVS_DISAPPEVTTYPE APPLICATION="SCH" DEBUG
 wait 8
 
 /$SC_$CPU_EVS_DISEVENTTYPE INFO 
@@ -656,7 +664,7 @@ write "************************************************************************"
  
 totalevtmsgsentctr =  $SC_$CPU_EVS_MSGSENTC + 1
 
-s get_file_to_cvt (ramDir,"cfe_evs_app.dat","261.tst_appdat","$CPU")
+s get_file_to_cvt (ramDir,"cfe_evs_app.dat","261.tst_appdat",hostCPU)
 
 ut_tlmwait $SC_$CPU_EVS_MSGSENTC, {totalevtmsgsentctr}
  
@@ -679,7 +687,7 @@ write " Step 2.7.1: Retrieve the application data file and local event log "
 write "             and examine them and account for their contents"
 write "************************************************************************"
  
-s get_file_to_cvt (ramDir,"cfe_evs_app.dat","271.tst_appdat","$CPU")
+s get_file_to_cvt (ramDir,"cfe_evs_app.dat","271.tst_appdat",hostCPU)
 wait 5
 
 write "*****************************************************************"
@@ -777,7 +785,7 @@ write "               retrieve the Local Event Log and verify the absence of"
 write "		      no-op evt msgs"
 write "************************************************************************"
  
-s get_file_to_cvt (ramDir,"cfe_evs.log","rst_252.log","$CPU")
+s get_file_to_cvt (ramDir,"cfe_evs.log","rst_252.log",hostCPU)
 wait 5
 
 write "************************************************************************"
@@ -836,10 +844,10 @@ write" Step 2.8.4: Retrieve the application data file and local event log "
 write "            and examine them and account for their contents"
 write "************************************************************************"
  
-s get_file_to_cvt (ramDir,"cfe_evs_app.dat","284.tst_appdat","$CPU")
+s get_file_to_cvt (ramDir,"cfe_evs_app.dat","284.tst_appdat",hostCPU)
 wait 5
 
-s get_file_to_cvt (ramDir,"cfe_evs.log","rst_284.log","$CPU")
+s get_file_to_cvt (ramDir,"cfe_evs.log","rst_284.log",hostCPU)
 wait 5
 
 ; Prior to Processor Reset
@@ -885,10 +893,10 @@ write " 	  Verify preservation of contents of the Local Event Log"
 write "           by comparing to the one created prior to Processor Reset"
 write "*****************************************************************"
  
-s get_file_to_cvt (ramDir,"cfe_evs_app.dat","301.tst_appdat","$CPU")
+s get_file_to_cvt (ramDir,"cfe_evs_app.dat","301.tst_appdat",hostCPU)
 wait 5
 
-s get_file_to_cvt (ramDir,"cfe_evs.log","rst_301.log","$CPU")
+s get_file_to_cvt (ramDir,"cfe_evs.log","rst_301.log",hostCPU)
 wait 5
 ut_setrequirements cEVS3207, "A" 
  

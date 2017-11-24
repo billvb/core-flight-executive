@@ -54,7 +54,8 @@
 /*
 ** Required header files...
 */
-#include "cfe.h"
+#include "private/cfe_private.h"
+#include "cfe_fs_priv.h"
 #include "cfe_fs.h"
 #include "cfe_time.h"
 #include "osapi.h"
@@ -62,8 +63,6 @@
 #include "cfe_es.h"
 #include <string.h>
 
-void CFE_FS_ByteSwapCFEHeader(CFE_FS_Header_t *Hdr);
-void CFE_FS_ByteSwapUint32(uint32 *Uint32ToSwapPtr);
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /*                                                                         */
@@ -101,6 +100,17 @@ int32 CFE_FS_ReadHeader(CFE_FS_Header_t *Hdr, int32 FileDes)
 
 } /* End of CFE_FS_ReadHeader() */
 
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/*                                                                         */
+/* CFE_FS_InitHeader() -- intialize cFE file header structure              */
+/*                                                                         */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+void CFE_FS_InitHeader(CFE_FS_Header_t *Hdr, const char *Description, uint32 SubType)
+{
+   CFE_PSP_MemSet(Hdr, 0, sizeof(CFE_FS_Header_t));
+   strncpy((char *)Hdr->Description, Description, sizeof(Hdr->Description) - 1);
+   Hdr->SubType = SubType;
+}
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /*                                                                         */
@@ -212,17 +222,17 @@ int32 CFE_FS_SetTimestamp(int32 FileDes, CFE_TIME_SysTime_t NewTimestamp)
             }
             else
             {
-                CFE_ES_WriteToSysLog("CFE_FS:SetTime-Failed to write Subseconds (Status=0x%08X)\n", Result);
+                CFE_ES_WriteToSysLog("CFE_FS:SetTime-Failed to write Seconds (Status=0x%08X)\n", (unsigned int)Result);
             }
         }
         else
         {
-            CFE_ES_WriteToSysLog("CFE_FS:SetTime-Failed to write Seconds (Status=0x%08X)\n", Result);
+            CFE_ES_WriteToSysLog("CFE_FS:SetTime-Failed to write Seconds (Status=0x%08X)\n", (unsigned int)Result);
         }
     }
     else
     {
-        CFE_ES_WriteToSysLog("CFE_FS:SetTime-Failed to lseek time fields (Status=0x%08X)\n", Result);
+        CFE_ES_WriteToSysLog("CFE_FS:SetTime-Failed to lseek time fields (Status=0x%08X)\n", (unsigned int)Result);
     }
     
     return(Result);
@@ -276,12 +286,12 @@ void CFE_FS_ByteSwapUint32(uint32 *Uint32ToSwapPtr)
 /*   combination.                                                          */
 /*                                                                         */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-int32 CFE_FS_ExtractFilenameFromPath(char *OriginalPath, char *FileNameOnly)
+int32 CFE_FS_ExtractFilenameFromPath(const char *OriginalPath, char *FileNameOnly)
 {
    uint32 i,j;
    int    StringLength;
    int    DirMarkIdx;
-   int32  ReturnCode;
+   int32   ReturnCode;
    
    if ( OriginalPath == NULL || FileNameOnly == NULL )
    {
@@ -358,9 +368,9 @@ int32 CFE_FS_ExtractFilenameFromPath(char *OriginalPath, char *FileNameOnly)
 /*  file name. The file name must end in ".gz".                            */ 
 /*                                                                         */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-boolean CFE_FS_IsGzFile(char *FileName)
+boolean CFE_FS_IsGzFile(const char *FileName)
 {
-   int    StringLength;
+   size_t    StringLength;
    
    if ( FileName == NULL )
    {

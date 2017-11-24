@@ -264,6 +264,9 @@ PROC $sc_$cpu_evs_bin_fltr
 ;				    some general clean-up
 ;     09/17/14   Walt Moleski	    Updated to work with cFE6.4.0.0 and the fact
 ;				    that the SCH application is running.
+;     05/04/16  W. Moleski      Updated for 6.5.0 testing using CPU1 for
+;                               commanding and added a hostCPU variable for the
+;                               utility procs that connect to the host IP.
 ;
 ;******************************************************************************
 ;     Procedures/Utilities called
@@ -378,6 +381,7 @@ local evs_errcnt
 local dest_pathname 
 
 local ramDir = "RAM:0"
+local hostCPU = "$CPU"
  
 write ";***********************************************************************"
 write "; Step 1.0: Setup/Initialization"
@@ -437,7 +441,7 @@ write "; Step 1.2: Retrieve application data"
 write ";***********************************************************************"
 cmdexctr =$SC_$CPU_EVS_CMDPC + 1
 
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_1_2.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_1_2.dat", hostCPU)
 
 ut_tlmwait $SC_$CPU_EVS_CMDPC, {cmdexctr}
 
@@ -579,7 +583,7 @@ write ";***********************************************************************"
 lclevtmsgsentctr = $SC_$CPU_EVS_MSGSENTC + 1
 EVSevtmsgsentctr =  $SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
                    
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_132.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_132.dat", hostCPU)
 
 ut_tlmwait $SC_$CPU_EVS_MSGSENTC, {lclevtmsgsentctr}
 
@@ -901,7 +905,7 @@ write ";***********************************************************************"
  
 lclevtmsgsentctr = lclevtmsgsentctr + 1
                    
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_211.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_211.dat", hostCPU)
 
 ut_tlmwait $SC_$CPU_EVS_MSGSENTC, {lclevtmsgsentctr}
 
@@ -1270,7 +1274,7 @@ write ";***********************************************************************"
  
 lclevtmsgsentctr = lclevtmsgsentctr + 1
                    
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_221.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_221.dat", hostCPU)
 
 ut_tlmwait $SC_$CPU_EVS_MSGSENTC, {lclevtmsgsentctr}
 
@@ -1552,7 +1556,7 @@ write "; Step 2.3.1.1: Retrieve applications data "
 write ";***********************************************************************"
 lclevtmsgsentctr = lclevtmsgsentctr + 1
                    
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_2311.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_2311.dat", hostCPU)
 
 ut_tlmwait $SC_$CPU_EVS_MSGSENTC, {lclevtmsgsentctr}
 
@@ -1808,7 +1812,7 @@ write ";***********************************************************************"
  
 lclevtmsgsentctr = lclevtmsgsentctr + 1
                    
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_2313.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_2313.dat", hostCPU)
 
 ut_tlmwait $SC_$CPU_EVS_MSGSENTC, {lclevtmsgsentctr} 60
 
@@ -2093,7 +2097,7 @@ write "; Step 2.3.2.1: Retrieve applications data"
 write ";***********************************************************************"
 lclevtmsgsentctr = lclevtmsgsentctr + 1
                      
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_2321.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_2321.dat", hostCPU)
   
 ut_tlmwait $SC_$CPU_EVS_MSGSENTC, {lclevtmsgsentctr}
  
@@ -2395,7 +2399,7 @@ write ";***********************************************************************"
   
 lclevtmsgsentctr = lclevtmsgsentctr + 1
                    
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_242.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_242.dat", hostCPU)
 
 ut_tlmwait $SC_$CPU_EVS_MSGSENTC, {lclevtmsgsentctr}
 
@@ -2727,7 +2731,7 @@ write "; Step 2.4.4: Retrieve applications data"
 write ";***********************************************************************"
 lclevtmsgsentctr = lclevtmsgsentctr + 1
                    
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_244.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_244.dat", hostCPU)
 
 ut_tlmwait $SC_$CPU_EVS_MSGSENTC, {lclevtmsgsentctr}
 
@@ -3066,7 +3070,7 @@ local goodfile = 0;
 cmdexctr = $SC_$CPU_EVS_CMDPC + 1
 
 ; Write Application Data to File
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_271.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_271.dat", hostCPU)
 
 ; Check for correct completion
 ut_tlmwait $SC_$CPU_EVS_CMDPC, {cmdexctr}
@@ -3419,7 +3423,7 @@ lclevtmsgsentctr = lclevtmsgsentctr + 4
 
 ut_setupevents $sc, $cpu, TST_EVS, TST_EVS_INIT_INF_EID, INFO, 1
 ;
-start load_start_app ("TST_EVS", "$CPU")
+start load_start_app ("TST_EVS", hostCPU)
 
 ut_tlmwait $SC_$CPU_EVS_MSGSENTC, {lclevtmsgsentctr}
 ;
@@ -3474,7 +3478,7 @@ write "; Step 3.1.1: Retrieve application data"
 write ";***********************************************************************"
 lclevtmsgsentctr = lclevtmsgsentctr + 1
                      
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_311.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_311.dat", hostCPU)
 
 ut_tlmwait $SC_$CPU_EVS_MSGSENTC, {lclevtmsgsentctr}
 
@@ -3584,7 +3588,7 @@ write "; Step 3.2.1: Retrieve applications data "
 write ";***********************************************************************"
 lclevtmsgsentctr = lclevtmsgsentctr + 1
                       
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_321.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_321.dat", hostCPU)
 
 ut_tlmwait $SC_$CPU_EVS_MSGSENTC, {lclevtmsgsentctr}
 
@@ -3869,7 +3873,7 @@ write ";***********************************************************************"
 
 lclevtmsgsentctr = lclevtmsgsentctr + 1
                      
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_331.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_331.dat", hostCPU)
 
 ut_tlmwait $SC_$CPU_EVS_MSGSENTC, {lclevtmsgsentctr}
 
@@ -3961,7 +3965,7 @@ write ";***********************************************************************"
 ;                                          
 lclevtmsgsentctr = lclevtmsgsentctr + 1
 
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_3321.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_3321.dat", hostCPU)
 
 ut_tlmwait $SC_$CPU_EVS_MSGSENTC, {lclevtmsgsentctr}
 
@@ -4214,7 +4218,7 @@ write ";***********************************************************************"
  
 lclevtmsgsentctr = lclevtmsgsentctr + 1
                      
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_3411.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_3411.dat", hostCPU)
 
 ut_tlmwait $SC_$CPU_EVS_MSGSENTC, {lclevtmsgsentctr}
 
@@ -4473,7 +4477,7 @@ write ";***********************************************************************"
  
 lclevtmsgsentctr = lclevtmsgsentctr + 1
                    
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_343.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_343.dat", hostCPU)
 
 ut_tlmwait $SC_$CPU_EVS_MSGSENTC, {lclevtmsgsentctr}
 
@@ -4736,7 +4740,7 @@ write "; Step 3.5.1: Retrieve applications data"
 write ";***********************************************************************"
 lclevtmsgsentctr = lclevtmsgsentctr + 1
                    
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_351.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_351.dat", hostCPU)
 
 ut_tlmwait $SC_$CPU_EVS_MSGSENTC, {lclevtmsgsentctr}
 
@@ -4837,7 +4841,7 @@ write ";***********************************************************************"
  
 lclevtmsgsentctr = lclevtmsgsentctr + 1
                     
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_361.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_361.dat", hostCPU)
 
 ut_tlmwait $SC_$CPU_EVS_MSGSENTC, {lclevtmsgsentctr}
     
@@ -4929,7 +4933,7 @@ write "; Step 3.7.1: Retrieve applications data "
 write ";***********************************************************************"
 lclevtmsgsentctr = lclevtmsgsentctr + 1
                    
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_371.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_371.dat", hostCPU)
 
 ut_tlmwait $SC_$CPU_EVS_MSGSENTC, {lclevtmsgsentctr}
 
@@ -5005,7 +5009,7 @@ write ";***********************************************************************"
  
 lclevtmsgsentctr = lclevtmsgsentctr + 1
                    
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_381.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_381.dat", hostCPU)
 
 ut_tlmwait $SC_$CPU_EVS_MSGSENTC, {lclevtmsgsentctr}
 
@@ -5071,7 +5075,7 @@ write "; Step 4.0.1: Retrieve applications data "
 write ";***********************************************************************"
 lclevtmsgsentctr = lclevtmsgsentctr + 1
                    
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_401.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_401.dat", hostCPU)
 
 ut_tlmwait $SC_$CPU_EVS_MSGSENTC, {lclevtmsgsentctr}
 
@@ -5159,7 +5163,7 @@ write ";***********************************************************************"
  
 lclevtmsgsentctr = lclevtmsgsentctr + 1
                      
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_411.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_411.dat", hostCPU)
 
 ut_tlmwait $SC_$CPU_EVS_MSGSENTC, {lclevtmsgsentctr}
 
@@ -5234,7 +5238,7 @@ write ";***********************************************************************"
  
 lclevtmsgsentctr = lclevtmsgsentctr + 1
                      
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_421.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_421.dat", hostCPU)
 
 ut_tlmwait $SC_$CPU_EVS_MSGSENTC, {lclevtmsgsentctr}
 
@@ -5325,7 +5329,7 @@ write ";***********************************************************************"
 
 lclevtmsgsentctr = lclevtmsgsentctr + 1
                    
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_4_4.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_4_4.dat", hostCPU)
 
 ut_tlmwait $SC_$CPU_EVS_MSGSENTC, {lclevtmsgsentctr}
 
@@ -5445,7 +5449,7 @@ write ";***********************************************************************"
 ;
 lclevtmsgsentctr = lclevtmsgsentctr + 1
 
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_5111.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_5111.dat", hostCPU)
 
 ut_tlmwait $SC_$CPU_EVS_MSGSENTC, {lclevtmsgsentctr}
 
@@ -5583,7 +5587,7 @@ write "; Step 5.1.5.1: Retrieve app data"
 ;                     cEVS3012
 write ";***********************************************************************"
 ;
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_5151.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_5151.dat", hostCPU)
 wait 10
 
 local evtID1 = 0
@@ -5644,7 +5648,7 @@ write "; Step 5.2.1: Retrieve app data"
 ;                    test app evt msg ID1 bin fltr ctr = 0
 write ";***********************************************************************"
  
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_521.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_521.dat", hostCPU)
 wait 10
 
 if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[evtID1].Ctr = 0 ) then
@@ -5703,7 +5707,7 @@ write "; Step 5.3.1: Retrieve app data"
 ;                    test app evt msg ID1 bin fltr ctr = 0
 write ";***********************************************************************"
  
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_531.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_531.dat", hostCPU)
 wait 10                     
 
 if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[evtID1].Ctr = 0 ) then
@@ -5756,7 +5760,7 @@ write "; Step 5.4.1: Retrieve app data"
 ;                    test app evt msg ID1 bin fltr ctr = 65514
 write ";***********************************************************************"
  
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_541.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_541.dat", hostCPU)
 wait 10
 
 if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[evtID1].Ctr = 65514 ) then
@@ -5807,7 +5811,7 @@ write "; Step 5.5.1: Retrieve app data"
 ;                    cEVS3103_3
 write ";***********************************************************************"
 
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_551.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_551.dat", hostCPU)
 wait 30
 
 if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[1].Ctr = 65515) then
@@ -5867,7 +5871,7 @@ write "; Step 5.6.1: Retrieve app data"
 ;                    cEVS3103_3
 write ";***********************************************************************"
  
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_561.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_561.dat", hostCPU)
 wait 10
 
 if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[evtID1].Ctr = 65524) then
@@ -5930,7 +5934,7 @@ write "; Step 5.7.1: Retrieve app data"
 ;                    cEVS3103_3
 write ";***********************************************************************"
  
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_571.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_571.dat", hostCPU)
 wait 10
 
 if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[evtID1].Ctr = 65525) then
@@ -5996,7 +6000,7 @@ write "; Step 5.8.1: Retrieve app data"
 ;                    cEVS3103_3
 write ";***********************************************************************"
  
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_581.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_581.dat", hostCPU)
 wait 10
 
 if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[evtID1].Ctr = 65534) then
@@ -6059,7 +6063,7 @@ write "; Step 5.9.1: Retrieve app data"
 ;                    cEVS3103_3
 write ";***********************************************************************"
 ;
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_591.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_591.dat", hostCPU)
 wait 10
 
 if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[evtID1].Ctr = 65535) then
@@ -6117,7 +6121,7 @@ write "; Step 5.10.1: Retrieve app data"
 ;                     cEVS3103_3_1 no rollover
 write ";***********************************************************************"
  
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_5101.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_5101.dat", hostCPU)
 wait 10
 
 if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[evtID1].Ctr = 65535) then
@@ -6194,7 +6198,7 @@ write "; Step 5.11.1: Retrieve app data"
 ;                     cEVS3103.3.1
 write ";***********************************************************************"
  
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_5111.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_5111.dat", hostCPU)
 wait 10
 
 if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[evtID8ndx].Ctr = 10) then

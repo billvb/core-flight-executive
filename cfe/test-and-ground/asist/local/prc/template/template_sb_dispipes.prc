@@ -157,6 +157,7 @@ global ing_result
 LOCAL errorcounter, errorcounter2, cmdCtr, timeoutcounter, errorcounters[0..5], errorcounternames[0..5], stream, expectedresult[1..4]
 
 local ramDir = "RAM:0"
+local hostCPU = "$CPU"
 
 write ";**********************************************************************"
 write "; Step 1.0:  Initialize the CPU for this test."
@@ -194,7 +195,7 @@ write ";  Step 1.1.1:  Send a ""Dump Software Bus statistics packet"" command."
 write ";  Requirements: cSB4002"
 write ";**********************************************************************"
 
-start get_file_to_cvt(ramDir, "cfe_sb_route.dat", "step1_1_1", "$CPU")
+start get_file_to_cvt(ramDir, "cfe_sb_route.dat", "step1_1_1", hostCPU)
 
 ut_setupevents $SC, $CPU, CFE_SB, CFE_SB_SND_STATS_EID, DEBUG, 1
 
@@ -255,7 +256,7 @@ write ";**********************************************************************"
 
 ut_setupevents $SC, $CPU, CFE_SB, CFE_SB_MAX_PIPES_MET_EID, ERROR, 1
 ut_setupevents $SC, $CPU, TST_SB, TST_SB_INIT_INF_EID, INFO, 2
-s load_start_app ("TST_SB", "$CPU")
+s load_start_app ("TST_SB", hostCPU)
 
 ut_tlmwait $sc_$CPU_find_event[1].num_found_messages 1 60
 
@@ -288,11 +289,11 @@ write ";**********************************************************************"
 ;; CPU1 is the default
 stream = x'900'
 
-if ("$CPU" = "CPU2") then
-   stream = x'A00'
-elseif ("$CPU" = "CPU3") then
-   stream = x'B00'
-endif
+;; if ("$CPU" = "CPU2") then
+;;    stream = x'A00'
+;; elseif ("$CPU" = "CPU3") then
+;;    stream = x'B00'
+;; endif
 
 start $sc_$CPU_print_sb_pipes("rout_1-3-0", 5)
 
@@ -388,7 +389,7 @@ else
 endif
 
 ;; Get the file to the ground whether or not the event msg was rcv'd
-s ftp_file (ramDir,"cfe_sb_route.dat","$sc_$cpu_sb_route14.dat","$CPU","G")
+s ftp_file (ramDir,"cfe_sb_route.dat","$sc_$cpu_sb_route14.dat",hostCPU,"G")
 wait 10
 
 ;; Check if the file above exists and pass the requirement if it does
@@ -407,7 +408,7 @@ write ";            a specified file."
 write ";**********************************************************************"
 ut_setupevents $SC, $CPU, CFE_SB, CFE_SB_SND_RTG_EID, DEBUG, 1
  
-start get_file_to_cvt(ramDir, "cfe_sb_msgmap.dat", "$sc_$cpu_sb_msgmap15.dat", "$CPU")
+start get_file_to_cvt(ramDir, "cfe_sb_msgmap.dat", "$sc_$cpu_sb_msgmap15.dat", hostCPU)
 wait 10
 
 if ($SC_$CPU_find_event[1].num_found_messages = 1) then
@@ -446,7 +447,7 @@ else
 endif
 
 ;; Get the file to the ground whether or not the event msg was rcv'd
-s ftp_file (ramDir,"cfe_sb_msgmap.dat","$sc_$cpu_sb_msgmap16.dat","$CPU","G")
+s ftp_file (ramDir,"cfe_sb_msgmap.dat","$sc_$cpu_sb_msgmap16.dat",hostCPU,"G")
 wait 10
 
 ;; Check if the file above exists and pass the requirement if it does
@@ -1322,10 +1323,10 @@ for i=1 to CFE_SB_MAX_MSG_IDS do
       endif
       prevmsgid = $SC_$CPU_SB_RouteEntry[i].SB_MSGID
 
-      if (SCX_CPU3_SB_RouteEntry[i].SB_Appname = "TST_SB") then
-        if (SCX_CPU3_SB_RouteEntry[i].SB_MSGID > lastMsgId) AND ;;
-           (SCX_CPU3_SB_RouteEntry[i].SB_MSGID < x'1100') then
-          lastMsgId = SCX_CPU3_SB_RouteEntry[i].SB_MSGID
+      if (SCX_$CPU_SB_RouteEntry[i].SB_Appname = "TST_SB") then
+        if (SCX_$CPU_SB_RouteEntry[i].SB_MSGID > lastMsgId) AND ;;
+           (SCX_$CPU_SB_RouteEntry[i].SB_MSGID < x'1100') then
+          lastMsgId = SCX_$CPU_SB_RouteEntry[i].SB_MSGID
         endif
       endif
    endif

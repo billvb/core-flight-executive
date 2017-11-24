@@ -1,15 +1,16 @@
-Core Flight Executive Open Source Release Readme
+core Flight Executive (cFE) Open Source Release Readme
 
-cFE Release 6.4.0
+cFE Release 6.5.0 
 
 Date: 
-September 30, 2014
+June 7, 2016
 
 Introduction:
  The Core Flight Executive is a portable, platform independent embedded system 
- framework developed by NASA Goddard Space Flight Center. This framework is 
- used as the basis for the flight software for satellite data systems and 
- instruments, but can be used on other embedded systems. 
+ framework originally developed by NASA Goddard Space Flight Center and now 
+ maintained by the NASA wide community Configuration Control Board (CCB). This 
+ framework is used as the basis for the flight software for satellite data 
+ systems and instruments, but can be used on other embedded systems. 
  The Core Flight Executive is written in C and depends on another software
  library called the Operating System Abstraction Layer (OSAL). The OSAL
  is available at http://sourceforge.net/projects/osal/ 
@@ -27,14 +28,107 @@ Introduction:
   - Table Services - Data/parameter load and update services for applications  
 
  The Core Flight Executive is intended to host a suite of applications
- and libraries. The applications and libraries are not included in this 
- distribution. A sample library and sample application are included to 
- help verify that the build and runtime are configured correctly. 
+ and libraries. A small subset of the applications and libraries are included in 
+ this distribution. A set of lab applications provide a means of scheduling the 
+ cFS system, as well as, commanding and receiving telemetry. A sample library 
+ and sample application are included to help verify that the build and runtime 
+ are configured correctly.
+
+Release Notes:
+
+cFE Release 6.5.0 does NOT support the following system requirements:
+
+cES1515.1 "If the creation of the operating system object fails, the cFE shall 
+           perform a power on reset."
+
+The cause of this requirement failure is due to a failure to call the 
+CFE_PSP_Restart function from the CFE_ES_CreateObjects function when the return 
+from OS_TaskCreate != OS_SUCCESS (cfe_es_start.c, line 865).  Instead the 
+CFE_PSP_Panic function is being called (cfe_es_start.c, line 882).  The 
+CFE_PSP_Panic function makes a call to exit(-1), resulting in termination of the 
+cFS system vs. a power on reset.  This failure will be addressed in the next
+release of the cFE.  It should be noted that the current behavior is consistent
+with previous releases of the cFE.  There are two workarounds to this failure:
+
+   1. Replace the call to CFE_PSP_Panic (cfe_es_start.c, line 882) with a call
+      to CFE_PSP_Restart(CFE_PSP_RST_TYPE_POWERON). 
+
+   2. Update the CFE_PSP_Panic function to perform the desired behavior.
+
+cES1702.3 "If the CPU exception was caused by the Operating System or cFE Core 
+           then the cFE shall initiate a <PLATFORM_DEFINED> response."
+
+In the previous release of the cFE (version 6.4.2), this requirement was being
+satisfied via the PSP making a call to the cFE platform defined exception 
+handling function.  Changes to the PSP (PSP version 1.3.0) resulted in the 
+failure of this requirement. cFE requirements must be satisfied by the cFE.  
+This failure will be addressed in the next release of the cFE.  To workaround 
+this failure:
+
+Replace the call to CFE_ES_ProcessCoreException (cfe_psp_exception.c, line 155) 
+with:
+
+CFE_ES_EXCEPTION_FUNCTION((uint32 )task_id, 
+                          (uint8 *)CFE_PSP_ExceptionReasonString, 
+	 	          (uint32 *)&CFE_PSP_ExceptionContext, 
+                          sizeof(CFE_PSP_ExceptionContext_t));
+
+Note: The CFE_ES_EXCEPTION_FUNCTION prototype will need to be imported into
+the cfe_psp_exception.c source file.  Also, the cfe platform configuration
+variable CFE_ES_EXCEPTION_FUNCTION defined in the cFE_platform_cfg.h file will
+need to be updated to call the desired function.
+  
+
+cES1703.3 "If the Floating Point exception was caused by the OS or cFE Core then 
+           the cFE shall initiate a <PLATFORM_DEFINED> response."
+
+In the previous release of the cFE (version 6.4.2), this requirement was being
+satisfied via the PSP making a call to the cFE platform defined exception 
+handling function.  Changes to the PSP (PSP version 1.3.0) resulted in the 
+failure of this requirement. cFE requirements must be satisfied by the cFE.  
+This failure will be addressed in the next release of the cFE.  To workaround 
+this failure:
+
+Replace the call to CFE_ES_ProcessCoreException (cfe_psp_exception.c, line 155) 
+with:
+
+CFE_ES_EXCEPTION_FUNCTION((uint32 )task_id, 
+                          (uint8 *)CFE_PSP_ExceptionReasonString, 
+	 	          (uint32 *)&CFE_PSP_ExceptionContext, 
+                          sizeof(CFE_PSP_ExceptionContext_t));
+
+Note: The CFE_ES_EXCEPTION_FUNCTION prototype will need to be imported into
+the cfe_psp_exception.c source file.  Also, the cfe platform configuration
+variable CFE_ES_EXCEPTION_FUNCTION defined in the cFE_platform_cfg.h file will
+need to be updated to call the desired function.
+
+There were some minor API changes to this build that may result in compiler 
+warnings with applications/tasks built via previous cFE releases.  It is known
+these API changes affect the Health and Safety (HS) application version 2.2.0
+and the Stored Command (SC) application version 2.4.0.  Minor updates are 
+needed to support compatability.  These updates include:
+
+   1. In sc_cmds.c, line 911 needs to be updated to:
+
+int32 TableID = (int32) ((CFE_TBL_NotifyCmd_t *) CmdPacket)->Payload.Parameter;
+ 
+   2. In hs_monitors.c, line 268 needs to be updated to:
+
+(HS_AppData.EMTablePtr[TableIndex].EventID == EventPtr->Payload.PacketID.EventID)) 
+ 	
+   3. In hs_monitors.c, line 270 needs to be updated to:
+
+if ( strncmp(HS_AppData.EMTablePtr[TableIndex].AppName, 
+     EventPtr->Payload.PacketID.AppName, OS_MAX_API_NAME) == 0 )
+
+For detailed information on what is included/missing from this release, reference
+the cFE 6.5.0 Version Description Document.
  
 Software Included:
- Core Flight Executive ( cFE ) 6.4.0
- Platform Support Package 
- Core Flight System Mission Build system 
+ Core Flight Executive ( cFE ) 6.5.0
+ Platform Support Package (PSP) library
+ Classic core Flight System (cFS) Mission Build system 
+ Cmake Mission Build system
 
  Applications:
     Sample Library -- an example of a CFS library
@@ -51,13 +145,14 @@ Software Included:
     The command and telemetry utilities provide a basic ground system 
     for desktop testing via UDP/IP connections to ci_lab and to_lab. 
     The utilities use python 2.x and the QT 4.x GUI libraries. The forms 
-    were designed in the QT4 designer program. The python bindings used are the PyQT4
-    bindings. On Ubuntu 12.04 LTS for example: use the following command to install the 
-    software needed to run the utilities:
+    were designed in the QT4 designer program. The python bindings used are the 
+    PyQT4 bindings. On Ubuntu 12.04 LTS for example: use the following command 
+    to install the software needed to run the utilities:
+
     $ sudo apt-get install python-qt4 pyqt4-dev-tools
     
-    cmdUtil -- A simple command line utility to format and send CCSDS command over
-               UDP/IP to the CI_LAB application. Located in cfe/tools/cmdUtil.
+    cmdUtil -- A simple command line utility to format and send CCSDS command 
+               over UDP/IP to the CI_LAB application. Located in cfe/tools/cmdUtil.
                Before using cmdGui, run "make" in this directory to build the 
                cmdUtil binary.
 
@@ -73,56 +168,36 @@ Software Included:
  
 Software Required:
 
- Operating System Abstraction Layer 4.1.1 or higher
+ Operating System Abstraction Layer 4.2.0 or higher
     Can be obtained at http://sourceforge.net/projects/osal
      or github.com/nasa/osal
 
  Supported Build and Runtime Environment:
 
  Build Environment Supported:
-  This software is built on CentOS/RHEL 6.x x86 ( 32 bit ) 
+  This software is configured to build "out of the box" on a pc-linux x86 
+  ( 32 bit ) environment. 
  
-  It should be possible to build on other recent linux distributions
-  ( Debian, Ubuntu, SUSE, etc ). It should also build and run
-  as a 32 bit application on a 64 bit system.  
-  This release was compiled on CentOS 6.5-x86, CentOS-7.0-x64, 
-  Ubuntu 12.04 LTS x86, Ubuntu 14.04 LTS x64. 
-  Note: On Ubuntu 14.04, the cFE unit tests do not work due to 
-        differences in the GCC compiler. 
+  It should be possible to build on recent linux distributions
+  ( CentOS, RedHat, Debian, Ubuntu, SUSE, etc ). It should also build and run
+  as a 32 bit or 64 bit executable on a 64 bit system.  See the Version 
+  Description Document, Section 1.5, for a listing of tested platforms. 
 
-  It should be possible to build on Windows and Mac OS X, but is
-    not currently tested. The platform support packages (psp) for
-    mac-osx and pc-cygwin are out of date and will probably not 
-    work. 
-
+  It should be possible to build on Windows and Mac OS X, but is not currently 
+  tested/supported. The platform support packages (psp) for mac-osx and pc-cygwin 
+  have been decommissioned.  It is recommended to start with the pc-linux PSP 
+  implementation for building on Windows and Mac OS X, updating the PSP 
+  implementation as necessary for these PC operating systems.
+  
 Runtime Targets Supported:
    The "out of the box" targets in this distribution include:
-     1. 32 bit x86 Linux ( CentOS 6.x )
-     2. Motorola MCP750 PowerPC vxWorks 6.4
+     1. 32 bit x86 Linux 
 
 Other targets: 
-    Other targets are included, but may take additional work to
-    run. They are included as examples of other target 
-    environments.
-    1. mcf5235-rtems - This is for the Axiom MCF5235 Coldfire board running
-                       RTEMS 4.10. It requires a static loader component for the
-                       OS abstraction layer. The static loader is currently
-                       not available as open source, so this target is not
-                       considered complete. RTEMS 4.11 will have a dynamic
-                       loader which will be supported by a future release
-                       of the OS Abstraction Layer, completing the RTEMS support
-                       for the cFE.
-          
-                       Once RTEMS 4.11 is released, the goal is to support
-                       an RTEMS simulator platform such as SPARC/sis or 
-                       quemu.
+    Other targets are included via the OSAL and  PSP libraries, but may take 
+    additional work to run. 
 
-    2. mac-osx and pc-cygwin - These targets are included for examples. They
-                       will most likely be removed in the future. 
-                       The pc-linux target is highly recommended. If you 
-                       have a windows or mac computer it is relatively easy to 
-                       set up a free virtual machine environment with 32 bit 
-                       Cent OS 5.x.
+Note: The cFE assumes use of the "char" data type as an 8-bit type.
 
 Quick start:
   The following assumes you are in a CentOS/RHEL terminal. The cFE distribution
@@ -131,15 +206,15 @@ Quick start:
   Unpack the cFE distribution
 
   [cfe@localhost ~]$ cd Projects
-  [cfe@localhost Projects]$ tar -zxf cFE-6.4.0-OSS-release.tar.gz
-  [cfe@localhost Projects]$ cd cFE-6.4.0-OSS-release
+  [cfe@localhost Projects]$ tar -zxf cFE-6.5.0-OSS-release.tar.gz
+  [cfe@localhost Projects]$ cd cFE-6.5.0-OSS-release
 
   Unpack the OSAL distribution ( obtain from sources above )
   Assuming the file is in your Projects directory
-  ( example: /home/acudmore/Projects/osal-4.1.1-release.tar.gz)
+  ( example: /home/acudmore/Projects/osal-4.2.0-release.tar.gz)
 
-  [cfe@localhost cFE-6.4.0-OSS-release]$ tar -zxf ../Projects/osal-4.1.1-release.tar.gz
-  [cfe@localhost cFE-6.4.0-OSS-release]$ mv osal-4.1.1-release osal
+  [cfe@localhost cFE-6.4.1-OSS-release]$ tar -zxf ../Projects/osal-4.2.0-release.tar.gz
+  [cfe@localhost cFE-6.4.1-OSS-release]$ mv osal-4.2.0-release osal
 
   Build the cFE source code
 
@@ -147,8 +222,8 @@ Quick start:
         then './setvars.sh' !!!
         ( see the bash command "source" )
 
-  [cfe@localhost cFE-6.4.0-OSS-release]$ . ./setvars.sh
-  [cfe@localhost cFE-6.4.0-OSS-release]$ cd build
+  [cfe@localhost cFE-6.4.1-OSS-release]$ . ./setvars.sh
+  [cfe@localhost cFE-6.4.1-OSS-release]$ cd build
   [cfe@localhost build]$ cd cpu1 
    ( Note: cpu1 is configured for the pc-linux target ) 
   [cfe@localhost pc-linux]$ make config
@@ -156,7 +231,7 @@ Quick start:
   [cfe@localhost pc-linux]$ make     
    ( Note: this builds the OSAL, cFE, and apps ) 
 
-  When the build completes, the cFE core executable that runs on on CentOS is i
+  When the build completes, the cFE core executable that runs on on CentOS is 
   in the exe directory. It can be run by doing the following:
    
   [cfe@localhost cpu1]$ cd exe
@@ -188,11 +263,11 @@ Where to find more info:
   There is much more information that is beyond the scope of a readme file.
 
   The current documents can be found in the following directories:
-  cFE-6.1.1-OSS-release/docs
-  cFE-6.1.1-OSS-release/osal/docs ( once the OSAL is installed )
-  cFE-6.1.1-OSS-release/cfe/docs
+  cFE-6.5.0-OSS-release/docs
+  cFE-6.5.0-OSS-release/osal/docs ( once the OSAL is installed )
+  cFE-6.5.0-OSS-release/cfe/docs
 
-  cFE-6.1.1-OSS-release/cfe/docs/doxygen/index.html -- a good place to start
+  cFE-6.5.0-OSS-release/cfe/docs/doxygen/index.html -- a good place to start
          for the cFE 
 
   

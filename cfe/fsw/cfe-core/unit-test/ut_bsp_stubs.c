@@ -101,7 +101,6 @@ int   CfeData = 1234;
 */
 extern uint32 UT_RestartType;
 extern int32  UT_StatusBSP;
-extern int    UT_DummyFuncRtn;
 extern int    UT_SizeofESResetArea;
 extern int    UT_BSP_Fail;
 extern int    UT_CDS_Size;
@@ -116,10 +115,12 @@ extern UT_SetRtn_t BSPUnloadAppFileRtn;
 extern UT_SetRtn_t PSPRestartRtn;
 extern UT_SetRtn_t PSPMemValRangeRtn;
 extern UT_SetRtn_t BSPGetCFETextRtn;
+extern UT_SetRtn_t PSPPanicRtn;
 
 extern boolean UT_CDS_GoodEnd;
 extern boolean UT_BSPCheckValidity;
 extern boolean UT_CDSReadBlock;
+extern boolean UT_CDS_Rebuild;
 
 extern OS_time_t BSP_Time;
 
@@ -128,9 +129,70 @@ extern OS_time_t BSP_Time;
 */
 int32 dummy_function(void);
 
+#ifdef _ENHANCED_BUILD_
+
+#include <target_config.h>
+
+Target_PspConfigData GLOBAL_PSP_CONFIGDATA = { 0 };
+Target_CfeConfigData GLOBAL_CFE_CONFIGDATA = { 0 };
+
+/**
+ * Instantiation of global system-wide configuration struct
+ * This contains build info plus pointers to the PSP and CFE
+ * configuration structures.  Everything will be linked together
+ * in the final executable.
+ */
+Target_ConfigData GLOBAL_CONFIGDATA =
+{
+        .MissionVersion = "MissionUnitTest",
+        .CfeVersion = "CfeUnitTest",
+        .OsalVersion = "OsalUnitTest",
+        .Config = "MissionConfig",
+        .Date = "MissionBuildDate",
+        .User = "MissionBuildUser",
+        .Default_CpuName = "UnitTestCpu",
+        .Default_CpuId = 1,
+        .Default_SpacecraftId = 42,
+        .CfeConfig = &GLOBAL_CFE_CONFIGDATA,
+        .PspConfig = &GLOBAL_PSP_CONFIGDATA
+};
+
+
+#endif
 /*
 ** Functions
 */
+
+/*****************************************************************************/
+/**
+** \brief CFE_PSP_Panic stub function
+**
+** \par Description
+**        This function is used to mimic the response of the OS API function
+**        CFE_PSP_Panic.  The variable PSPPanicRtn.value is set equal to the
+**        input variable ErrorCode and the variable PSPPanicRtn.count is
+**        incremented each time this function is called.  The unit tests
+**        compare these values to expected results to verify proper system
+**        response.
+**
+** \par Assumptions, External Events, and Notes:
+**        None
+**
+** \returns
+**        This function does not return a value.
+**
+******************************************************************************/
+void CFE_PSP_Panic(int32 ErrorCode)
+{
+#ifdef UT_VERBOSE
+    snprintf(cMsg, UT_MAX_MESSAGE_LENGTH,
+             "  CFE_PSP_Panic called: EC = 0x%lx", (uint32) ErrorCode);
+    UT_Text(cMsg);
+#endif
+    PSPPanicRtn.value = ErrorCode;
+    PSPPanicRtn.count++;
+}
+
 /*****************************************************************************/
 /**
 ** \brief CFE_PSP_GetProcessorId stub function
@@ -279,7 +341,7 @@ int32 CFE_PSP_ReadFromCDS(void *PtrToDataToRead,
                           uint32 CDSOffset,
                           uint32 NumBytes)
 {
-    int32   status;
+    int32   status = OS_SUCCESS;
     boolean flag = FALSE;
 
     if (BSPReadCDSRtn.count > 0)
@@ -290,9 +352,9 @@ int32 CFE_PSP_ReadFromCDS(void *PtrToDataToRead,
         {
             if (UT_BSPCheckValidity == TRUE)
             {
-                memcpy(PtrToDataToRead, "_CDSBeg_", NumBytes);
+                memcpy((char *) PtrToDataToRead, "_CDSBeg_", NumBytes);
             }
-           
+
             status = BSPReadCDSRtn.value;
             flag = TRUE;
         }
@@ -307,10 +369,27 @@ int32 CFE_PSP_ReadFromCDS(void *PtrToDataToRead,
             UT_Text("  CFE_PSP_ReadFromCDS called: (FAILURE)");
 #endif
         }
+        else if (UT_CDS_Rebuild)
+        {
+            if (UT_BSPCheckValidity == TRUE)
+            {
+                memcpy((char *) PtrToDataToRead, "_CDSBeg_", NumBytes);
+                UT_BSPCheckValidity = FALSE;
+                BSPReadCDSRtn.value = 1234;
+
+            }
+            else
+            {
+                memcpy(PtrToDataToRead, "_CDSEnd_", NumBytes);
+                UT_SetCDSRebuild(FALSE);
+            }
+
+#ifdef UT_VERBOSE
+            UT_Text("  CFE_PSP_ReadFromCDS called: (REBUILD)");
+#endif
+        }
         else
         {
-            status = OS_SUCCESS;
-
             if (UT_CDS_GoodEnd == TRUE)
             {
                 if (UT_BSPCheckValidity == TRUE)
@@ -389,7 +468,7 @@ int32 CFE_PSP_GetCDSSize(uint32 *SizeOfCDS)
 **        Returns either OS_SUCCESS or OS_ERROR.
 **
 ******************************************************************************/
-int32 CFE_PSP_GetVolatileDiskMem(void *PtrToVolDisk, uint32 *SizeOfVolDisk)
+int32 CFE_PSP_GetVolatileDiskMem(cpuaddr *PtrToVolDisk, uint32 *SizeOfVolDisk)
 {
     int32 status = OS_SUCCESS;
 
@@ -406,7 +485,7 @@ int32 CFE_PSP_GetVolatileDiskMem(void *PtrToVolDisk, uint32 *SizeOfVolDisk)
     }
     else
     {
-        memset(&(PtrToVolDisk),0,sizeof(PtrToVolDisk));
+        *PtrToVolDisk = 0;
         *SizeOfVolDisk = 0;
     }
 
@@ -435,36 +514,12 @@ int32 CFE_PSP_GetVolatileDiskMem(void *PtrToVolDisk, uint32 *SizeOfVolDisk)
 void CFE_PSP_Restart(uint32 reset_type)
 {
 #ifdef UT_VERBOSE
-    SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
+    snprintf(cMsg, UT_MAX_MESSAGE_LENGTH,
              "  CFE_PSP__Restart called: reset_type = %lu", reset_type);
     UT_Text(cMsg);
 #endif
     PSPRestartRtn.value = reset_type;
     PSPRestartRtn.count++;
-}
-
-/*****************************************************************************/
-/**
-** \brief dummy_function stub function
-**
-** \par Description
-**        This function is used by the OS API function, OS_SymbolLookup, which
-**        requires a valid function for which to report the address.  The user
-**        defines the function's return value in the variable UT_DummyFuncRtn.
-**
-** \par Assumptions, External Events, and Notes:
-**        None
-**
-** \returns
-**        Returns a user-defined status value, UT_DummyFuncRtn.
-**
-******************************************************************************/
-int32 dummy_function(void)
-{
-#ifdef UT_VERBOSE
-    UT_Text("  dummy function called");
-#endif
-    return UT_DummyFuncRtn;
 }
 
 /*****************************************************************************/
@@ -505,10 +560,10 @@ void CFE_PSP_Get_Timebase(uint32 *Tbu, uint32* Tbl)
 **        Returns a user-defined status value, UT_StatusBSP.
 **
 ******************************************************************************/
-int32 CFE_PSP_GetResetArea(void *PtrToResetArea, uint32 *SizeOfResetArea)
+int32 CFE_PSP_GetResetArea(cpuaddr *PtrToResetArea, uint32 *SizeOfResetArea)
 {
     UT_CFE_ES_ResetDataPtr = &UT_CFE_ES_ResetData;
-    memcpy(PtrToResetArea, &UT_CFE_ES_ResetDataPtr, sizeof(PtrToResetArea));
+    *PtrToResetArea = (cpuaddr)UT_CFE_ES_ResetDataPtr;
     *SizeOfResetArea = UT_SizeofESResetArea;
     return UT_StatusBSP;
 }
@@ -613,12 +668,11 @@ uint32 CFE_PSP_GetTimerLow32Rollover(void)
 **        Returns either a user-defined status flag or OS_SUCCESS.
 **
 ******************************************************************************/
-int32 CFE_PSP_GetCFETextSegmentInfo(void *PtrToCFESegment,
+int32 CFE_PSP_GetCFETextSegmentInfo(cpuaddr *PtrToCFESegment,
                                     uint32 *SizeOfCFESegment)
 {
     int32   status = OS_SUCCESS;
     boolean flag = FALSE;
-    uint32  Address;
 
     if (BSPGetCFETextRtn.count > 0)
     {
@@ -634,8 +688,7 @@ int32 CFE_PSP_GetCFETextSegmentInfo(void *PtrToCFESegment,
     if (flag == FALSE)
     {
         /* Set the pointer and size to anything */
-        Address = (uint32) &CfeData;
-        memcpy(PtrToCFESegment, &Address, sizeof(PtrToCFESegment));
+	    *PtrToCFESegment = (cpuaddr)&CfeData;
         *SizeOfCFESegment = sizeof(CfeData);
     }
 
@@ -658,10 +711,10 @@ int32 CFE_PSP_GetCFETextSegmentInfo(void *PtrToCFESegment,
 **        Returns OS_SUCCESS.
 **
 ******************************************************************************/
-int32 CFE_PSP_MemRead8(uint32 Address, uint8 *Data)
+int32 CFE_PSP_MemRead8(cpuaddr Address, uint8 *Data)
 {
     *Data = 0x01;
-    return OS_SUCCESS;
+    return UT_BSP_Fail;
 }
 
 /*****************************************************************************/
@@ -684,7 +737,7 @@ int32 CFE_PSP_MemRead8(uint32 Address, uint8 *Data)
 **        Returns either a user-defined status flag or OS_SUCCESS.
 **
 ******************************************************************************/
-int32 CFE_PSP_MemValidateRange(uint32 Address, uint32 Size, uint32 MemoryType)
+int32 CFE_PSP_MemValidateRange(cpuaddr Address, uint32 Size, uint32 MemoryType)
 {
     int32 status = OS_SUCCESS;
 
@@ -700,3 +753,46 @@ int32 CFE_PSP_MemValidateRange(uint32 Address, uint32 Size, uint32 MemoryType)
 
     return status;
 }
+
+/*****************************************************************************/
+/**
+** \brief CFE_PSP_MemCpy stub function
+**
+** \par Description
+**        This function is used to mimic the response of the OS API function
+**        CFE_PSP_MemCpy.  It always returns OS_SUCCESS.
+**
+** \par Assumptions, External Events, and Notes:
+**        None
+**
+** \returns
+**        Returns OS_SUCCESS.
+**
+******************************************************************************/
+int32 CFE_PSP_MemCpy(void *dst, void *src, uint32 size)
+{
+    memcpy(dst, src, size);
+    return OS_SUCCESS;
+}
+
+/*****************************************************************************/
+/**
+** \brief CFE_PSP_MemSet stub function
+**
+** \par Description
+**        This function is used to mimic the response of the OS API function
+**        CFE_PSP_MemSet.  It always returns OS_SUCCESS.
+**
+** \par Assumptions, External Events, and Notes:
+**        None
+**
+** \returns
+**        Returns OS_SUCCESS.
+**
+******************************************************************************/
+int32 CFE_PSP_MemSet(void *dst, uint8 value , uint32 size)
+{
+    memset(dst, (int)value, (size_t)size);
+    return OS_SUCCESS;
+}
+

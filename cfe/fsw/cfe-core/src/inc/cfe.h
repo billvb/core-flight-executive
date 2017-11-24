@@ -54,7 +54,17 @@
 #include "osapi.h"            /* Define OS API function prototypes */
 
 #include "cfe_mission_cfg.h"  /* Define mission configuration parameters */
+
+/*
+ * Note that the platform configuration is _not_ included with cfe.h anymore.
+ *
+ * Most applications should not depend on any of the #defines in that file.
+ * If an application truly does need a value from the platform config, then
+ * it can retrieve it from the mission data dictionary using a public API.
+ */
+#if !defined(_ENHANCED_BUILD_)
 #include "cfe_platform_cfg.h" /* Define platform configuration parameters */
+#endif
 
 #include "cfe_msgids.h"       /* Define common cFE Message IDs */
 #include "cfe_error.h"        /* Define common cFE error codes */

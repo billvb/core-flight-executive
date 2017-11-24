@@ -120,6 +120,7 @@ extern UT_SetRtn_t GetAppIDRtn;
 extern UT_SetRtn_t ES_ExitAppRtn;
 extern UT_SetRtn_t WriteSysLogRtn;
 extern UT_SetRtn_t GetResetTypeRtn;
+extern UT_SetRtn_t ES_GetTaskInfoRtn;
 
 extern uint8        UT_CDS[UT_CDS_SIZE];
 extern UT_CDS_Map_t UT_CDS_Map;
@@ -156,7 +157,7 @@ char poolBuffer[65536];
 int32 CFE_ES_CreateChildTask(uint32 *TaskIdPtr,
                              const char *TaskName,
                              CFE_ES_ChildTaskMainFuncPtr_t FunctionPtr,
-                             const uint32 *StackPtr,
+                             uint32 *StackPtr,
                              uint32 StackSize,
                              uint32 Priority,
                              uint32 Flags)
@@ -175,7 +176,7 @@ int32 CFE_ES_CreateChildTask(uint32 *TaskIdPtr,
             status = ES_CreateChildRtn.value;
 #ifdef UT_VERBOSE
             flag = TRUE;
-            SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
+            snprintf(cMsg, UT_MAX_MESSAGE_LENGTH,
                      "  CFE_ES_CreateChildTask called: %ld",
                      ES_CreateChildRtn.value);
             UT_Text(cMsg);
@@ -186,7 +187,7 @@ int32 CFE_ES_CreateChildTask(uint32 *TaskIdPtr,
 #ifdef UT_VERBOSE
     if (flag == FALSE)
     {
-        SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
+        snprintf(cMsg, UT_MAX_MESSAGE_LENGTH,
                  "  CFE_ES_CreateChildTask called: %s", TaskName);
         UT_Text(cMsg);
     }
@@ -255,7 +256,7 @@ int32 CFE_ES_GetAppID(uint32 *pAppID)
 **        Returns either CFE_ES_ERR_APPNAME or CFE_SUCCESS.
 **
 ******************************************************************************/
-int32 CFE_ES_GetAppIDByName(uint32 *pAppID, char *pAppName)
+int32 CFE_ES_GetAppIDByName(uint32 *pAppID, const char *pAppName)
 {
     int32 status = CFE_SUCCESS;
 
@@ -339,7 +340,7 @@ int32 CFE_ES_RegisterApp(void)
             status = ES_RegisterRtn.value;
 #ifdef UT_VERBOSE
             flag = TRUE;
-            SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
+            snprintf(cMsg, UT_MAX_MESSAGE_LENGTH,
                      "  CFE_ES_RegisterApp called: %ld", ES_RegisterRtn.value);
             UT_Text(cMsg);
 #endif
@@ -401,129 +402,116 @@ int32 CFE_ES_RegisterChildTask(void)
 int32 CFE_ES_WriteToSysLog(const char *pSpecString, ...)
 {
     char    tmpString[CFE_ES_MAX_SYSLOG_MSG_SIZE];
-    VA_LIST ap;
+    va_list ap;
 
-    VA_START(ap, pSpecString, UT_OFFSET_CFE_ES_WRITETOSYSLOG,
+#ifdef OSP_ARINC653
+    va_start(ap, pSpecString, UT_OFFSET_CFE_ES_WRITETOSYSLOG,
              UT_BREAK_CFE_ES_WRITETOSYSLOG, UT_SKIP_CFE_ES_WRITETOSYSLOG);
-    VSNPRINTF(tmpString, CFE_ES_MAX_SYSLOG_MSG_SIZE, pSpecString, ap);
-    VA_END(ap);
+#else
+    va_start(ap, pSpecString);
+#endif
+
+    vsnprintf(tmpString, CFE_ES_MAX_SYSLOG_MSG_SIZE, pSpecString, ap);
+    va_end(ap);
 
     /* EVS SysLog messages */
-    if (strcmp(tmpString, "EVS call to CFE_PSP_GetResetArea failed, "
-               "RC=0xffffffff\n") == 0 ||
-        strcmp(tmpString, "EVS call to CFE_PSP_GetResetArea failed, "
-               "RC=0xFFFFFFFF\n") == 0)
+    if (UT_strcmp(tmpString, "EVS call to CFE_PSP_GetResetArea failed, "
+               "RC=0x~\n") == 0)
     {
         WriteSysLogRtn.value = EVS_SYSLOG_OFFSET + 1;
     }
-    else if (strcmp(tmpString, "Unexpected size from CFE_PSP_GetResetArea: "
-                    "expected = 0x0001ff24, actual = 0x00000000\n") == 0 ||
-             strcmp(tmpString, "Unexpected size from CFE_PSP_GetResetArea: "
-                    "expected = 0x0001FF24, actual = 0x00000000\n") == 0)
+    else if (UT_strcmp(tmpString, "Unexpected size from CFE_PSP_GetResetArea: "
+                    "expected = 0x~, actual = 0x00000000\n") == 0)
     {
         WriteSysLogRtn.value = EVS_SYSLOG_OFFSET + 2;
     }
-    else if (strcmp(tmpString, "EVS call to OS_MutSemCreate failed, "
-                    "RC=0xffffffff\n") == 0 ||
-             strcmp(tmpString, "EVS call to OS_MutSemCreate failed, "
-                    "RC=0xFFFFFFFF\n") == 0)
+    else if (UT_strcmp(tmpString, "EVS call to OS_MutSemCreate failed, "
+                    "RC=0x~\n") == 0)
     {
         WriteSysLogRtn.value = EVS_SYSLOG_OFFSET + 3;
     }
-    else if (strcmp(tmpString, "Event Log cleared following power-on "
+    else if (UT_strcmp(tmpString, "Event Log cleared following power-on "
                     "reset\n") == 0)
     {
         WriteSysLogRtn.value = EVS_SYSLOG_OFFSET + 4;
     }
-    else if (strcmp(tmpString, "Event Log cleared, n=20, c=2, f=0, m=1, "
-                    "o=0\n") == 0)
+    else if (UT_strcmp(tmpString, "Event Log cleared, n=~, c=~, f=~, m=~, "
+                    "o=~\n") == 0)
     {
         WriteSysLogRtn.value = EVS_SYSLOG_OFFSET + 5;
     }
-    else if (strcmp(tmpString, "Event Log restored, n=2, c=2, f=0, m=1, "
+    else if (UT_strcmp(tmpString, "Event Log restored, n=2, c=2, f=0, m=1, "
                     "o=0\n") == 0)
     {
         WriteSysLogRtn.value = EVS_SYSLOG_OFFSET + 6;
     }
-    else if (strcmp(tmpString, "EVS:Application Init Failed,RC="
-                    "0xffffffff\n") == 0 ||
-             strcmp(tmpString, "EVS:Application Init Failed,RC="
-                    "0xFFFFFFFF\n") == 0)
+    else if (UT_strcmp(tmpString, "EVS:Application Init Failed,RC="
+                    "0x~\n") == 0)
     {
         WriteSysLogRtn.value = EVS_SYSLOG_OFFSET + 7;
     }
-    else if (strcmp(tmpString, "EVS:Error reading cmd pipe,RC="
-                    "0xca000001\n") == 0 ||
-             strcmp(tmpString, "EVS:Error reading cmd pipe,RC="
-                    "0xCA000001\n") == 0)
+    else if (UT_strcmp(tmpString, "EVS:Error reading cmd pipe,RC="
+                    "0x~\n") == 0)
     {
         WriteSysLogRtn.value = EVS_SYSLOG_OFFSET + 8;
     }
-    else if (strcmp(tmpString, "EVS:Call to CFE_ES_RegisterApp Failed:"
-                    "RC=0xffffffff\n") == 0 ||
-             strcmp(tmpString, "EVS:Call to CFE_ES_RegisterApp Failed:"
-                    "RC=0xFFFFFFFF\n") == 0)
+    else if (UT_strcmp(tmpString, "EVS:Call to CFE_ES_RegisterApp Failed:"
+                    "RC=0x~\n") == 0)
     {
         WriteSysLogRtn.value = EVS_SYSLOG_OFFSET + 9;
     }
-    else if (strcmp(tmpString, "EVS:Call to CFE_ES_GetAppID Failed:RC="
-                    "0xc2000003\n") == 0 ||
-             strcmp(tmpString, "EVS:Call to CFE_ES_GetAppID Failed:RC="
-                    "0xC2000003\n") == 0)
+    else if (UT_strcmp(tmpString, "EVS:Call to CFE_ES_GetAppID Failed:RC="
+                    "0x~\n") == 0 )
     {
         WriteSysLogRtn.value = EVS_SYSLOG_OFFSET + 10;
     }
-    else if (strcmp(tmpString, "EVS:Call to CFE_SB_CreatePipe Failed:RC="
-                    "0xffffffff\n") == 0 ||
-             strcmp(tmpString, "EVS:Call to CFE_SB_CreatePipe Failed:RC="
-                    "0xFFFFFFFF\n") == 0)
+    else if (UT_strcmp(tmpString, "EVS:Call to CFE_SB_CreatePipe Failed:RC="
+                    "0x~\n") == 0)
     {
         WriteSysLogRtn.value = EVS_SYSLOG_OFFSET + 12;
     }
-    else if (strcmp(tmpString, "EVS:Subscribing to Cmds Failed:RC="
-                    "0xffffffff\n") == 0 ||
-             strcmp(tmpString, "EVS:Subscribing to Cmds Failed:RC="
-                    "0xFFFFFFFF\n") == 0)
+    else if (UT_strcmp(tmpString, "EVS:Subscribing to Cmds Failed:RC="
+                    "0x~\n") == 0)
     {
         WriteSysLogRtn.value = EVS_SYSLOG_OFFSET + 13;
     }
-    else if (strcmp(tmpString, "EVS:Subscribing to HK Request Failed:"
-                    "RC=0xffffffff\n") == 0 ||
-             strcmp(tmpString, "EVS:Subscribing to HK Request Failed:RC="
-                    "0xFFFFFFFF\n") == 0)
+    else if (UT_strcmp(tmpString, "EVS:Subscribing to HK Request Failed:"
+                    "RC=0x~\n") == 0)
     {
         WriteSysLogRtn.value = EVS_SYSLOG_OFFSET + 14;
     }
 
     /* FS SysLog messages */
-    else if (strcmp(tmpString, "FS SharedData Mutex Take Err Stat=0xffffffff,"
-                    "App=0,Function=FunctionName\n") == 0 ||
-             strcmp(tmpString, "FS SharedData Mutex Take Err Stat=0xFFFFFFFF,"
+    else if (UT_strcmp(tmpString, "FS SharedData Mutex Take Err Stat=0x~,"
                     "App=0,Function=FunctionName\n") == 0)
     {
         WriteSysLogRtn.value = FS_SYSLOG_OFFSET + 1;
     }
-    else if (strcmp(tmpString, "FS SharedData Mutex Give Err Stat=0xffffffff,"
-                    "App=0,Function=FunctionName\n") == 0 ||
-             strcmp(tmpString, "FS SharedData Mutex Give Err Stat=0xFFFFFFFF,"
+    else if (UT_strcmp(tmpString, "FS SharedData Mutex Give Err Stat=0x~,"
                     "App=0,Function=FunctionName\n") == 0)
     {
         WriteSysLogRtn.value = FS_SYSLOG_OFFSET + 2;
     }
 
-    else if (strcmp(tmpString, "TIME:Error reading cmd pipe,RC="
-                    "0xCA000001\n") == 0 ||
-             strcmp(tmpString, "TIME:Error reading cmd pipe,RC="
-                    "0xca000001\n") == 0)
+    else if (UT_strcmp(tmpString, "TIME:Error reading cmd pipe,RC="
+                    "0x~\n") == 0)
     {
         WriteSysLogRtn.value = TIME_SYSLOG_OFFSET + 1;
     }
-    else if (strcmp(tmpString, "TIME:Application Init Failed,RC="
-                    "0xFFFFFFFF\n") == 0 ||
-             strcmp(tmpString, "TIME:Application Init Failed,RC="
-                    "0xffffffff\n") == 0)
+    else if (UT_strcmp(tmpString, "TIME:Application Init Failed,RC="
+                    "0x~\n") == 0)
     {
         WriteSysLogRtn.value = TIME_SYSLOG_OFFSET + 2;
+    }
+    else if (strcmp(tmpString, "TIME:1Hz OS_TimerAdd failed:RC=0xFFFFFFFF\n") == 0 ||
+             strcmp(tmpString, "TIME:1Hz OS_TimerAdd failed:RC=0xffffffff\n") == 0)
+    {
+        WriteSysLogRtn.value = TIME_SYSLOG_OFFSET + 3;
+    }
+    else if (strcmp(tmpString, "TIME:1Hz OS_TimerSet failed:RC=0xFFFFFFFF\n") == 0 ||
+             strcmp(tmpString, "TIME:1Hz OS_TimerSet failed:RC=0xffffffff\n") == 0)
+    {
+        WriteSysLogRtn.value = TIME_SYSLOG_OFFSET + 4;
     }
 
     /* Unrecognized Syslog message */
@@ -534,7 +522,7 @@ int32 CFE_ES_WriteToSysLog(const char *pSpecString, ...)
 
     ++WriteSysLogRtn.count;
 #ifdef UT_VERBOSE
-    SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH, "  %s", tmpString);
+    snprintf(cMsg, UT_MAX_MESSAGE_LENGTH, "  %s", tmpString);
     UT_Text(cMsg);
 #endif
     return CFE_SUCCESS;
@@ -566,7 +554,7 @@ int32 CFE_ES_GetPoolBuf(uint32 **BufPtr,
                         CFE_ES_MemHandle_t HandlePtr,
                         uint32 Size)
 {
-    int32   a = 0x8000000;
+    int32   Block = 0x8000000;
     boolean flag = FALSE;
 
     if (GetPoolRtn.count > 0)
@@ -575,7 +563,8 @@ int32 CFE_ES_GetPoolBuf(uint32 **BufPtr,
 
         if (GetPoolRtn.count == 0)
         {
-            a = GetPoolRtn.value;
+            *BufPtr = NULL;
+            Block = GetPoolRtn.value;
             flag = TRUE;
         }
     }
@@ -584,20 +573,25 @@ int32 CFE_ES_GetPoolBuf(uint32 **BufPtr,
     {
         if (Size > CFE_SB_MAX_SB_MSG_SIZE)
         {
-            a = 0xffffffff;
+            Block = 0xffffffff;
         }
-
-        *BufPtr = (uint32 *) &poolBuffer[poolBufIndex];
-        poolBufIndex += Size;
-
-        /* Round up for return value, like CFE_ES_GetBlockSize */
-        while (!(a >> 1 & Size))
+        else
         {
-            a >>= 1;
+            /* Round up the requested size to the next highest multiple of 2
+             * for the block size, similar to CFE_ES_GetBlockSize, in order to
+             * account for memory alignment requirements
+             */
+            while (!(Block >> 1 & Size))
+            {
+                Block >>= 1;
+            }
+
+            *BufPtr = (uint32 *) &poolBuffer[poolBufIndex];
+            poolBufIndex += Block;
         }
     }
 
-    return a;
+    return Block;
 }
 
 /*****************************************************************************/
@@ -620,7 +614,7 @@ int32 CFE_ES_GetPoolBuf(uint32 **BufPtr,
 **        Returns either a user-defined status flag or OS_SUCCESS.
 **
 ******************************************************************************/
-int32 CFE_ES_PoolCreate(uint32 *HandlePtr, uint8 *MemPtr, uint32 Size)
+int32 CFE_ES_PoolCreate(cpuaddr *HandlePtr, uint8 *MemPtr, uint32 Size)
 {
     int32 status = OS_SUCCESS;
 
@@ -683,7 +677,7 @@ int32 CFE_ES_PoolCreateNoSem(CFE_ES_MemHandle_t *HandlePtr,
 **        Returns either a user-defined status flag or CFE_SUCCESS.
 **
 ******************************************************************************/
-int32 CFE_ES_PoolCreateEx(uint32 *HandlePtr,
+int32 CFE_ES_PoolCreateEx(cpuaddr *HandlePtr,
                           uint8 *MemPtr,
                           uint32 Size,
                           uint32 NumBlockSizes,
@@ -825,7 +819,7 @@ int32 CFE_ES_GetPoolBufInfo(CFE_ES_MemHandle_t HandlePtr, uint32 *BufPtr)
 void CFE_ES_PerfLogAdd(uint32 Marker, uint32 EntryExit)
 {
 #ifdef UT_VERBOSE
-    SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
+    snprintf(cMsg, UT_MAX_MESSAGE_LENGTH,
              "  CFE_ES_PerfLogAdd called: EntryExit = %lu", EntryExit);
     UT_Text(cMsg);
 #endif
@@ -847,7 +841,7 @@ void CFE_ES_PerfLogAdd(uint32 Marker, uint32 EntryExit)
 **        Returns 332424.
 **
 ******************************************************************************/
-uint32 CFE_ES_CalculateCRC(void *DataPtr,
+uint32 CFE_ES_CalculateCRC(const void *DataPtr,
                            uint32 DataLength,
                            uint32 InputCRC,
                            uint32 TypeCRC)
@@ -861,9 +855,14 @@ uint32 CFE_ES_CalculateCRC(void *DataPtr,
 **
 ** \par Description
 **        This function is used to mimic the response of the cFE ES function
-**        CFE_ES_GetTaskInfo.  The user can adjust the application name and
-**        task name by setting the value of UT_appname prior to this function
-**        being called.
+**        CFE_ES_GetTaskInfo.  The user can adjust the response by setting
+**        the values in the ES_GetTaskInfoRtn structure prior to this function
+**        being called.  If the value ES_GetTaskInfoRtn.count is greater than
+**        zero then the counter is decremented; if it then equals zero the
+**        return value is set to the user-defined value ES_GetTaskInfoRtn.value.
+**        CFE_SUCCESS is returned otherwise.  The user can adjust the
+**        application name and task name by setting the value of UT_appname
+**        prior to this function being called.
 **
 ** \par Assumptions, External Events, and Notes:
 **        None
@@ -874,29 +873,39 @@ uint32 CFE_ES_CalculateCRC(void *DataPtr,
 ******************************************************************************/
 int32 CFE_ES_GetTaskInfo(CFE_ES_TaskInfo_t *TaskInfo, uint32 TaskId)
 {
-    int32 RetVal = CFE_SUCCESS;
+
     static uint32 cnt;
+    int32   status = CFE_SUCCESS;
+    boolean flag = FALSE;
 
-    TaskInfo->AppId = 3; /* Fake ID number */
-    strncpy((char *) &TaskInfo->AppName, UT_appname, OS_MAX_API_NAME);
-    TaskInfo->AppName[OS_MAX_API_NAME - 1] = '\0';
-    strncpy((char *) &TaskInfo->TaskName, UT_appname, OS_MAX_API_NAME);
-    TaskInfo->TaskName[OS_MAX_API_NAME - 1] = '\0';
+    if (ES_GetTaskInfoRtn.count > 0)
+    {
+        ES_GetTaskInfoRtn.count--;
 
-    cnt++;
-    if ((cnt % 3) == 0)
-    {
-        RetVal = CFE_ES_APP_ERROR;
-    }
-    else
-    {
-        if ((cnt % 3) == 1)
+        if (ES_GetTaskInfoRtn.count == 0)
         {
-            strcpy((char *) &TaskInfo->TaskName, "");
+            status = ES_GetTaskInfoRtn.value;
+            flag = TRUE;
         }
     }
 
-    return RetVal;
+    if (flag == FALSE)
+    {
+        TaskInfo->AppId = 3; /* Fake ID number */
+        strncpy((char *) &TaskInfo->AppName, UT_appname, OS_MAX_API_NAME);
+        TaskInfo->AppName[OS_MAX_API_NAME - 1] = '\0';
+        strncpy((char *) &TaskInfo->TaskName, UT_appname, OS_MAX_API_NAME);
+        TaskInfo->TaskName[OS_MAX_API_NAME - 1] = '\0';
+
+        if (cnt % 2)
+        {
+            strcpy((char *) &TaskInfo->TaskName, "");
+        }
+
+        cnt++;
+    }
+
+    return status;
 }
 
 /*****************************************************************************/
@@ -1060,7 +1069,7 @@ int32 CFE_ES_RegisterCDSEx(CFE_ES_CDSHandle_t *HandlePtr,
 
     if (UT_CDS_Map.NextHandle >= UT_MAX_NUM_CDS)
     {
-        SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
+        snprintf(cMsg, UT_MAX_MESSAGE_LENGTH,
                  "  CFE_ES_RegisterCDSEx called: number of CDSs exceeds UT "
                  "maximum of %d", UT_MAX_NUM_CDS);
         UT_Text(cMsg);
@@ -1078,10 +1087,10 @@ int32 CFE_ES_RegisterCDSEx(CFE_ES_CDSHandle_t *HandlePtr,
 
     if (UT_CDS_Map.Handles[UT_CDS_Map.NextHandle] >= UT_CDS_SIZE)
     {
-        SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
+        snprintf(cMsg, UT_MAX_MESSAGE_LENGTH,
                  "  CFE_ES_RegisterCDSEx called: size of CDSs (%lu) exceeds "
-                 "UT maximum of %d", UT_CDS_Map.Handles[UT_CDS_Map.NextHandle],
-                 UT_CDS_SIZE);
+                 "UT maximum of %d", (unsigned long)UT_CDS_Map.Handles[UT_CDS_Map.NextHandle],
+                 (int)UT_CDS_SIZE);
         UT_Text(cMsg);
 
 #ifdef CFE_ARINC653
@@ -1182,5 +1191,24 @@ int32 CFE_ES_GetResetType(uint32 *ResetSubtypePtr)
 **
 ******************************************************************************/
 void CFE_ES_IncrementTaskCounter(void)
+{
+}
+
+/*****************************************************************************/
+/**
+** \brief CFE_ES_WaitForStartupSync stub function
+**
+** \par Description
+**        This function is used as a placeholder for the cFE ES function
+**        CFE_ES_WaitForStartupSync.
+**
+** \par Assumptions, External Events, and Notes:
+**        None
+**
+** \returns
+**        This function does not return a value.
+**
+******************************************************************************/
+void CFE_ES_WaitForStartupSync(uint32 Timeout)
 {
 }

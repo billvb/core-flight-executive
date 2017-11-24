@@ -94,6 +94,9 @@ PROC $sc_$cpu_evs_log
 ;     12/08/06  N. Schweiss	Changed "RAM:" to "RAM:0" for cFE 4.0.
 ;     09/30/11	W. Moleski	Created variables for ram disk and clean up.
 ;     01/30/12	W. Moleski	Updated the write statements for Pass & Fail.
+;     05/04/16	W. Moleski	Updated for 6.5.0 testing using CPU1 for
+;				commanding and added a hostCPU variable for the
+;				utility procs that connect to the host IP.
 ;
 ;  Procedures/Utilities Called
 ;         
@@ -193,6 +196,7 @@ local step_532_log_file_time
 
 local ramDir = "RAM:0"
 local logicalRamDir = "/ram/"
+local hostCPU = "$CPU"
 
 write"*****************************************************************"
 write " Step 1.0: EVS Reset Test"
@@ -246,7 +250,7 @@ write "        Local Log Overflow Counter: ", $SC_$CPU_EVS_LOGOVERFLOWC
 write "        Local Event Log Mode: ", p@$SC_$CPU_EVS_LOGMODE
 write
 
-start get_file_to_cvt (ramDir,"cfe_evs.log","$sc_$cpu_cfe_evs_21.log","$cpu")
+start get_file_to_cvt (ramDir,"cfe_evs.log","$sc_$cpu_cfe_evs_21.log",hostCPU)
 wait 5
 
 ut_tlmupdate $SC_$CPU_EVS_MSGFMTMODE
@@ -275,7 +279,7 @@ write ";  Step 2.2:  Load EVS Test App"
 write ";             Event message indicates test app has started."
 write ";**********************************************************************"
 ;  Dump the properties of all running apps
-s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log","$CPU")
+s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log",hostCPU)
 wait 5
                                                                                 
 local found_app = FALSE
@@ -292,7 +296,7 @@ if (found_app = FALSE) then
   ut_setupevents $SC, $CPU, CFE_ES, CFE_ES_START_INF_EID, INFO, 1
   ut_setupevents $SC, $CPU, TST_EVS, TST_EVS_INIT_INF_EID, INFO, 2
 
-   start load_start_app ("TST_EVS", "$CPU")
+   start load_start_app ("TST_EVS", hostCPU)
    wait 20
 
   ;; Look for expected event #1 & #2
@@ -357,7 +361,7 @@ write ";**********************************************************************"
 
 local empty_log = TRUE
 
-start get_file_to_cvt (ramDir,"cfe_evs.log","$sc_$cpu_cfe_evs_24.log","$cpu")
+start get_file_to_cvt (ramDir,"cfe_evs.log","$sc_$cpu_cfe_evs_24.log",hostCPU)
 wait 5
 
 FOR i = 1 to CFE_EVS_LOG_MAX DO
@@ -426,7 +430,7 @@ write ";**********************************************************************"
 write ";  Step 3.1.1: Get Local Event Log. "
 write ";**********************************************************************"
 
-start get_file_to_cvt (ramDir,"cfe_evs.log","$sc_$cpu_cfe_evs_311.log","$cpu")
+start get_file_to_cvt (ramDir,"cfe_evs.log","$sc_$cpu_cfe_evs_311.log",hostCPU)
 wait 5
 
 start $sc_$cpu_print_evs_log_file
@@ -494,7 +498,7 @@ write ";***********************************************************************"
 ;             Log file dumped containing the number and type of entries 
 ;             sent in previous steps.
 
-start get_file_to_cvt (ramDir,"cfe_evs.log","$sc_$cpu_cfe_evs_331.log","$cpu")
+start get_file_to_cvt (ramDir,"cfe_evs.log","$sc_$cpu_cfe_evs_331.log",hostCPU)
 wait 5
 
 start $sc_$cpu_print_evs_log_file
@@ -559,7 +563,7 @@ ut_setrequirements cEVS3108_31, "A"
 write "*** Requirement cEVS3108_31 requires ANALYSIS."
 write
 
-start get_file_to_cvt (ramDir,"cfe_evs.log","$sc_$cpu_cfe_evs_333.log","$cpu")
+start get_file_to_cvt (ramDir,"cfe_evs.log","$sc_$cpu_cfe_evs_333.log",hostCPU)
 wait 5
 
 start $sc_$cpu_print_evs_log_file
@@ -633,7 +637,7 @@ ut_setrequirements cEVS3108_31, "A"
 write "*** Requirement cEVS3108_31 requires ANALYSIS."
 write
 
-start get_file_to_cvt (ramDir,"cfe_evs.log","$sc_$cpu_cfe_evs_341.log","$cpu")
+start get_file_to_cvt (ramDir,"cfe_evs.log","$sc_$cpu_cfe_evs_341.log",hostCPU)
 wait 5
 
 step_341_log_file_time = {"pf" & %hex($CPU_CMDAPID_BASE, 2) & "cFE_createtimeseconds"}
@@ -746,7 +750,7 @@ ut_setrequirements cEVS3108_32, "A"
 write "*** Requirement cEVS3108_32 requires ANALYSIS."
 write
 
-start get_file_to_cvt (ramDir,"cfe_evs.log","$sc_$cpu_cfe_evs_421.log","$cpu")
+start get_file_to_cvt (ramDir,"cfe_evs.log","$sc_$cpu_cfe_evs_421.log",hostCPU)
 wait 5
 
 start $sc_$cpu_print_evs_log_file 
@@ -824,7 +828,7 @@ write ";***********************************************************************"
 
 local empty_log = TRUE
 
-start get_file_to_cvt (ramDir,"cfe_evs.log","$sc_$cpu_cfe_evs_432.log","$cpu")
+start get_file_to_cvt (ramDir,"cfe_evs.log","$sc_$cpu_cfe_evs_432.log",hostCPU)
 wait 5
 
 FOR i = 1 to CFE_EVS_LOG_MAX DO
@@ -886,7 +890,7 @@ write ";***********************************************************************"
 ;                Log file dumped 'n' entries. Page should show 'n' entries in 
 ;                order sent from top - down.
 
-start get_file_to_cvt (ramDir,"cfe_evs.log","$sc_$cpu_cfe_evs_4411.log","$cpu")
+start get_file_to_cvt (ramDir,"cfe_evs.log","$sc_$cpu_cfe_evs_4411.log",hostCPU)
 wait 5
 
 start $sc_$cpu_print_evs_log_file
@@ -936,7 +940,7 @@ write "; Step 4.4.2.1:  Get Local Event Log."
 write ";***********************************************************************"
 ;                 Log file dumped CFE_EVS_LOG_MAX entries
 
-start get_file_to_cvt (ramDir,"cfe_evs.log","$sc_$cpu_cfe_evs_4421.log","$cpu")
+start get_file_to_cvt (ramDir,"cfe_evs.log","$sc_$cpu_cfe_evs_4421.log",hostCPU)
 wait 5
 
 step_4421_log_file_time = {"pf" & %hex($CPU_CMDAPID_BASE, 2) & "cFE_createtimeseconds"}
@@ -1018,7 +1022,7 @@ endif
 ; ===================================
 ; Issue ftp transfer
 ; ===================================
-s ftp_file(ramDir,src_filename,dest_filename,"$cpu","g")
+s ftp_file(ramDir,src_filename,dest_filename,hostCPU,"g")
 
 ; ===================================
 ; Test if file has arrived to workstation
@@ -1136,7 +1140,7 @@ endif
 src_filename = "cfe_evs.log"
 dest_filename =  "$sc_$cpu_" & "cfe_evs_452.log"
 write "ftp ", src_filename, " to ", dest_filename
-start ftp_file(ramDir, src_filename, dest_filename, "$cpu", "g")
+start ftp_file(ramDir, src_filename, dest_filename, hostCPU, "g")
 
 ; ===================================
 ; Test if file has arrived at workstation
@@ -1319,7 +1323,7 @@ endif
 ; ===================================
 ; Issue ftp transfer
 ; ===================================
-s ftp_file(ramDir,src_filename,dest_filename,"$cpu","g")
+s ftp_file(ramDir,src_filename,dest_filename,hostCPU,"g")
 
 ; ===================================
 ; Test if file has arrived to workstation
@@ -1408,7 +1412,7 @@ endif
 src_filename = "cfe_evs.log"
 dest_filename =  "$sc_$cpu_" & "cfe_evs_532.log"
 write "ftp ", src_filename, " to ", dest_filename
-start ftp_file(ramDir, src_filename, dest_filename, "$cpu", "g")
+start ftp_file(ramDir, src_filename, dest_filename, hostCPU, "g")
 
 ; ===================================
 ; Test if file has arrived at workstation
@@ -1508,7 +1512,7 @@ write "; Step 6.1.1:  Get Local Event Log."
 write ";***********************************************************************"
 ;               Log file dumped containing no entries. File size is 288 bytes.
 
-start get_file_to_cvt (ramDir,"cfe_evs.log","$sc_$cpu_cfe_evs_611.log","$cpu")
+start get_file_to_cvt (ramDir,"cfe_evs.log","$sc_$cpu_cfe_evs_611.log",hostCPU)
 wait 5
 
 start $sc_$cpu_print_evs_log_file
@@ -1641,7 +1645,7 @@ write ";***********************************************************************"
 
 local event_text
 
-start get_file_to_cvt (ramDir,"cfe_evs.log","$sc_$cpu_cfe_evs_641.log","$cpu")
+start get_file_to_cvt (ramDir,"cfe_evs.log","$sc_$cpu_cfe_evs_641.log",hostCPU)
 wait 5
 
 FOR i = 1 to 11 DO
@@ -1756,7 +1760,7 @@ write "; Step 7.2.1: Get Local Event Log"
 write ";***********************************************************************"
 ; Log file dumped containing no entries. File size is 288 bytes.
 
-start get_file_to_cvt (ramDir,"cfe_evs.log","$sc_$cpu_cfe_evs_721.log","$cpu")
+start get_file_to_cvt (ramDir,"cfe_evs.log","$sc_$cpu_cfe_evs_721.log",hostCPU)
 wait 5
 
 start $sc_$cpu_print_evs_log_file
@@ -1799,7 +1803,7 @@ ut_setrequirements cEVS3016, "A"
 write "*** Requirement cEVS3016 requires ANALYSIS."
 write
 
-start get_file_to_cvt (ramDir,"cfe_evs.log","$sc_$cpu_cfe_evs_751.log","$cpu")
+start get_file_to_cvt (ramDir,"cfe_evs.log","$sc_$cpu_cfe_evs_751.log",hostCPU)
 wait 5
 
 start $sc_$cpu_print_evs_log_file

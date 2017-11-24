@@ -31,3 +31,17 @@ OS = posix
 ##---------------------------------------------------------
 PSP = pc-linux
 
+##---------------------------------------------------------
+## BSP -- OSAL BSP/Operating system for the board
+##
+## Required when building OSAL Unit Tests.
+##
+## Current selections include:
+## 
+## BSP = pc-linux-ut         -- Unit test target
+## BSP = pc-linux            -- Target to run on PC-linux
+## BSP = genppc-vxworks6.4   -- vxWorks Power PC target
+## BSP = mcf5235-rtems       -- RTEMS Coldfire evaluation board
+## BSP = sis-rtems           -- RTEMS Sparc Instruction Simulator (GDB)
+##---------------------------------------------------------
+BSP = pc-linux

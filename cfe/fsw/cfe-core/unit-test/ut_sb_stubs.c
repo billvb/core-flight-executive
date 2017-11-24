@@ -63,13 +63,11 @@
 /*
 ** External global variables
 */
-extern uint32 UT_RestartType;
 extern uint16 UT_RcvMsgCode;
 extern int    UT_SB_TotalMsgLen;
 extern char   cMsg[];
 
 extern CFE_SB_MsgId_t       UT_RcvMsgId;
-extern CFE_EVS_GlobalData_t CFE_EVS_GlobalData;
 
 extern UT_SetRtn_t SB_SubscribeRtn;
 extern UT_SetRtn_t SB_SubscribeExRtn;
@@ -88,7 +86,7 @@ CFE_SB_Msg_t UT_message;
 /*
 **  Functions prototypes
 */
-void UT_ProcessSBMsg(CFE_SB_Msg_t *MsgPtr);
+extern void UT_ProcessSBMsg(CFE_SB_Msg_t *MsgPtr);
 
 /*
 ** Functions
@@ -153,7 +151,7 @@ void CFE_SB_TaskMain(void)
 **
 ******************************************************************************/
 int32 CFE_SB_CreatePipe(CFE_SB_PipeId_t *PipeIdPtr, uint16 Depth,
-                        char *PipeName)
+                        const char *PipeName)
 {
     int32   status = CFE_SUCCESS;
 #ifdef UT_VERBOSE
@@ -167,7 +165,7 @@ int32 CFE_SB_CreatePipe(CFE_SB_PipeId_t *PipeIdPtr, uint16 Depth,
         if (SB_CreatePipeRtn.count == 0)
         {
 #ifdef UT_VERBOSE
-            SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
+            snprintf(cMsg, UT_MAX_MESSAGE_LENGTH,
                      "  CFE_SB_CreatePipe called: %ld",
                      SB_CreatePipeRtn.value);
             UT_Text(cMsg);
@@ -260,7 +258,7 @@ void CFE_SB_InitMsg(void *MsgPtr,
                     boolean Clear)
 {
 #ifdef UT_VERBOSE
-    SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
+    snprintf(cMsg, UT_MAX_MESSAGE_LENGTH,
              "  CFE_SB_InitMsg called: initialized msg %d", MsgId);
     UT_Text(cMsg);
 #endif
@@ -371,19 +369,19 @@ int32 CFE_SB_SendMsg(CFE_SB_Msg_t *MsgPtr)
             case CFE_EVS_EVENT_MSG_MID:
 
                 packet = (CFE_EVS_Packet_t *) MsgPtr;
-                SendMsgEventIDRtn.value = packet->PacketID.EventID;
+                SendMsgEventIDRtn.value = packet->Payload.PacketID.EventID;
 #ifdef UT_VERBOSE
-                SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
+                snprintf(cMsg, UT_MAX_MESSAGE_LENGTH,
 "  CFE_SB_SendMsg called: type CFE_EVS_EVENT_MSG_MID\n  %lu/%lu/%s %u:%s",
-                        packet->PacketID.SpacecraftID,
-                        packet->PacketID.ProcessorID,
-                        packet->PacketID.AppName,
-                        packet->PacketID.EventID,
-                        packet->Message);
+                        packet->Payload.PacketID.SpacecraftID,
+                        packet->Payload.PacketID.ProcessorID,
+                        packet->Payload.PacketID.AppName,
+                        packet->Payload.PacketID.EventID,
+                        packet->Payload.Message);
                 UT_Text(cMsg);
 #endif
 
-                if (*packet->Message != '\0')
+                if (*packet->Payload.Message != '\0')
                 {
                     SendMsgEventIDRtn.count++;
                 }
@@ -395,7 +393,7 @@ int32 CFE_SB_SendMsg(CFE_SB_Msg_t *MsgPtr)
                 SendMsgEventIDRtn.value = CFE_EVS_HK_TLM_MID;
 #ifdef UT_VERBOSE
                 tlmpkt = (CFE_EVS_TlmPkt_t *) MsgPtr;
-                SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
+                snprintf(cMsg, UT_MAX_MESSAGE_LENGTH,
                          "  CFE_SB_SendMsg: type CFE_EVS_HK_TLM_MID\n"
                            "   CommandCounter = %d\n"
                            "   CommandErrCounter = %d\n"
@@ -405,22 +403,22 @@ int32 CFE_SB_SendMsg(CFE_SB_Msg_t *MsgPtr)
                            "   UnregisteredAppCounter = %d\n"
                            "   OutputPort = %d\n   LogFullFlag = %d\n"
                            "   LogMode = %d\n   LogOverflowCounter = %d",
-                         tlmpkt->CommandCounter, tlmpkt->CommandErrCounter,
-                         tlmpkt->MessageFormatMode, tlmpkt->MessageSendCounter,
-                         tlmpkt->MessageTruncCounter,
-                         tlmpkt->UnregisteredAppCounter, tlmpkt->OutputPort,
-                         tlmpkt->LogFullFlag, tlmpkt->LogMode,
-                         tlmpkt->LogOverflowCounter);
+                         tlmpkt->Payload.CommandCounter, tlmpkt->Payload.CommandErrCounter,
+                         tlmpkt->Payload.MessageFormatMode, tlmpkt->Payload.MessageSendCounter,
+                         tlmpkt->Payload.MessageTruncCounter,
+                         tlmpkt->Payload.UnregisteredAppCounter, tlmpkt->Payload.OutputPort,
+                         tlmpkt->Payload.LogFullFlag, tlmpkt->Payload.LogMode,
+                         tlmpkt->Payload.LogOverflowCounter);
                 UT_Text(cMsg);
 
                 for (i = 0; i < CFE_ES_MAX_APPLICATIONS; i++)
                 {
-                    SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
+                    snprintf(cMsg, UT_MAX_MESSAGE_LENGTH,
                              "   AppID = %lu\n    AppEnableStatus = %d\n    "
                                "AppMessageSentCounter = %d",
-                             tlmpkt->AppData[i].AppID,
-                             tlmpkt->AppData[i].AppEnableStatus,
-                             tlmpkt->AppData[i].AppMessageSentCounter);
+                             tlmpkt->Payload.AppData[i].AppID,
+                             tlmpkt->Payload.AppData[i].AppEnableStatus,
+                             tlmpkt->Payload.AppData[i].AppMessageSentCounter);
                     UT_Text(cMsg);
                }
 #endif
@@ -430,7 +428,7 @@ int32 CFE_SB_SendMsg(CFE_SB_Msg_t *MsgPtr)
 
                 SendMsgEventIDRtn.value = CFE_TIME_DIAG_TLM_MID;
 #ifdef UT_VERBOSE
-                SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
+                snprintf(cMsg, UT_MAX_MESSAGE_LENGTH,
                          "Incomplete TIME command: %d",
                          CFE_SB_GetMsgId(MsgPtr));
                 UT_Text(cMsg);
@@ -441,7 +439,7 @@ int32 CFE_SB_SendMsg(CFE_SB_Msg_t *MsgPtr)
 
                 SendMsgEventIDRtn.value = CFE_TIME_HK_TLM_MID;
 #ifdef UT_VERBOSE
-                SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
+                snprintf(cMsg, UT_MAX_MESSAGE_LENGTH,
                          "Incomplete TIME housekeeping command: %d",
                          CFE_SB_GetMsgId(MsgPtr));
                 UT_Text(cMsg);
@@ -576,7 +574,7 @@ int32 CFE_SB_SubscribeEx(CFE_SB_MsgId_t MsgId, CFE_SB_PipeId_t PipeId,
             status = SB_SubscribeExRtn.value;
 #ifdef UT_VERBOSE
             flag = TRUE;
-            SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
+            snprintf(cMsg, UT_MAX_MESSAGE_LENGTH,
                      "  CFE_SB_SubscribeEx called: %ld",
                      SB_SubscribeExRtn.value);
             UT_Text(cMsg);
@@ -587,7 +585,7 @@ int32 CFE_SB_SubscribeEx(CFE_SB_MsgId_t MsgId, CFE_SB_PipeId_t PipeId,
 #ifdef UT_VERBOSE
     if (flag == FALSE)
     {
-        SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
+        snprintf(cMsg, UT_MAX_MESSAGE_LENGTH,
                  "  CFE_SB_SubscribeEx called: subscribed to msg %d", MsgId);
         UT_Text(cMsg);
     }
@@ -632,7 +630,7 @@ int32 CFE_SB_Subscribe(CFE_SB_MsgId_t MsgId, CFE_SB_PipeId_t PipeId)
             status = SB_SubscribeRtn.value;
 #ifdef UT_VERBOSE
             flag = TRUE;
-            SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
+            snprintf(cMsg, UT_MAX_MESSAGE_LENGTH,
                      "  CFE_SB_Subscribe called: %ld", SB_SubscribeRtn.value);
             UT_Text(cMsg);
 #endif
@@ -642,7 +640,7 @@ int32 CFE_SB_Subscribe(CFE_SB_MsgId_t MsgId, CFE_SB_PipeId_t PipeId)
 #ifdef UT_VERBOSE
     if (flag == FALSE)
     {
-        SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
+        snprintf(cMsg, UT_MAX_MESSAGE_LENGTH,
                  "  CFE_SB_Subscribe called: subscribed to msg %d", MsgId);
         UT_Text(cMsg);
     }
@@ -689,7 +687,7 @@ int32 CFE_SB_SubscribeLocal(CFE_SB_MsgId_t MsgId,
             status = SB_SubscribeLocalRtn.value;
 #ifdef UT_VERBOSE
             flag = TRUE;
-            SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
+            snprintf(cMsg, UT_MAX_MESSAGE_LENGTH,
                      "  CFE_SB_Subscribe called: %ld",
                      SB_SubscribeLocalRtn.value);
             UT_Text(cMsg);
@@ -700,7 +698,7 @@ int32 CFE_SB_SubscribeLocal(CFE_SB_MsgId_t MsgId,
 #ifdef UT_VERBOSE
     if (flag == FALSE)
     {
-        SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
+        snprintf(cMsg, UT_MAX_MESSAGE_LENGTH,
                  "  CFE_SB_SubscribeLocal called: subscribed to msg %d",
                  MsgId);
         UT_Text(cMsg);
@@ -758,19 +756,14 @@ uint16 CFE_SB_GetTotalMsgLength(CFE_SB_MsgPtr_t MsgPtr)
 ** \brief CFE_SB_CleanUpApp stub function
 **
 ** \par Description
-**        This function is used to mimic the response of the cFE SB function
-**        CFE_SB_CleanUpApp.  The user can adjust the response by setting
-**        the values in the SBCleanUpRtn structure prior to this
-**        function being called.  If the value SBCleanUpRtn.count is
-**        greater than zero then the counter is decremented; if it then equals
-**        zero the return value is set to the user-defined value
-**        SBCleanUpRtn.value.  CFE_SUCCESS is returned otherwise.
+**        This function is used as a placeholder for the cFE SB function
+**        CFE_SB_CleanUpApp.
 **
 ** \par Assumptions, External Events, and Notes:
 **        None
 **
 ** \returns
-**        Returns either a user-defined status flag or CFE_SUCCESS.
+**        This function does not return a value.
 **
 ******************************************************************************/
 int32 CFE_SB_CleanUpApp(uint32 AppId)
@@ -788,4 +781,58 @@ int32 CFE_SB_CleanUpApp(uint32 AppId)
     }
 
     return status;
+}
+
+/******************************************************************************
+**  Function:  CFE_SB_MessageStringGet()
+**
+**  See function prototype for full description
+**
+*/
+int32 CFE_SB_MessageStringGet(char *DestStringPtr, const char *SourceStringPtr, const char *DefaultString, uint32 DestMaxSize, uint32 SourceMaxSize)
+{
+    if (DestMaxSize == 0)
+    {
+        return CFE_SB_BAD_ARGUMENT;
+    }
+
+    /*
+     * Check if should use the default, which is if
+     * the source string has zero length (first char is NUL).
+     */
+    if (DefaultString != NULL && (SourceMaxSize == 0 || *SourceStringPtr == 0))
+    {
+        SourceStringPtr = DefaultString;
+        SourceMaxSize = DestMaxSize;
+    }
+
+    /* For the UT implementation, just call strncpy() */
+    strncpy(DestStringPtr, SourceStringPtr, DestMaxSize - 1);
+    DestStringPtr[DestMaxSize - 1] = 0;
+
+    return strlen(DestStringPtr);
+}
+
+
+/******************************************************************************
+**  Function:  CFE_SB_MessageStringSet()
+**
+**  See function prototype for full description
+**
+*/
+int32 CFE_SB_MessageStringSet(char *DestStringPtr, const char *SourceStringPtr, uint32 DestMaxSize, uint32 SourceMaxSize)
+{
+    if (DestMaxSize == 0)
+    {
+        return CFE_SB_BAD_ARGUMENT;
+    }
+
+    /* For the UT implementation, just call strncpy() */
+    strncpy(DestStringPtr, SourceStringPtr, DestMaxSize);
+    if (DestStringPtr[DestMaxSize - 1] != 0)
+    {
+        return DestMaxSize;
+    }
+
+    return strlen(DestStringPtr);
 }

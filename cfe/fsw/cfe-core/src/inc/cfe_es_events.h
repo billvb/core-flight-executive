@@ -1513,6 +1513,47 @@
 #define CFE_ES_TASKINFO_WR_ERR_EID    90
 
 
+/** \brief <tt> 'Mission %s.%s, %s, %s' </tt>
+**  \event <tt> 'Mission %s.%s, %s, %s' </tt>
+**
+**  \par Type: INFORMATION
+**
+**  \par Cause:
+**
+**  This event message is always automatically issued when the Executive Services
+**  Task completes its Initialization
+**
+**  The \c Mission field identifies the tagged build identifiers and configuration name.
+**  If available, this will also indicate the revision control identifiers for CFE and OSAL
+**  that this binary was built with.
+**/
+#define CFE_ES_VERSION_INF_EID    91
+
+/** \brief <tt> 'Build %s %s' </tt>
+**  \event <tt> 'Build %s %s' </tt>
+**
+**  \par Type: INFORMATION
+**
+**  \par Cause:
+**
+**  This event message is always automatically issued when the Executive Services
+**  Task completes its Initialization, and as part of the Noop command.
+**
+**  The \c Build field identifies the build date, time, hostname and user identifier of
+**  the build host machine for the current running binary.  The first string is the
+**  build date/time, and the second string is formatted as "user@hostname"
+**
+**  By default, if not specified/overridden, the default values of these variables will be:
+**    BUILDDATE ==> the output of "date +%Y%m%d%H%M"
+**    HOSTNAME ==> the output of "hostname"
+**    USER ==> the output of "whoami"
+**
+**  The values can be overridden by setting an environment variable with the names above
+**  to the value desired for the field when running "make".
+**/
+#define CFE_ES_BUILD_INF_EID    92
+
+
 
 #endif /* _cfe_es_events_ */
 

@@ -127,6 +127,10 @@ proc $sc_$cpu_evs_cmds
 ;     10/27/11	 W. Moleski   Modified to be like other tests
 ;     09/15/14	 W. Moleski   Modified to add the SCH app since this is started
 ;			      rather than the SCH_LAB application
+;     05/04/16  W. Moleski    Updated for 6.5.0 testing using CPU1 for 
+;			      commanding and added a hostCPU variable for the
+;                             utility procs that connect to the host IP.
+;			      Replaced SCH with SCH_LAB for cFE 6.5.0 testing.
 ;
 ;  Arguments
 ;
@@ -181,31 +185,31 @@ local logging = %liv (log_procedure)
 local i = 0
 local cfe_app_cnt = 9        ; dependant on number of apps being processed
 local added_app_lctn = 0
-local cfe_applications[cfe_app_cnt] = ["CFE_EVS","CFE_SB","CFE_ES","CFE_TIME","CFE_TBL","CI_LAB_APP","TO_LAB_APP","SCH","TST_EVS"]
+local cfe_applications[cfe_app_cnt] = ["CFE_EVS","CFE_SB","CFE_ES","CFE_TIME","CFE_TBL","CI_LAB_APP","TO_LAB_APP","SCH_LAB_APP","TST_EVS"]
 local cfe_debug_msgs[cfe_app_cnt] = [1,0,0,0,0,0,0,0,1]
 local cfe_info_msgs[cfe_app_cnt] =  [1,1,1,1,1,1,1,0,1]
 local cfe_error_msgs[cfe_app_cnt] = [0,0,0,0,0,0,0,0,1]
 local cfe_crit_msgs[cfe_app_cnt] =  [0,0,0,0,0,0,0,0,1]
+local bin_fltr_msgs[cfe_app_cnt] =  [0,1,0,0,0,0,1,0,1]
 
 local cfe_port_cnt = 4
 local cfe_ports[cfe_port_cnt] = ["PORT_ONE","PORT_TWO","PORT_THREE","PORT_FOUR"]
 
 local raw_command
 
-local previous_event_type_status[cfe_app_cnt]
-local current_event_type_status[cfe_app_cnt]
-local event_type_status_flag[cfe_app_cnt]
+local previous_event_type_status[CFE_ES_MAX_APPLICATIONS]
+local current_event_type_status[CFE_ES_MAX_APPLICATIONS]
+local event_type_status_flag[CFE_ES_MAX_APPLICATIONS]
 
-local previous_app_msg_sent_ctr[cfe_app_cnt]
-local current_app_msg_sent_ctr[cfe_app_cnt]
-local msg_ctr_status_flag[cfe_app_cnt]
+local previous_app_msg_sent_ctr[CFE_ES_MAX_APPLICATIONS]
+local current_app_msg_sent_ctr[CFE_ES_MAX_APPLICATIONS]
+local msg_ctr_status_flag[CFE_ES_MAX_APPLICATIONS]
 
 local previous_port_mask
 local port_mask_status_flag
 
-local previous_bin_fltr_ctr[cfe_app_cnt]
-local current_bin_fltr_ctr[cfe_app_cnt]
-local bin_fltr_msgs[cfe_app_cnt] =  [0,1,0,0,0,0,1,0,1]
+local previous_bin_fltr_ctr[CFE_ES_MAX_APPLICATIONS]
+local current_bin_fltr_ctr[CFE_ES_MAX_APPLICATIONS]
 
 #define EVS_3000	0
 #define EVS_3002	1
@@ -236,6 +240,7 @@ local cfe_requirements[0 .. ut_req_array_size] = ["cEVS3000","cEVS3002","cEVS300
  
 local ramDir = "RAM:0"
 local logicalRamDir = "/ram/"
+local hostCPU = "$CPU"
 
 write ";***********************************************************************"
 write "; Step 1.0: Test setup"
@@ -273,10 +278,10 @@ write "; Step 1.2: Start the TST_EVS application."
 write ";***********************************************************************"
 ;; Check if TST_EVS app is running
 
-start load_start_app ("TST_EVS", "$CPU")
+start load_start_app ("TST_EVS", hostCPU)
 wait 10
 
-start get_file_to_cvt (ramDir,"cfe_es_app_info.log","cfe_es_app_info_afterinit.log","$CPU")
+start get_file_to_cvt (ramDir,"cfe_es_app_info.log","cfe_es_app_info_afterinit.log",hostCPU)
 
 IF ($sc_$cpu_is_app_loaded("TST_EVS")) THEN
   write "<*> Passed - TST_EVS initialization OK."
@@ -288,7 +293,7 @@ ENDIF
 write ";***********************************************************************"
 write "; Step 1.3: Retrieve the application data file."
 write ";***********************************************************************"
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_13.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_13.dat", hostCPU)
 wait 5
 
 ;;Report of evt message type statuses for cFE core and added test apps
@@ -301,15 +306,17 @@ enddo
  
 IF (added_app_lctn > 0) THEN
   write "  >>> Default status for every event message type "
-  FOR i = 1 to cfe_app_cnt DO
-    write " For app ", $sc_$cpu_EVS_AppData[i].AppName
-    write " DEBUG = ", p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Debug
-    write " INFO = ", p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Info
-    write " ERROR = ", p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Err
-    write " CRIT = ", p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Crit
-    write " Evt msg types mask"
-    write " CEID"
-    write " ",$sc_$cpu_EVS_AppData[i].EvtTypeAF.Crit, $sc_$cpu_EVS_AppData[i].EvtTypeAF.Err, $sc_$cpu_EVS_AppData[i].EvtTypeAF.Info, $sc_$cpu_EVS_AppData[i].EvtTypeAF.Debug
+  FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+    if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+      write " For app ", $sc_$cpu_EVS_AppData[i].AppName
+      write " DEBUG = ", p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Debug
+      write " INFO = ", p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Info
+      write " ERROR = ", p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Err
+      write " CRIT = ", p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Crit
+      write " Evt msg types mask"
+      write " CEID"
+      write " ",$sc_$cpu_EVS_AppData[i].EvtTypeAF.Crit, $sc_$cpu_EVS_AppData[i].EvtTypeAF.Err, $sc_$cpu_EVS_AppData[i].EvtTypeAF.Info, $sc_$cpu_EVS_AppData[i].EvtTypeAF.Debug
+    endif
   ENDDO
 ELSE
    write "*** Warning; added_app_lctn = ", added_app_lctn
@@ -337,7 +344,7 @@ else
   write "<*> Passed (3004) - Write App Data to File command did not increment CMDPC."
 endif
 
-start ftp_file (ramDir, src_filename , dest_filename, "$cpu", "g")
+start ftp_file (ramDir, src_filename , dest_filename, hostCPU, "g")
 wait 10
 IF file_exists(dest_pathname) THEN
   ut_setrequirements EVS_3004, "P"
@@ -365,7 +372,7 @@ endif
 
 src_filename = "cfe_evs_app.dat" ;default name
 dest_filename =  "$sc_$cpu_" & src_filename
-start ftp_file (ramDir, src_filename , dest_filename, "$cpu", "g")
+start ftp_file (ramDir, src_filename , dest_filename, hostCPU, "g")
 wait 10
 
 dest_pathname = work & "/image/" & dest_filename
@@ -495,20 +502,23 @@ write ";***********************************************************************"
 wait 10
  
 ; Retrieve application data file
-start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_314.dat","$CPU")
+start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_314.dat",hostCPU)
 wait 5
  
 ;event message types 
 write "  >>> Default status for every event message type "
-FOR i = 1 to cfe_app_cnt DO
-  write " For app ", $sc_$cpu_EVS_AppData[i].AppName
-  write " DEBUG = ", p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Debug
-  write " INFO = ", p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Info
-  write " ERROR = ", p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Err
-  write " CRIT = ", p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Crit
-  write " Evt msg types mask"
-  write " CEID"
-  write " ",$sc_$cpu_EVS_AppData[i].EvtTypeAF.Crit, $sc_$cpu_EVS_AppData[i].EvtTypeAF.Err, $sc_$cpu_EVS_AppData[i].EvtTypeAF.Info, $sc_$cpu_EVS_AppData[i].EvtTypeAF.Debug
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+    write " For app ", $sc_$cpu_EVS_AppData[i].AppName
+    write " DEBUG = ", p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Debug
+    write " INFO = ", p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Info
+    write " ERROR = ", p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Err
+    write " CRIT = ", p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Crit
+    write " Evt msg types mask"
+    write " CEID"
+    write " ",$sc_$cpu_EVS_AppData[i].EvtTypeAF.Crit, $sc_$cpu_EVS_AppData[i].EvtTypeAF.Err, $sc_$cpu_EVS_AppData[i].EvtTypeAF.Info, $sc_$cpu_EVS_AppData[i].EvtTypeAF.Debug
+  endif
 ENDDO
 
 write ";***********************************************************************"
@@ -578,42 +588,48 @@ write ";***********************************************************************"
 write "; Step 3.2.2: Send Disable Application Event Type for DEBUG messages "
 write ";             for each cFE application: CFE_SB, CFE_ES, CFE_EVS, "
 write ";             CFE_TIME, TST_EVS"
-write ";             Telemetry indicates DEBUG messages ENABLE."
+write ";             Telemetry indicates DEBUG messages DISABLED."
 write ";             cEVS3007"
 write ";***********************************************************************"
 ; Retrieve application data file
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_322.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_322.dat", hostCPU)
 wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   previous_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Debug 
-ENDDO
-
-FOR i = 1 to cfe_app_cnt DO
-  /$SC_$CPU_EVS_DISAPPEVTTYPE APPLICATION=cfe_applications[i] DEBUG
-  wait 5
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+    previous_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Debug 
+;;    /$SC_$CPU_EVS_DISAPPEVTTYPE APPLICATION=cfe_applications[i] DEBUG
+    /$SC_$CPU_EVS_DISAPPEVTTYPE APPLICATION=$sc_$cpu_evs_AppData[i].AppName DEBUG
+    wait 5
+  endif
 ENDDO
 
 ; Retrieve application data file
-start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_322a.dat","$CPU")
+start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_322a.dat",hostCPU)
 wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   current_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Debug 
-ENDDO
+;;FOR i = 1 to cfe_app_cnt DO
+;;   current_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Debug 
+;;ENDDO
 
 local evs3007Passed = TRUE
 write "" 
-write "     DEBUG message status"
-write "     --------------------"
-FOR i = 1 to cfe_app_cnt DO
-  IF (previous_event_type_status[i] = current_event_type_status[i]) THEN
-    event_type_status_flag[i] = "*** FAILED ***"
-    evs3007Passed = FALSE
-  ELSE
-    event_type_status_flag[i] = "OK"
-  ENDIF
-  write "     ", cfe_applications[i], " - ", previous_event_type_status[i] , " -> " , current_event_type_status[i], "   ", event_type_status_flag[i]
+write "     DEBUG message status DISABLED"
+write "     -----------------------------"
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+  ;;IF (previous_event_type_status[i] = current_event_type_status[i]) THEN
+    if (p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Debug <> "DIS") then
+      event_type_status_flag[i] = "*** FAILED ***"
+      evs3007Passed = FALSE
+    ELSE
+      event_type_status_flag[i] = "OK"
+    ENDIF
+;;    write "     ", cfe_applications[i], " - ", previous_event_type_status[i] , " -> " , current_event_type_status[i], "   ", event_type_status_flag[i]
+    write "     ",$sc_$cpu_evs_AppData[i].AppName," - ",event_type_status_flag[i]
+  endif
 ENDDO
 
 if (evs3007Passed = TRUE) then
@@ -635,34 +651,44 @@ write ";***********************************************************************"
 ;; in the cfe_applications array
 local evt_msg_sent_ctr_offset = [0,0,0,0,0,0,0,0,0]
 
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_323.dat", "$CPU")
-wait 5
+;; Don't need to do this since it was just dumped to verify status above
+;;start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_323.dat", hostCPU)
+;;wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   previous_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+    previous_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+  endif
 ENDDO
 
+;; Should send debug event for each CFE app -> Only does TST_EVS
 s $sc_$cpu_evs_send_debug
 
-start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_323a.dat","$CPU")
+start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_323a.dat",hostCPU)
 wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   current_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
-ENDDO
+;;FOR i = 1 to cfe_app_cnt DO
+;;   current_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+;;ENDDO
 
 evs3007Passed = TRUE
 write "" 
 write "     Msg Sent Counter"
 write "     ----------------"
-FOR i = 1 to cfe_app_cnt DO
-  IF (previous_app_msg_sent_ctr[i] + evt_msg_sent_ctr_offset[i] = current_app_msg_sent_ctr[i]) THEN
-    msg_ctr_status_flag[i] = "OK"
-  ELSE
-    msg_ctr_status_flag[i] = "*** FAILED ***"
-    evs3007Passed = FALSE
-  ENDIF
-  write "     ", cfe_applications[i], " - ", previous_app_msg_sent_ctr [i] , " -> " , current_app_msg_sent_ctr [i], "     ", msg_ctr_status_flag[i]
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+    ;;IF (previous_app_msg_sent_ctr[i] + evt_msg_sent_ctr_offset[i] = current_app_msg_sent_ctr[i]) THEN
+    IF (previous_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter) then 
+      msg_ctr_status_flag[i] = "OK"
+    ELSE
+      msg_ctr_status_flag[i] = "*** FAILED ***"
+      evs3007Passed = FALSE
+    ENDIF
+  ;;write "     ", cfe_applications[i], " - ", previous_app_msg_sent_ctr [i] , " -> " , current_app_msg_sent_ctr [i], "     ", msg_ctr_status_flag[i]
+    write "     ",$sc_$cpu_evs_AppData[i].AppName," - ",msg_ctr_status_flag[i]
+  endif
 ENDDO
 
 if (evs3007Passed = TRUE) then
@@ -682,37 +708,42 @@ write ";             cEVS3004"
 write ";             cEVS3007"
 write ";***********************************************************************"
 ; Retrieve application data file
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_324.dat", "$CPU")
+;;start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_324.dat", hostCPU)
+;;wait 5
+
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+    previous_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Info 
+    /$SC_$CPU_EVS_DISAPPEVTTYPE APPLICATION=$sc_$cpu_evs_AppData[i].AppName INFO
+    wait 3
+  endif
+ENDDO
+
+start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_324a.dat",hostCPU)
 wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   previous_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Info 
-ENDDO
-
-FOR i = 1 to cfe_app_cnt DO
-  /$SC_$CPU_EVS_DISAPPEVTTYPE APPLICATION=cfe_applications[i] INFO
-  wait 3
-ENDDO
-
-start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_324a.dat","$CPU")
-wait 5
-
-FOR i = 1 to cfe_app_cnt DO
-   current_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Info
-ENDDO
+;;FOR i = 1 to cfe_app_cnt DO
+;;   current_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Info
+;;ENDDO
 
 write "" 
-write "     INFO message status"
-write "     --------------------"
+write "     INFO message status DISABLED"
+write "     ----------------------------"
 evs3007Passed = TRUE
-FOR i = 1 to cfe_app_cnt DO
-  IF (previous_event_type_status[i] = current_event_type_status[i]) THEN
-    event_type_status_flag[i] = "*** FAILED ***"
-    evs3007Passed = FALSE
-  ELSE
-    event_type_status_flag[i] = "OK"
-  ENDIF
-  write "     ", cfe_applications[i], " - ", previous_event_type_status[i] , " -> " , current_event_type_status[i], "   ", event_type_status_flag[i]
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+  ;;IF (previous_event_type_status[i] = current_event_type_status[i]) THEN
+    if (p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Info <> "DIS") then
+      event_type_status_flag[i] = "*** FAILED ***"
+      evs3007Passed = FALSE
+    ELSE
+      event_type_status_flag[i] = "OK"
+    ENDIF
+;;  write "     ", cfe_applications[i], " - ", previous_event_type_status[i] , " -> " , current_event_type_status[i], "   ", event_type_status_flag[i]
+    write "     ",$sc_$cpu_evs_AppData[i].AppName," - ",event_type_status_flag[i]
+  endif
 ENDDO
 
 if (evs3007Passed = TRUE) then
@@ -730,36 +761,44 @@ write ";             Messages not processed by CFE_EVS."
 write ";             Verify by telemetry INFO message counts not incrementing."
 write ";             cEVS3007"
 write ";***********************************************************************"
-start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_325.dat","$CPU")
-wait 5
+;;start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_325.dat",hostCPU)
+;;wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   previous_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+    previous_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+  endif
 ENDDO
 
 s $sc_$cpu_evs_send_info
 
-start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_325a.dat","$CPU")
+start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_325a.dat",hostCPU)
 wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   current_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
-ENDDO
-
-evt_msg_sent_ctr_offset = [0,0,0,0,0,0,0,0,0]
+;;FOR i = 1 to cfe_app_cnt DO
+;;   current_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+;;ENDDO
+;;
+;;evt_msg_sent_ctr_offset = [0,0,0,0,0,0,0,0,0]
 
 evs3007Passed = TRUE
 write "" 
 write "     Msg Sent Counter"
 write "     ----------------"
-FOR i = 1 to cfe_app_cnt-1 DO
-  IF (previous_app_msg_sent_ctr[i] + evt_msg_sent_ctr_offset[i] = current_app_msg_sent_ctr[i]) THEN
-    msg_ctr_status_flag[i] = "OK"
-  ELSE
-    msg_ctr_status_flag[i] = "*** FAILED ***"
-    evs3007Passed = FALSE
-  ENDIF
-  write "     ", cfe_applications[i], " - ", previous_app_msg_sent_ctr [i] , " -> " , current_app_msg_sent_ctr [i], "     ", msg_ctr_status_flag[i]
+;;FOR i = 1 to cfe_app_cnt-1 DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+;;  IF (previous_app_msg_sent_ctr[i] + evt_msg_sent_ctr_offset[i] = current_app_msg_sent_ctr[i]) THEN
+    IF (previous_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter) then 
+      msg_ctr_status_flag[i] = "OK"
+    ELSE
+      msg_ctr_status_flag[i] = "*** FAILED ***"
+      evs3007Passed = FALSE
+    ENDIF
+ ;; write "     ", cfe_applications[i], " - ", previous_app_msg_sent_ctr [i] , " -> " , current_app_msg_sent_ctr [i], "     ", msg_ctr_status_flag[i]
+    write "     ",$sc_$cpu_evs_AppData[i].AppName," - ",msg_ctr_status_flag[i]
+  endif
 ENDDO
 
 if (evs3007Passed = TRUE) then
@@ -778,37 +817,42 @@ write ";             Telemetry indicates ERROR messages disabled."
 write ";             cEVS3004"
 write ";             cEVS3007"
 write ";***********************************************************************"
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_326.dat", "$CPU")
+;;start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_326.dat", hostCPU)
+;;wait 5
+
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+    previous_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Err 
+    /$SC_$CPU_EVS_DISAPPEVTTYPE APPLICATION=$sc_$cpu_evs_AppData[i].AppName ERROR
+    wait 3
+  endif
+ENDDO
+
+start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_326a.dat",hostCPU)
 wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   previous_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Err 
-ENDDO
-
-FOR i = 1 to cfe_app_cnt DO
-  /$SC_$CPU_EVS_DISAPPEVTTYPE APPLICATION=cfe_applications[i] ERROR
-  wait 3
-ENDDO
-
-start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_326a.dat","$CPU")
-wait 5
-
-FOR i = 1 to cfe_app_cnt DO
-   current_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Err
-ENDDO
+;;FOR i = 1 to cfe_app_cnt DO
+;;   current_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Err
+;;ENDDO
 
 evs3007Passed = TRUE
 write "" 
-write "     ERROR message status"
-write "     --------------------"
-FOR i = 1 to cfe_app_cnt DO
-  IF (previous_event_type_status[i] = current_event_type_status[i]) THEN
-    event_type_status_flag[i] = "*** FAILED ***"
-    evs3007Passed = FALSE
-  ELSE
-    event_type_status_flag[i] = "OK"
-  ENDIF
-  write "     ", cfe_applications[i], " - ", previous_event_type_status[i] , " -> " , current_event_type_status[i], "   ", event_type_status_flag[i]
+write "     ERROR message status DISABLED"
+write "     -----------------------------"
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+;;  IF (previous_event_type_status[i] = current_event_type_status[i]) THEN
+    if (p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Err <> "DIS") then
+      event_type_status_flag[i] = "*** FAILED ***"
+      evs3007Passed = FALSE
+    ELSE
+      event_type_status_flag[i] = "OK"
+    ENDIF
+  ;;write "     ", cfe_applications[i], " - ", previous_event_type_status[i] , " -> " , current_event_type_status[i], "   ", event_type_status_flag[i]
+    write "     ",$sc_$cpu_evs_AppData[i].AppName," - ",event_type_status_flag[i]
+  endif
 ENDDO
 
 if (evs3007Passed = TRUE) then
@@ -826,36 +870,44 @@ write ";             Messages not processed by CFE_EVS."
 write ";             Verify by telemetry ERROR message counts not incrementing."
 write ";             cEVS3007"
 write ";***********************************************************************"
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_327.dat", "$CPU")
-wait 5
+;;start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_327.dat", hostCPU)
+;;wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   previous_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+    previous_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+  endif
 ENDDO
 
 s $sc_$cpu_evs_send_error
 
-start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_327a.dat","$CPU")
+start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_327a.dat",hostCPU)
 wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   current_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
-ENDDO
-
-evt_msg_sent_ctr_offset = [0,0,0,0,0,0,0,0,0]
+;;FOR i = 1 to cfe_app_cnt DO
+;;   current_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+;;ENDDO
+;;
+;;evt_msg_sent_ctr_offset = [0,0,0,0,0,0,0,0,0]
  
 evs3007Passed = TRUE
 write "" 
 write "     Msg Sent Counter"
 write "     ----------------"
-FOR i = 1 to cfe_app_cnt DO
-  IF (previous_app_msg_sent_ctr[i]  + evt_msg_sent_ctr_offset[i] = current_app_msg_sent_ctr[i]) THEN
-     msg_ctr_status_flag[i] = "OK"
-  ELSE
-    msg_ctr_status_flag[i] = "*** FAILED ***"
-    evs3007Passed = FALSE
-  ENDIF
-  write "     ", cfe_applications[i], " - ", previous_app_msg_sent_ctr [i] , " -> " , current_app_msg_sent_ctr [i], "     ", msg_ctr_status_flag[i]
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+  ;;IF (previous_app_msg_sent_ctr[i]  + evt_msg_sent_ctr_offset[i] = current_app_msg_sent_ctr[i]) THEN
+    IF (previous_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter) THEN 
+      msg_ctr_status_flag[i] = "OK"
+    ELSE
+      msg_ctr_status_flag[i] = "*** FAILED ***"
+      evs3007Passed = FALSE
+    ENDIF
+  ;;write "     ", cfe_applications[i], " - ", previous_app_msg_sent_ctr [i] , " -> " , current_app_msg_sent_ctr [i], "     ", msg_ctr_status_flag[i]
+    write "     ",$sc_$cpu_evs_AppData[i].AppName," - ",msg_ctr_status_flag[i]
+  endif
 ENDDO
 
 if (evs3007Passed = TRUE) then
@@ -874,37 +926,42 @@ write ";             Telemetry indicates CRITICAL messages disabled."
 write ";             cEVS3004"
 write ";             cEVS3007"
 write ";***********************************************************************"
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_328.dat", "$CPU")
+;;start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_328.dat", hostCPU)
+;;wait 5
+
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+    previous_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Crit 
+    /$SC_$CPU_EVS_DISAPPEVTTYPE APPLICATION=$sc_$cpu_evs_AppData[i].AppName CRIT
+    wait 3
+  endif
+ENDDO
+
+start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_328a.dat",hostCPU)
 wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   previous_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Crit 
-ENDDO
-
-FOR i = 1 to cfe_app_cnt DO
-  /$SC_$CPU_EVS_DISAPPEVTTYPE APPLICATION=cfe_applications[i] CRIT
-  wait 3
-ENDDO
-
-start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_328a.dat","$CPU")
-wait 5
-
-FOR i = 1 to cfe_app_cnt DO
-   current_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Crit
-ENDDO
+;;FOR i = 1 to cfe_app_cnt DO
+;;   current_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Crit
+;;ENDDO
 
 evs3007Passed = TRUE
 write "" 
-write "     CRITICAL message status"
-write "     ----------------------"
-FOR i = 1 to cfe_app_cnt DO
-  IF (previous_event_type_status[i] = current_event_type_status[i]) THEN 
-    event_type_status_flag[i] = "*** FAILED ***"
-    evs3007Passed = FALSE
-  ELSE
-    event_type_status_flag[i] = "OK"
-  ENDIF
-  write "     ", cfe_applications[i], " - ", previous_event_type_status[i] , " -> " , current_event_type_status[i], "   ", event_type_status_flag[i]
+write "     CRITICAL message status DISABLED"
+write "     --------------------------------"
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+;;  IF (previous_event_type_status[i] = current_event_type_status[i]) THEN
+    if (p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Crit <> "DIS") then
+      event_type_status_flag[i] = "*** FAILED ***"
+      evs3007Passed = FALSE
+    ELSE
+      event_type_status_flag[i] = "OK"
+    ENDIF
+  ;;write "     ", cfe_applications[i], " - ", previous_event_type_status[i] , " -> " , current_event_type_status[i], "   ", event_type_status_flag[i]
+    write "     ",$sc_$cpu_evs_AppData[i].AppName," - ",event_type_status_flag[i]
+  endif
 ENDDO
 
 if (evs3007Passed = TRUE) then
@@ -922,21 +979,24 @@ write ";             Messages not processed by CFE_EVS."
 write ";             Verify by telemetry ctrs not incrementing."
 write ";             cEVS3007"
 write ";***********************************************************************"
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_329.dat", "$CPU")
-wait 5
+;;start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_329.dat", hostCPU)
+;;wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   previous_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+    previous_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+  endif
 ENDDO
 
 s $sc_$cpu_evs_send_crit
 
-start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_329a.dat","$CPU")
+start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_329a.dat",hostCPU)
 wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   current_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
-ENDDO
+;;FOR i = 1 to cfe_app_cnt DO
+;;   current_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+;;ENDDO
 
 evt_msg_sent_ctr_offset = [0,0,0,0,0,0,0,0,0]
 
@@ -944,14 +1004,19 @@ evs3007Passed = TRUE
 write "" 
 write "     Msg Sent Counter"
 write "     ----------------"
-FOR i = 1 to cfe_app_cnt DO
-  IF (previous_app_msg_sent_ctr[i]  + evt_msg_sent_ctr_offset[i] = current_app_msg_sent_ctr[i]) THEN
-     msg_ctr_status_flag[i] = "OK"
-  ELSE
-    msg_ctr_status_flag[i] = "*** FAILED ***"
-    evs3007Passed = FALSE
-  ENDIF
-  write "     ", cfe_applications[i], " - ", previous_app_msg_sent_ctr [i] , " -> " , current_app_msg_sent_ctr [i], "     ", msg_ctr_status_flag[i]
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+  ;;IF (previous_app_msg_sent_ctr[i]  + evt_msg_sent_ctr_offset[i] = current_app_msg_sent_ctr[i]) THEN
+    IF (previous_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter) THEN 
+      msg_ctr_status_flag[i] = "OK"
+    ELSE
+      msg_ctr_status_flag[i] = "*** FAILED ***"
+      evs3007Passed = FALSE
+    ENDIF
+  ;;write "     ", cfe_applications[i], " - ", previous_app_msg_sent_ctr [i] , " -> " , current_app_msg_sent_ctr [i], "     ", msg_ctr_status_flag[i]
+    write "     ",$sc_$cpu_evs_AppData[i].AppName," - ",msg_ctr_status_flag[i]
+  endif
 ENDDO
 
 if (evs3007Passed = TRUE) then
@@ -973,37 +1038,41 @@ write ";             cEVS3004"
 write ";             cEVS3007"
 write ";***********************************************************************"
 ; Retrieve application data file
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_331.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_331.dat", hostCPU)
 wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   previous_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Debug 
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+    previous_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Debug 
+    /$SC_$CPU_EVS_ENAAPPEVTTYPE APPLICATION=$sc_$cpu_evs_AppData[i].AppName DEBUG
+    wait 3
+  endif
 ENDDO
 
-FOR i = 1 to cfe_app_cnt DO
-  /$SC_$CPU_EVS_ENAAPPEVTTYPE APPLICATION=cfe_applications[i] DEBUG
-  wait 3
-ENDDO
-
-start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_331a.dat","$CPU")
+start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_331a.dat",hostCPU)
 wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   current_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Debug 
-ENDDO
+;;FOR i = 1 to cfe_app_cnt-2 DO
+;;   current_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Debug 
+;;ENDDO
 
 evs3007Passed = TRUE
 write "" 
-write "     DEBUG message status"
-write "     --------------------"
-FOR i = 1 to cfe_app_cnt DO
-  IF (previous_event_type_status[i] = current_event_type_status[i]) THEN
-    event_type_status_flag[i] = "*** FAILED ***"
-    evs3007Passed = FALSE
-  ELSE
-    event_type_status_flag[i] = "OK"
-  ENDIF
-  write "     ", cfe_applications[i], " - ", previous_event_type_status[i] , " -> " , current_event_type_status[i], "   ", event_type_status_flag[i]
+write "     DEBUG message status ENABLED"
+write "     ----------------------------"
+;;FOR i = 1 to cfe_app_cnt-2 DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+    if (p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Debug <> "ENA") then
+      event_type_status_flag[i] = "*** FAILED ***"
+      evs3007Passed = FALSE
+    ELSE
+      event_type_status_flag[i] = "OK"
+    ENDIF
+  ;;write "     ", cfe_applications[i], " - ", previous_event_type_status[i] , " -> " , current_event_type_status[i], "   ", event_type_status_flag[i]
+    write "     ",$sc_$cpu_evs_AppData[i].AppName," - ",event_type_status_flag[i]
+  endif
 ENDDO
 
 if (evs3007Passed = TRUE) then
@@ -1022,39 +1091,46 @@ write ";             Messages processed by CFE_EVS."
 write ";             Verify by telemetry message counts incrementing."
 write ";             cEVS3007"
 write ";***********************************************************************"
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_332.dat", "$CPU")
-wait 5
+;;start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_332.dat", hostCPU)
+;;wait 5
 
-FOR i = 1 to cfe_app_cnt-1 DO
-   previous_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+;;FOR i = 1 to cfe_app_cnt-2 DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+    previous_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+  endif
 ENDDO
-previous_app_msg_sent_ctr[cfe_app_cnt] = p@$sc_$cpu_EVS_AppData[added_app_lctn].EventCounter
+;;previous_app_msg_sent_ctr[cfe_app_cnt] = p@$sc_$cpu_EVS_AppData[added_app_lctn].EventCounter
 
 s $sc_$cpu_evs_send_debug
 wait 5
 
-start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_332a.dat","$CPU")
-
+start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_332a.dat",hostCPU)
 wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   current_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
-ENDDO
+;;FOR i = 1 to cfe_app_cnt-2 DO
+;;   current_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+;;ENDDO
 
+;; CFE_EVS and TST_EVS counters should increment
 evt_msg_sent_ctr_offset = [1,0,0,0,0,0,0,0,1]
 
 evs3007Passed = TRUE
 write "" 
 write "     Msg Sent Counter"
 write "     ----------------"
-FOR i = 1 to cfe_app_cnt DO
-  IF (previous_app_msg_sent_ctr[i] + evt_msg_sent_ctr_offset[i] = current_app_msg_sent_ctr[i]) THEN
-    msg_ctr_status_flag[i] = "OK"
-  ELSE
-    msg_ctr_status_flag[i] = "*** FAILED ***"
-    evs3007Passed = FALSE
-  ENDIF
-  write "     ", cfe_applications[i], " - ", previous_app_msg_sent_ctr [i] , " -> " , current_app_msg_sent_ctr [i], "     ", msg_ctr_status_flag[i]
+;;FOR i = 1 to cfe_app_cnt-2 DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if (($sc_$cpu_evs_AppData[i].AppName = "CFE_EVS") OR ;;
+      ($sc_$cpu_evs_AppData[i].AppName = "TST_EVS")) then
+    IF (previous_app_msg_sent_ctr[i] + 1 = p@$sc_$cpu_EVS_AppData[i].EventCounter) THEN
+      write "     ",$sc_$cpu_evs_AppData[i].AppName," - OK"
+    ELSE
+      write "     ",$sc_$cpu_evs_AppData[i].AppName," - *** FAILED ***"
+      evs3007Passed = FALSE
+    ENDIF
+;;    write "     ", cfe_applications[i], " - ", previous_app_msg_sent_ctr [i] , " -> " , current_app_msg_sent_ctr [i], "     ", msg_ctr_status_flag[i]
+  endif
 ENDDO
 
 if (evs3007Passed = TRUE) then
@@ -1074,37 +1150,42 @@ write ";             cEVS3004"
 write ";             cEVS3007"
 write ";***********************************************************************"
 ; Retrieve application data file
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_333.dat", "$CPU")
+;;start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_333.dat", hostCPU)
+;;wait 5
+
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+    previous_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Info 
+    /$SC_$CPU_EVS_ENAAPPEVTTYPE APPLICATION=$sc_$cpu_evs_AppData[i].AppName INFO
+    wait 3
+  endif
+ENDDO
+
+start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_333a.dat",hostCPU)
 wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-  previous_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Info 
-ENDDO
-
-FOR i = 1 to cfe_app_cnt DO
-  /$SC_$CPU_EVS_ENAAPPEVTTYPE APPLICATION=cfe_applications[i] INFO
-  wait 5
-ENDDO
-
-start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_333a.dat","$CPU")
-wait 5
-
-FOR i = 1 to cfe_app_cnt DO
-   current_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Info
-ENDDO
+;;FOR i = 1 to cfe_app_cnt DO
+;;   current_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Info
+;;ENDDO
 
 evs3007Passed = TRUE
 write "" 
-write "     INFO message status"
-write "     --------------------"
-FOR i = 1 to cfe_app_cnt DO
-  IF (previous_event_type_status[i] = current_event_type_status[i]) THEN
-    event_type_status_flag[i] = "*** FAILED ***"
-    evs3007Passed = FALSE
-  ELSE
-    event_type_status_flag[i] = "OK"
-  ENDIF
-  write "     ", cfe_applications[i], " - ", previous_event_type_status[i] , " -> " , current_event_type_status[i], "   ", event_type_status_flag[i]
+write "     INFO message status ENABLED"
+write "     ---------------------------"
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+    if (p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Debug <> "ENA") then
+;;  IF (previous_event_type_status[i] = current_event_type_status[i]) THEN
+      event_type_status_flag[i] = "*** FAILED ***"
+      evs3007Passed = FALSE
+    ELSE
+      event_type_status_flag[i] = "OK"
+    ENDIF
+  ;;write "     ", cfe_applications[i], " - ", previous_event_type_status[i] , " -> " , current_event_type_status[i], "   ", event_type_status_flag[i]
+    write "     ",$sc_$cpu_evs_AppData[i].AppName," - ",event_type_status_flag[i]
+  endif
 ENDDO
 
 if (evs3007Passed = TRUE) then
@@ -1123,35 +1204,43 @@ write ";             Verify by telemetry INFO message counts incrementing."
 write ";             cEVS3007"
 write ";***********************************************************************"
 ; Retrieve application data file
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_334.dat", "$CPU")
-wait 5
+;;start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_334.dat", hostCPU)
+;;wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   previous_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+    previous_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+  endif
 ENDDO
 
 s $sc_$cpu_evs_send_info
 
 ; Retrieve application data file
-start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_334a.dat","$CPU")
+start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_334a.dat",hostCPU)
 wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   current_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
-ENDDO
+;;FOR i = 1 to cfe_app_cnt DO
+;;   current_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+;;ENDDO
 
 evs3007Passed = TRUE
 write "" 
 write "     Msg Sent Counter"
 write "     ----------------"
-FOR i = 1 to cfe_app_cnt DO
-  IF ((previous_app_msg_sent_ctr[i] = current_app_msg_sent_ctr[i]) AND cfe_info_msgs[i]) THEN
-    msg_ctr_status_flag[i] = "*** FAILED ***"
-    evs3007Passed = FALSE
-  ELSE
-    msg_ctr_status_flag[i] = "OK"
-  ENDIF
-  write "     ", cfe_applications[i], " - ", previous_app_msg_sent_ctr [i] , " -> " , current_app_msg_sent_ctr [i], "     ", msg_ctr_status_flag[i]
+;; All should increment
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+    IF (p@$sc_$cpu_EVS_AppData[i].EventCounter > previous_app_msg_sent_ctr[i]) THEN
+      msg_ctr_status_flag[i] = "OK"
+    ELSE
+      msg_ctr_status_flag[i] = "*** FAILED ***"
+      evs3007Passed = FALSE
+    ENDIF
+  ;;  write "     ", $sc_$cpu_evs_AppData[i].AppName, " - ", previous_app_msg_sent_ctr [i] , " -> " , current_app_msg_sent_ctr [i], "     ", msg_ctr_status_flag[i]
+    write "     ", $sc_$cpu_evs_AppData[i].AppName, " - ", previous_app_msg_sent_ctr [i] , " -> " , p@$sc_$cpu_EVS_AppData[i].EventCounter, "     ", msg_ctr_status_flag[i]
+  endif
 ENDDO
 
 if (evs3007Passed = TRUE) then
@@ -1170,39 +1259,43 @@ write ";             Telemetry indicates ERROR messages enabled."
 write ";             cEVS3004"
 write ";             cEVS3007"
 write ";***********************************************************************"
+;;start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_335.dat", hostCPU)
+;;wait 5
+
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+    previous_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Err 
+   /$SC_$CPU_EVS_ENAAPPEVTTYPE APPLICATION=$sc_$cpu_evs_AppData[i].AppName ERROR
+   wait 5
+  endif
+ENDDO
+
 ; Retrieve application data file
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_335.dat", "$CPU")
+start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_335a.dat",hostCPU)
 wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   previous_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Err 
-ENDDO
-
-FOR i = 1 to cfe_app_cnt DO
-  /$SC_$CPU_EVS_ENAAPPEVTTYPE APPLICATION=cfe_applications[i] ERROR
-  wait 5
-ENDDO
-
-; Retrieve application data file
-start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_335a.dat","$CPU")
-wait 5
-
-FOR i = 1 to cfe_app_cnt DO
-   current_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Err
-ENDDO
+;;FOR i = 1 to cfe_app_cnt DO
+;;   current_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Err
+;;ENDDO
 
 evs3007Passed = TRUE
 write "" 
-write "     ERROR message status"
-write "     --------------------"
-FOR i = 1 to cfe_app_cnt DO
-  IF (previous_event_type_status[i] = current_event_type_status[i]) THEN
-    event_type_status_flag[i] = "*** FAILED ***"
-    evs3007Passed = FALSE
-  ELSE
-    event_type_status_flag[i] = "OK"
-  ENDIF
-  write "     ", cfe_applications[i], " - ", previous_event_type_status[i] , " -> " , current_event_type_status[i], "   ", event_type_status_flag[i]
+write "     ERROR message status ENABLED"
+write "     ----------------------------"
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+;;  IF (previous_event_type_status[i] = current_event_type_status[i]) THEN
+    IF (p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Err <> "ENA") THEN
+      event_type_status_flag[i] = "*** FAILED ***"
+      evs3007Passed = FALSE
+    ELSE
+      event_type_status_flag[i] = "OK"
+    ENDIF
+  ;;write "     ", cfe_applications[i], " - ", previous_event_type_status[i] , " -> " , current_event_type_status[i], "   ", event_type_status_flag[i]
+    write "     ",$sc_$cpu_evs_AppData[i].AppName," - ",event_type_status_flag[i]
+  endif
 ENDDO
 
 if (evs3007Passed = TRUE) then
@@ -1221,35 +1314,44 @@ write ";             Verify by telemetry message counts incrementing."
 write ";             cEVS3007"
 write ";***********************************************************************"
 ; Retrieve application data file
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_336.dat", "$CPU")
-wait 5
+;;start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_336.dat", hostCPU)
+;;wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   previous_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+    previous_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+  endif
 ENDDO
 
 s $sc_$cpu_evs_send_error
 
 ; Retrieve application data file
-start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_336a.dat","$CPU")
+start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_336a.dat",hostCPU)
 wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   current_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
-ENDDO
+;;FOR i = 1 to cfe_app_cnt DO
+;;   current_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+;;ENDDO
 
 evs3007Passed = TRUE
 write "" 
 write "     Msg Sent Counter"
 write "     ----------------"
-FOR i = 1 to cfe_app_cnt DO
-  IF ((previous_app_msg_sent_ctr[i] = current_app_msg_sent_ctr[i]) AND cfe_error_msgs[i]) THEN
-    msg_ctr_status_flag[i] = "*** FAILED ***"
-    evs3007Passed = FALSE
-  ELSE
-    msg_ctr_status_flag[i] = "OK"
-  ENDIF
-  write "     ", cfe_applications[i], " - ", previous_app_msg_sent_ctr [i] , " -> " , current_app_msg_sent_ctr [i], "     ", msg_ctr_status_flag[i]
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if (($sc_$cpu_evs_AppData[i].AppName <> "") AND ;;
+      ($sc_$cpu_evs_AppData[i].AppName <> "CI_LAB_APP")) then
+  ;;IF ((previous_app_msg_sent_ctr[i] = current_app_msg_sent_ctr[i]) AND cfe_error_msgs[i]) THEN
+    IF (previous_app_msg_sent_ctr[i] < p@$sc_$cpu_EVS_AppData[i].EventCounter) THEN
+      msg_ctr_status_flag[i] = "OK"
+    ELSE
+      msg_ctr_status_flag[i] = "*** FAILED ***"
+      evs3007Passed = FALSE
+    ENDIF
+  ;;write "     ", cfe_applications[i], " - ", previous_app_msg_sent_ctr [i] , " -> " , current_app_msg_sent_ctr [i], "     ", msg_ctr_status_flag[i]
+    write "     ", $sc_$cpu_evs_AppData[i].AppName, " - ", previous_app_msg_sent_ctr [i] , " -> " , p@$sc_$cpu_EVS_AppData[i].EventCounter, "     ", msg_ctr_status_flag[i]
+  endif
 ENDDO
 
 if (evs3007Passed = TRUE) then
@@ -1268,39 +1370,44 @@ write ";             Telemetry indicates CRITICAL messages enabled."
 write ";             cEVS3004"
 write ";             cEVS3007"
 write ";***********************************************************************"
+;; Retrieve application data file
+;;start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_337.dat", hostCPU)
+;;wait 5
+
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+    previous_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Crit 
+    /$SC_$CPU_EVS_ENAAPPEVTTYPE APPLICATION=$sc_$cpu_evs_AppData[i].AppName CRIT
+    wait 3
+  endif
+ENDDO
+
 ; Retrieve application data file
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_337.dat", "$CPU")
+start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_337a.dat",hostCPU)
 wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   previous_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Crit 
-ENDDO
-
-FOR i = 1 to cfe_app_cnt DO
-  /$SC_$CPU_EVS_ENAAPPEVTTYPE APPLICATION=cfe_applications[i] CRIT
-  wait 5
-ENDDO
-
-; Retrieve application data file
-start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_337a.dat","$CPU")
-wait 5
-
-FOR i = 1 to cfe_app_cnt DO
-   current_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Crit
-ENDDO
+;;FOR i = 1 to cfe_app_cnt DO
+;;   current_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Crit
+;;ENDDO
 
 evs3007Passed = TRUE
 write "" 
-write "     CRITICAL message status"
-write "     -----------------------"
-FOR i = 1 to cfe_app_cnt DO
-  IF (previous_event_type_status[i] = current_event_type_status[i]) THEN
-    event_type_status_flag[i] = "*** FAILED ***"
-    evs3007Passed = FALSE
-  ELSE
-    event_type_status_flag[i] = "OK"
-  ENDIF
-  write "     ", cfe_applications[i], " - ", previous_event_type_status[i] , " -> " , current_event_type_status[i], "   ", event_type_status_flag[i]
+write "     CRITICAL message status ENABLED"
+write "     -------------------------------"
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+;;  IF (previous_event_type_status[i] = current_event_type_status[i]) THEN
+    IF (p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Crit <> "ENA") THEN
+      event_type_status_flag[i] = "*** FAILED ***"
+      evs3007Passed = FALSE
+    ELSE
+      event_type_status_flag[i] = "OK"
+    ENDIF
+  ;;write "     ", cfe_applications[i], " - ", previous_event_type_status[i] , " -> " , current_event_type_status[i], "   ", event_type_status_flag[i]
+    write "     ", $sc_$cpu_evs_AppData[i].AppName, " - ", event_type_status_flag[i]
+  endif
 ENDDO
 
 if (evs3007Passed = TRUE) then
@@ -1318,36 +1425,46 @@ write ";             Messages processed by CFE_EVS."
 write ";             Verify by telemetry CRITICAL message counts incrementing."
 write ";             cEVS3007"
 write ";***********************************************************************"
-; Retrieve application data file
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_338.dat", "$CPU")
-wait 5
+;; Retrieve application data file
+;;start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_338.dat", hostCPU)
+;;wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   previous_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+    previous_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+  endif
 ENDDO
 
+;; TST_EVS is the only app that actually sends a critical message
 s $sc_$cpu_evs_send_crit
 
 ; Retrieve application data file
-start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_338a.dat","$CPU")
+start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_338a.dat",hostCPU)
 wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   current_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
-ENDDO
+;;FOR i = 1 to cfe_app_cnt DO
+;;   current_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+;;ENDDO
 
 evs3007Passed = TRUE
 write "" 
 write "     Msg Sent Counter"
 write "     ----------------"
-FOR i = 1 to cfe_app_cnt-1 DO
-  IF ((previous_app_msg_sent_ctr[i] = current_app_msg_sent_ctr[i]) AND cfe_crit_msgs[i]) THEN
-    msg_ctr_status_flag[i] = "*** FAILED ***"
-    evs3007Passed = FALSE
-  ELSE
-    msg_ctr_status_flag[i] = "OK"
-  ENDIF
-  write "     ", cfe_applications[i], " - ", previous_app_msg_sent_ctr [i] , " -> " , current_app_msg_sent_ctr [i], "     ", msg_ctr_status_flag[i]
+;;FOR i = 1 to cfe_app_cnt-1 DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+;;  IF ((previous_app_msg_sent_ctr[i] = current_app_msg_sent_ctr[i]) AND cfe_crit_msgs[i]) THEN
+    if (($sc_$cpu_evs_AppData[i].AppName = "TST_EVS") AND ;;
+        (p@$sc_$cpu_EVS_AppData[i].EventCounter != previous_app_msg_sent_ctr[i]+1)) THEN
+      msg_ctr_status_flag[i] = "*** FAILED ***"
+      evs3007Passed = FALSE
+    ELSE
+      msg_ctr_status_flag[i] = "OK"
+    ENDIF
+  ;;write "     ", cfe_applications[i], " - ", previous_app_msg_sent_ctr [i] , " -> " , current_app_msg_sent_ctr [i], "     ", msg_ctr_status_flag[i]
+  write "     ", $sc_$cpu_evs_AppData[i].AppName, " - ",previous_app_msg_sent_ctr[i], " -> ",p@$sc_$cpu_EVS_AppData[i].EventCounter,"     ",msg_ctr_status_flag[i]
+  endif
 ENDDO
 
 if (evs3007Passed = TRUE) then
@@ -1363,21 +1480,9 @@ endif
 wait 5
  
 ; Retrieve application data file
-start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_338b.dat","$CPU")
+start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_338b.dat",hostCPU)
 wait 5
  
-;event message types 
-FOR i = 1 to cfe_app_cnt DO
-  write " For app ", $sc_$cpu_EVS_AppData[i].AppName
-  write " DEBUG = ", p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Debug
-  write " INFO = ", p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Info
-  write " ERROR = ", p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Err
-  write " CRIT = ", p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Crit
-  write " Evt msg types mask"
-  write " CEID"
-  write " ",$sc_$cpu_EVS_AppData[i].EvtTypeAF.Crit, $sc_$cpu_EVS_AppData[i].EvtTypeAF.Err, $sc_$cpu_EVS_AppData[i].EvtTypeAF.Info, $sc_$cpu_EVS_AppData[i].EvtTypeAF.Debug
-ENDDO
-
 write ";***********************************************************************"
 write "; Step 4.0: Enable/Disable Event Types Test"
 write ";***********************************************************************"
@@ -1397,19 +1502,22 @@ else
 endif
 
 ; Retrieve application data file
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_41.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_41.dat", hostCPU)
 wait 5
  
 ;event message types 
-FOR i = 1 to cfe_app_cnt DO
-  write " For app ", $sc_$cpu_EVS_AppData[i].AppName
-  write " DEBUG = ", p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Debug
-  write " INFO = ", p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Info
-  write " ERROR = ", p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Err
-  write " CRIT = ", p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Crit
-  write " Evt msg types mask"
-  write " CEID"
-  write " ",$sc_$cpu_EVS_AppData[i].EvtTypeAF.Crit, $sc_$cpu_EVS_AppData[i].EvtTypeAF.Err, $sc_$cpu_EVS_AppData[i].EvtTypeAF.Info, $sc_$cpu_EVS_AppData[i].EvtTypeAF.Debug
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+    write " For app ", $sc_$cpu_EVS_AppData[i].AppName
+    write " DEBUG = ", p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Debug
+    write " INFO = ", p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Info
+    write " ERROR = ", p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Err
+    write " CRIT = ", p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Crit
+    write " Evt msg types mask"
+    write " CEID"
+    write " ",$sc_$cpu_EVS_AppData[i].EvtTypeAF.Crit,$sc_$cpu_EVS_AppData[i].EvtTypeAF.Err,$sc_$cpu_EVS_AppData[i].EvtTypeAF.Info,$sc_$cpu_EVS_AppData[i].EvtTypeAF.Debug
+  endif
 ENDDO
 
 write ";***********************************************************************"
@@ -1420,9 +1528,9 @@ write ";            Telemetry indicates DEBUG messages enabled."
 write ";            cEVS3000"
 write ";            cEVS3004"
 write ";***********************************************************************"
-FOR i = 1 to cfe_app_cnt DO
-   previous_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Debug 
-ENDDO
+;;FOR i = 1 to cfe_app_cnt DO
+;;    previous_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Debug 
+;;ENDDO
 
 cmdcnt = $SC_$CPU_EVS_CMDPC + 1
 
@@ -1438,25 +1546,30 @@ else
 endif
 
 ; Retrieve application data file
-start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_421.dat","$CPU")
+start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_421.dat",hostCPU)
 wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   current_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Debug
-ENDDO
+;;FOR i = 1 to cfe_app_cnt DO
+;;   current_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Debug
+;;ENDDO
 
 local evs3000Passed = TRUE
 write "" 
 write "     DEBUG message status"
 write "     --------------------"
-FOR i = 1 to cfe_app_cnt-1 DO
-  IF (previous_event_type_status[i] = current_event_type_status[i]) THEN
-    event_type_status_flag[i] = "*** FAILED ***"
-    evs3000Passed = FALSE
-  ELSE
-    event_type_status_flag[i] = "OK"
-  ENDIF
-  write "     ", cfe_applications[i], " - ", previous_event_type_status[i] , " -> " , current_event_type_status[i], "   ", event_type_status_flag[i]
+;;FOR i = 1 to cfe_app_cnt-1 DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+  ;;IF (previous_event_type_status[i] = current_event_type_status[i]) THEN
+    IF (p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Debug <> "DIS") THEN
+      event_type_status_flag[i] = "*** FAILED ***"
+      evs3000Passed = FALSE
+    ELSE
+      event_type_status_flag[i] = "OK"
+    ENDIF
+  ;;write "     ", cfe_applications[i], " - ", previous_event_type_status[i] , " -> " , current_event_type_status[i], "   ", event_type_status_flag[i]
+  write "     ",$sc_$cpu_evs_AppData[i].AppName, " - ", event_type_status_flag[i]
+  endif
 ENDDO
 
 if (evs3000Passed = TRUE) then
@@ -1475,23 +1588,26 @@ write ";             Expect NO generation of event messages. "
 write ";             Verify by telemetry message counts incrementing. "
 write ";             cEVS3000 "
 write ";***********************************************************************"
-; Retrieve application data file
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_422.dat", "$CPU")
-wait 5
+;; Retrieve application data file
+;;start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_422.dat", hostCPU)
+;;wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   previous_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+    previous_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+  endif
 ENDDO
 
 s $sc_$cpu_evs_send_debug
 
 ; Retrieve application data file
-start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_422a.dat","$CPU")
+start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_422a.dat",hostCPU)
 wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   current_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
-ENDDO
+;;FOR i = 1 to cfe_app_cnt DO
+;;   current_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+;;ENDDO
 
 evt_msg_sent_ctr_offset = [0,0,0,0,0,0,0,0,0]
 
@@ -1499,14 +1615,19 @@ evs3000Passed = TRUE
 write "" 
 write "     Msg Sent Counter"
 write "     ----------------"
-FOR i = 1 to cfe_app_cnt DO
-  IF (previous_app_msg_sent_ctr[i] + evt_msg_sent_ctr_offset[i] = current_app_msg_sent_ctr[i]) THEN
-    msg_ctr_status_flag[i] = "OK"
-  ELSE
-    msg_ctr_status_flag[i] = "*** FAILED ***"
-    evs3000Passed = FALSE
-  ENDIF
-  write "     ", cfe_applications[i], " - ", previous_app_msg_sent_ctr [i] , " -> " , current_app_msg_sent_ctr [i], "     ", msg_ctr_status_flag[i]
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+;;  IF (previous_app_msg_sent_ctr[i] + evt_msg_sent_ctr_offset[i] = current_app_msg_sent_ctr[i]) THEN
+    IF (previous_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter) THEN
+      msg_ctr_status_flag[i] = "OK"
+    ELSE
+      msg_ctr_status_flag[i] = "*** FAILED ***"
+      evs3000Passed = FALSE
+    ENDIF
+  ;;write "     ", cfe_applications[i], " - ", previous_app_msg_sent_ctr [i] , " -> " , current_app_msg_sent_ctr [i], "     ", msg_ctr_status_flag[i]
+    write "     ",$sc_$cpu_evs_AppData[i].AppName, " - ",previous_app_msg_sent_ctr[i]," -> ",p@$sc_$cpu_EVS_AppData[i].EventCounter,"     ",msg_ctr_status_flag[i]
+  endif
 ENDDO
 
 if (evs3000Passed = TRUE) then
@@ -1523,13 +1644,13 @@ write ";             Telemetry indicates INFO messages disabled."
 write ";             cEVS3000"
 write ";             cEVS3004"
 write ";***********************************************************************"
-; Retrieve application data file
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_423.dat", "$CPU")
-wait 5
+;; Retrieve application data file
+;;start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_423.dat", hostCPU)
+;;wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   previous_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Info 
-ENDDO
+;;FOR i = 1 to cfe_app_cnt DO
+;;   previous_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Info 
+;;ENDDO
 
 cmdcnt = $SC_$CPU_EVS_CMDPC + 1
 
@@ -1545,25 +1666,30 @@ else
 endif
 
 ; Retrieve application data file
-start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_423a.dat","$CPU")
+start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_423a.dat",hostCPU)
 wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   current_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Info
-ENDDO
+;;FOR i = 1 to cfe_app_cnt DO
+;;   current_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Info
+;;ENDDO
 
 evs3000Passed = TRUE
 write "" 
 write "     INFO message status"
 write "     --------------------"
-FOR i = 1 to cfe_app_cnt DO
-  IF (previous_event_type_status[i] = current_event_type_status[i]) THEN
-    event_type_status_flag[i] = "*** FAILED ***"
-    evs3000Passed = FALSE
-  ELSE
-    event_type_status_flag[i] = "OK"
-  ENDIF
-  write "     ", cfe_applications[i], " - ", previous_event_type_status[i] , " -> " , current_event_type_status[i], "   ", event_type_status_flag[i]
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+  ;;IF (previous_event_type_status[i] = current_event_type_status[i]) THEN
+    IF (p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Info <> "DIS") THEN
+      event_type_status_flag[i] = "*** FAILED ***"
+      evs3000Passed = FALSE
+    ELSE
+      event_type_status_flag[i] = "OK"
+    ENDIF
+  ;;write "     ", cfe_applications[i], " - ", previous_event_type_status[i] , " -> " , current_event_type_status[i], "   ", event_type_status_flag[i]
+    write "     ",$sc_$cpu_evs_AppData[i].AppName," - ",event_type_status_flag[i]
+  endif
 ENDDO
 
 if (evs3000Passed = TRUE) then
@@ -1581,23 +1707,26 @@ write ";              Messages not processed by CFE_EVS."
 write ";              Verify by telemetry INFO message counts not incrementing."
 write ";              cEVS3000"
 write ";***********************************************************************"
-; Retrieve application data file
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_424.dat", "$CPU")
-wait 5
+;; Retrieve application data file
+;;start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_424.dat", hostCPU)
+;;wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   previous_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+    previous_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+  endif
 ENDDO
 
 s $sc_$cpu_evs_send_info
 
 ; Retrieve application data file
-start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_424a.dat","$CPU")
+start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_424a.dat",hostCPU)
 wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   current_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
-ENDDO
+;;FOR i = 1 to cfe_app_cnt DO
+;;   current_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+;;ENDDO
 
 evt_msg_sent_ctr_offset = [0,0,0,0,0,0,0,0,0]
 
@@ -1605,14 +1734,19 @@ evs3000Passed = TRUE
 write "" 
 write "     Msg Sent Counter"
 write "     ----------------"
-FOR i = 1 to cfe_app_cnt-1 DO
-  IF (previous_app_msg_sent_ctr[i] + evt_msg_sent_ctr_offset[i] = current_app_msg_sent_ctr[i]) THEN
-    msg_ctr_status_flag[i] = "OK"
-  ELSE
-    msg_ctr_status_flag[i] = "*** FAILED ***"
-    evs3000Passed = FALSE
-  ENDIF
-  write "     ", cfe_applications[i], " - ", previous_app_msg_sent_ctr [i] , " -> " , current_app_msg_sent_ctr [i], "     ", msg_ctr_status_flag[i]
+;;FOR i = 1 to cfe_app_cnt-1 DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+;;  IF (previous_app_msg_sent_ctr[i] + evt_msg_sent_ctr_offset[i] = current_app_msg_sent_ctr[i]) THEN
+    IF (previous_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter) THEN
+      msg_ctr_status_flag[i] = "OK"
+    ELSE
+      msg_ctr_status_flag[i] = "*** FAILED ***"
+      evs3000Passed = FALSE
+    ENDIF
+  ;;write "     ", cfe_applications[i], " - ", previous_app_msg_sent_ctr [i] , " -> " , current_app_msg_sent_ctr [i], "     ", msg_ctr_status_flag[i]
+    write "     ",$sc_$cpu_evs_AppData[i].AppName," - ",previous_app_msg_sent_ctr [i]," -> ",p@$sc_$cpu_EVS_AppData[i].EventCounter,"     ",msg_ctr_status_flag[i]
+  endif
 ENDDO
 
 if (evs3000Passed = TRUE) then
@@ -1629,13 +1763,13 @@ write ";             Telemetry indicates ERROR messages disabled."
 write ";             cEVS3000"
 write ";             cEVS3004"
 write ";***********************************************************************"
-; Retrieve application data file
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_425.dat", "$CPU")
-wait 5
+;; Retrieve application data file
+;;start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_425.dat", hostCPU)
+;;wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   previous_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Err 
-ENDDO
+;;FOR i = 1 to cfe_app_cnt DO
+;;   previous_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Err 
+;;ENDDO
 
 cmdcnt = $SC_$CPU_EVS_CMDPC + 1
 
@@ -1651,25 +1785,30 @@ else
 endif
 
 ; Retrieve application data file
-start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_425a.dat","$CPU")
+start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_425a.dat",hostCPU)
 wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   current_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Err
-ENDDO
+;;FOR i = 1 to cfe_app_cnt DO
+;;   current_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Err
+;;ENDDO
 
 evs3000Passed = TRUE
 write "" 
 write "     ERROR message status"
 write "     --------------------"
-FOR i = 1 to cfe_app_cnt DO
-  IF (previous_event_type_status[i] = current_event_type_status[i]) THEN
-    event_type_status_flag[i] = "*** FAILED ***"
-    evs3000Passed = FALSE
-  ELSE
-    event_type_status_flag[i] = "OK"
-  ENDIF
-  write "     ", cfe_applications[i], " - ", previous_event_type_status[i] , " -> " , current_event_type_status[i], "   ", event_type_status_flag[i]
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+;;  IF (previous_event_type_status[i] = current_event_type_status[i]) THEN
+    IF (p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Err <> "DIS") THEN
+      event_type_status_flag[i] = "*** FAILED ***"
+      evs3000Passed = FALSE
+    ELSE
+      event_type_status_flag[i] = "OK"
+    ENDIF
+  ;;write "     ", cfe_applications[i], " - ", previous_event_type_status[i] , " -> " , current_event_type_status[i], "   ", event_type_status_flag[i]
+    write "     ",$sc_$cpu_evs_AppData[i].AppName," - ",event_type_status_flag[i]
+  endif
 ENDDO
 
 if (evs3000Passed = TRUE) then
@@ -1687,23 +1826,26 @@ write ";             Messages not processed by CFE_EVS."
 write ";             Verify by telemetry ERROR message counts not incrementing."
 write ";             cEVS3000"
 write ";***********************************************************************"
-; Retrieve application data file
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_426.dat", "$CPU")
-wait 5
+;; Retrieve application data file
+;;start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_426.dat", hostCPU)
+;;wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   previous_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+    previous_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+  endif
 ENDDO
 
 s $sc_$cpu_evs_send_error
 
 ; Retrieve application data file
-start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_426a.dat","$CPU")
+start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_426a.dat",hostCPU)
 wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   current_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
-ENDDO
+;;FOR i = 1 to cfe_app_cnt DO
+;;   current_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+;;ENDDO
 
 evt_msg_sent_ctr_offset = [0,0,0,0,0,0,0,0,0]
 
@@ -1711,14 +1853,20 @@ evs3000Passed = TRUE
 write "" 
 write "     Msg Sent Counter"
 write "     ----------------"
-FOR i = 1 to cfe_app_cnt DO
-  IF (previous_app_msg_sent_ctr[i] + evt_msg_sent_ctr_offset[i] = current_app_msg_sent_ctr[i]) THEN
-    msg_ctr_status_flag[i] = "OK"
-  ELSE
-    msg_ctr_status_flag[i] = "*** FAILED ***"
-    evs3000Passed = FALSE
-  ENDIF
-  write "     ", cfe_applications[i], " - ", previous_app_msg_sent_ctr [i] , " -> " , current_app_msg_sent_ctr [i], "     ", msg_ctr_status_flag[i]
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if (($sc_$cpu_evs_AppData[i].AppName <> "") AND ;;
+      ($sc_$cpu_evs_AppData[i].AppName <> "CI_LAB_APP")) then
+;;  IF (previous_app_msg_sent_ctr[i] + evt_msg_sent_ctr_offset[i] = current_app_msg_sent_ctr[i]) THEN
+    IF (previous_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter) THEN
+      msg_ctr_status_flag[i] = "OK"
+    ELSE
+      msg_ctr_status_flag[i] = "*** FAILED ***"
+      evs3000Passed = FALSE
+    ENDIF
+  ;;write "     ", cfe_applications[i], " - ", previous_app_msg_sent_ctr [i] , " -> " , current_app_msg_sent_ctr [i], "     ", msg_ctr_status_flag[i]
+    write "     ",$sc_$cpu_evs_AppData[i].AppName," - ",previous_app_msg_sent_ctr[i]," -> ",p@$sc_$cpu_EVS_AppData[i].EventCounter,"     ",msg_ctr_status_flag[i]
+  endif
 ENDDO
 
 if (evs3000Passed = TRUE) then
@@ -1735,13 +1883,13 @@ write ";             Telemetry indicates CRITICAL messages disabled."
 write ";             cEVS3000"
 write ";             cEVS3004"
 write ";***********************************************************************"
-; Retrieve application data file
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_427.dat", "$CPU")
-wait 5
+;; Retrieve application data file
+;;start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_427.dat", hostCPU)
+;;wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   previous_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Crit 
-ENDDO
+;;FOR i = 1 to cfe_app_cnt DO
+;;   previous_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Crit 
+;;ENDDO
 
 cmdcnt = $SC_$CPU_EVS_CMDPC + 1
 
@@ -1757,25 +1905,30 @@ else
 endif
 
 ; Retrieve application data file
-start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_427a.dat","$CPU")
+start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_427a.dat",hostCPU)
 wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   current_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Crit
-ENDDO
+;;FOR i = 1 to cfe_app_cnt DO
+;;   current_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Crit
+;;ENDDO
 
 evs3000Passed = TRUE
 write "" 
 write "     CRITICAL message status"
 write "     -----------------------"
-FOR i = 1 to cfe_app_cnt-1 DO
-  IF (previous_event_type_status[i] = current_event_type_status[i]) THEN
-    event_type_status_flag[i] = "*** FAILED ***"
-    evs3000Passed = FALSE
-  ELSE
-    event_type_status_flag[i] = "OK"
-  ENDIF
-  write "     ", cfe_applications[i], " - ", previous_event_type_status[i] , " -> " , current_event_type_status[i], "   ", event_type_status_flag[i]
+;;FOR i = 1 to cfe_app_cnt-1 DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+;;  IF (previous_event_type_status[i] = current_event_type_status[i]) THEN
+    IF (p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Crit <> "DIS") THEN
+      event_type_status_flag[i] = "*** FAILED ***"
+      evs3000Passed = FALSE
+    ELSE
+      event_type_status_flag[i] = "OK"
+    ENDIF
+  ;;write "     ", cfe_applications[i], " - ", previous_event_type_status[i] , " -> " , current_event_type_status[i], "   ", event_type_status_flag[i]
+    write "     ",$sc_$cpu_evs_AppData[i].AppName," - ",event_type_status_flag[i]
+  endif
 ENDDO
 
 if (evs3000Passed = TRUE) then
@@ -1794,23 +1947,26 @@ write ";             Verify by telemetry CRITICAL message counts not "
 write ";	     incrementing."
 write ";             cEVS3000"
 write ";***********************************************************************"
-; Retrieve application data file
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_428.dat", "$CPU")
-wait 5
+;; Retrieve application data file
+;;start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_428.dat", hostCPU)
+;;wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   previous_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+    previous_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+  endif
 ENDDO
 
 s $sc_$cpu_evs_send_crit
 
 ; Retrieve application data file
-start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_428a.dat","$CPU")
+start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_428a.dat",hostCPU)
 wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   current_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
-ENDDO
+;;FOR i = 1 to cfe_app_cnt DO
+;;   current_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+;;ENDDO
 
 evt_msg_sent_ctr_offset = [0,0,0,0,0,0,0,0,0]
 
@@ -1818,14 +1974,19 @@ evs3000Passed = TRUE
 write "" 
 write "     Msg Sent Counter"
 write "     ----------------"
-FOR i = 1 to cfe_app_cnt DO
-  IF (previous_app_msg_sent_ctr[i] + evt_msg_sent_ctr_offset[i] = current_app_msg_sent_ctr[i]) THEN
-    msg_ctr_status_flag[i] = "OK"
-  ELSE
-    msg_ctr_status_flag[i] = "*** FAILED ***"
-    evs3000Passed = FALSE
-  ENDIF
-  write "     ", cfe_applications[i], " - ", previous_app_msg_sent_ctr [i] , " -> " , current_app_msg_sent_ctr [i], "     ", msg_ctr_status_flag[i]
+;;FOR i = 1 to cfe_app_cnt DO
+;;  IF (previous_app_msg_sent_ctr[i] + evt_msg_sent_ctr_offset[i] = current_app_msg_sent_ctr[i]) THEN
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+    IF (previous_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter) THEN
+      msg_ctr_status_flag[i] = "OK"
+    ELSE
+      msg_ctr_status_flag[i] = "*** FAILED ***"
+      evs3000Passed = FALSE
+    ENDIF
+  ;;write "     ", cfe_applications[i], " - ", previous_app_msg_sent_ctr [i] , " -> " , current_app_msg_sent_ctr [i], "     ", msg_ctr_status_flag[i]
+    write "     ",$sc_$cpu_evs_AppData[i].AppName," - ",previous_app_msg_sent_ctr[i]," -> ",p@$sc_$cpu_EVS_AppData[i].EventCounter,"     ",msg_ctr_status_flag[i]
+  endif
 ENDDO
 
 if (evs3000Passed = TRUE) then
@@ -1844,13 +2005,13 @@ write ";             Telemetry indicates DEBUG messages enabled. "
 write ";             cEVS3000 "
 write ";             cEVS3004 "
 write ";***********************************************************************"
-; Retrieve application data file
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_431.dat", "$CPU")
-wait 5
+;; Retrieve application data file
+;;start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_431.dat", hostCPU)
+;;wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   previous_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Debug 
-ENDDO
+;;FOR i = 1 to cfe_app_cnt-2 DO
+;;   previous_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Debug 
+;;ENDDO
 
 cmdcnt = $SC_$CPU_EVS_CMDPC + 1
 
@@ -1866,25 +2027,30 @@ else
 endif
 
 ; Retrieve application data file
-start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_431a.dat","$CPU")
+start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_431a.dat",hostCPU)
 wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   current_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Debug
-ENDDO
+;;FOR i = 1 to cfe_app_cnt-2 DO
+;;   current_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Debug
+;;ENDDO
 
 evs3000Passed = TRUE
 write "" 
 write "     DEBUG message status"
 write "     --------------------"
-FOR i = 1 to cfe_app_cnt DO
-  IF (previous_event_type_status[i] = current_event_type_status[i]) THEN
-    event_type_status_flag[i] = "*** FAILED ***"
-    evs3000Passed = FALSE
-  ELSE
-    event_type_status_flag[i] = "OK"
-  ENDIF
-  write "     ", cfe_applications[i], " - ", previous_event_type_status[i] , " -> " , current_event_type_status[i], "   ", event_type_status_flag[i]
+;;FOR i = 1 to cfe_app_cnt-2 DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+;;  IF (previous_event_type_status[i] = current_event_type_status[i]) THEN
+    IF (p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Debug <> "ENA") THEN
+      event_type_status_flag[i] = "*** FAILED ***"
+      evs3000Passed = FALSE
+    ELSE
+      event_type_status_flag[i] = "OK"
+    ENDIF
+    ;;write "     ", cfe_applications[i], " - ", previous_event_type_status[i] , " -> " , current_event_type_status[i], "   ", event_type_status_flag[i]
+    write "     ", $sc_$cpu_evs_AppData[i].AppName," - ",event_type_status_flag[i]
+  endif
 ENDDO
 
 if (evs3000Passed = TRUE) then
@@ -1903,46 +2069,47 @@ write ";             Expect event msgs. "
 write ";             Verify by telemetry counts incrementing. "
 write ";             cEVS3000 "
 write ";***********************************************************************"
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_432.dat", "$CPU")
-wait 5
+write "; Skipping this step since it was already performed "
+;;start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_432.dat", hostCPU)
+;;wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   previous_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
-ENDDO
+;;FOR i = 1 to cfe_app_cnt-2 DO
+;;   previous_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+;;ENDDO
 
-s $sc_$cpu_evs_send_debug
+;;s $sc_$cpu_evs_send_debug
 
-; Retrieve application data file
-start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_432a.dat","$CPU")
-wait 5
+;;; Retrieve application data file
+;;start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_432a.dat",hostCPU)
+;;wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   current_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
-ENDDO
+;;FOR i = 1 to cfe_app_cnt-2 DO
+;;   current_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+;;ENDDO
 
-evt_msg_sent_ctr_offset = [1,0,0,0,0,0,0,0,1]
+;;evt_msg_sent_ctr_offset = [1,0,0,0,0,0,0,0,1]
 
-evs3000Passed = TRUE
-write "" 
-write "     Msg Sent Counter"
-write "     ----------------"
-FOR i = 1 to cfe_app_cnt DO
-  IF (previous_app_msg_sent_ctr[i] + evt_msg_sent_ctr_offset[i] = current_app_msg_sent_ctr[i]) THEN
-    msg_ctr_status_flag[i] = "OK"
-  ELSE
-    msg_ctr_status_flag[i] = "*** FAILED ***"
-    evs3000Passed = FALSE
-  ENDIF
-  write "     ", cfe_applications[i], " - ", previous_app_msg_sent_ctr [i] , " -> " , current_app_msg_sent_ctr [i], "     ", msg_ctr_status_flag[i]
-ENDDO
-
-if (evs3000Passed = TRUE) then
-  ut_setrequirements EVS_3000, "P"
-  write "<*> Passed (3000) - Enable Event Type counts."
-else
-  ut_setrequirements EVS_3000, "F"
-  write "<!> Failed (3000) - Enable Event Type counts."
-endif
+;;evs3000Passed = TRUE
+;;write "" 
+;;write "     Msg Sent Counter"
+;;write "     ----------------"
+;;FOR i = 1 to cfe_app_cnt-2 DO
+;;  IF (previous_app_msg_sent_ctr[i] + evt_msg_sent_ctr_offset[i] = current_app_msg_sent_ctr[i]) THEN
+;;    msg_ctr_status_flag[i] = "OK"
+;;  ELSE
+;;    msg_ctr_status_flag[i] = "*** FAILED ***"
+;;    evs3000Passed = FALSE
+;;  ENDIF
+;;  write "     ", cfe_applications[i], " - ", previous_app_msg_sent_ctr [i] , " -> " , current_app_msg_sent_ctr [i], "     ", msg_ctr_status_flag[i]
+;;ENDDO
+;;
+;;if (evs3000Passed = TRUE) then
+;;  ut_setrequirements EVS_3000, "P"
+;;  write "<*> Passed (3000) - Enable Event Type counts."
+;;else
+;;  ut_setrequirements EVS_3000, "F"
+;;  write "<!> Failed (3000) - Enable Event Type counts."
+;;endif
 
 write ";***********************************************************************"
 write "; Step 4.3.3: Send Enable Event Type Command for INFO messages	"
@@ -1950,13 +2117,13 @@ write ";             Telemetry indicates INFO messages enabled."
 write ";             cEVS3000"
 write ";             cEVS3004"
 write ";***********************************************************************"
-; Retrieve application data file
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_433.dat", "$CPU")
-wait 5
+;;; Retrieve application data file
+;;start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_433.dat", hostCPU)
+;;wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   previous_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Info 
-ENDDO
+;;FOR i = 1 to cfe_app_cnt DO
+;;   previous_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Info 
+;;ENDDO
 
 cmdcnt = $SC_$CPU_EVS_CMDPC + 1
 
@@ -1971,25 +2138,30 @@ else
   write "<*> Passed (3000) - Enable Event Type command did not increment CMDPC."
 endif
 
-start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_433a.dat","$CPU")
+start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_433a.dat",hostCPU)
 wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   current_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Info
-ENDDO
+;;FOR i = 1 to cfe_app_cnt DO
+;;   current_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Info
+;;ENDDO
 
 evs3000Passed = TRUE
 write "" 
 write "     INFO message status"
 write "     --------------------"
-FOR i = 1 to cfe_app_cnt DO
-  IF (previous_event_type_status[i] = current_event_type_status[i]) THEN
-    event_type_status_flag[i] = "*** FAILED ***"
-    evs3000Passed = FALSE
-  ELSE
-    event_type_status_flag[i] = "OK"
-  ENDIF
-  write "     ", cfe_applications[i], " - ", previous_event_type_status[i] , " -> " , current_event_type_status[i], "   ", event_type_status_flag[i]
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+  ;;IF (previous_event_type_status[i] = current_event_type_status[i]) THEN
+    IF (p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Info <> "ENA") THEN
+      event_type_status_flag[i] = "*** FAILED ***"
+      evs3000Passed = FALSE
+    ELSE
+      event_type_status_flag[i] = "OK"
+    ENDIF
+  ;;write "     ", cfe_applications[i], " - ", previous_event_type_status[i] , " -> " , current_event_type_status[i], "   ", event_type_status_flag[i]
+    write "     ",$sc_$cpu_evs_AppData[i].AppName, " - ",event_type_status_flag[i]
+  endif
 ENDDO
 
 if (evs3000Passed = TRUE) then
@@ -2007,47 +2179,48 @@ write ";             Messages processed by CFE_EVS."
 write ";             Verify by telemetry message counts incrementing."
 write ";             cEVS3000"
 write ";***********************************************************************"
-; Retrieve application data file
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_434.dat", "$CPU")
-wait 5
+write "; Skipping this step since it was already performed "
+;;; Retrieve application data file
+;;start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_434.dat", hostCPU)
+;;wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   previous_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
-ENDDO
+;;FOR i = 1 to cfe_app_cnt-2 DO
+;;   previous_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+;;ENDDO
 
-s $sc_$cpu_evs_send_info
+;;s $sc_$cpu_evs_send_info
 
-; Retrieve application data file
-start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_434a.dat","$CPU")
-wait 5
+;;; Retrieve application data file
+;;start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_434a.dat",hostCPU)
+;;wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   current_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
-ENDDO
+;;FOR i = 1 to cfe_app_cnt-2 DO
+;;   current_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+;;ENDDO
 
-evt_msg_sent_ctr_offset = [2,1,1,1,1,1,1,0,1]
+;;evt_msg_sent_ctr_offset = [2,1,1,1,1,1,1,0,1]
 
-evs3000Passed = TRUE
-write "" 
-write "     Msg Sent Counter"
-write "     ----------------"
-FOR i = 1 to cfe_app_cnt DO
-  IF (previous_app_msg_sent_ctr[i] + evt_msg_sent_ctr_offset[i] = current_app_msg_sent_ctr[i]) THEN
-    msg_ctr_status_flag[i] = "OK"
-  ELSE
-    msg_ctr_status_flag[i] = "*** FAILED ***"
-    evs3000Passed = FALSE
-  ENDIF
-  write "     ", cfe_applications[i], " - ", previous_app_msg_sent_ctr [i] , " -> " , current_app_msg_sent_ctr [i], "     ", msg_ctr_status_flag[i]
-ENDDO
+;;evs3000Passed = TRUE
+;;write "" 
+;;write "     Msg Sent Counter"
+;;write "     ----------------"
+;;FOR i = 1 to cfe_app_cnt-2 DO
+;;  IF (previous_app_msg_sent_ctr[i] + evt_msg_sent_ctr_offset[i] = current_app_msg_sent_ctr[i]) THEN
+;;    msg_ctr_status_flag[i] = "OK"
+;;  ELSE
+;;    msg_ctr_status_flag[i] = "*** FAILED ***"
+;;    evs3000Passed = FALSE
+;;  ENDIF
+;;  write "     ", cfe_applications[i], " - ", previous_app_msg_sent_ctr [i] , " -> " , current_app_msg_sent_ctr [i], "     ", msg_ctr_status_flag[i]
+;;ENDDO
 
-if (evs3000Passed = TRUE) then
-  ut_setrequirements EVS_3000, "P"
-  write "<*> Passed (3000) - Enable Event Type counts."
-else
-  ut_setrequirements EVS_3000, "F"
-  write "<!> Failed (3000) - Enable Event Type counts."
-endif
+;;if (evs3000Passed = TRUE) then
+;;  ut_setrequirements EVS_3000, "P"
+;;  write "<*> Passed (3000) - Enable Event Type counts."
+;;else
+;;  ut_setrequirements EVS_3000, "F"
+;;  write "<!> Failed (3000) - Enable Event Type counts."
+;;endif
 
 write ";***********************************************************************"
 write "; Step 4.3.5: Send Enable Event Type Command for ERROR messages"
@@ -2055,13 +2228,13 @@ write ";             Telemetry indicates ERROR messages enabled."
 write ";             cEVS3000"
 write ";             cEVS3004"
 write ";***********************************************************************"
-; Retrieve application data file
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_435.dat", "$CPU")
-wait 5
+;;; Retrieve application data file
+;;start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_435.dat", hostCPU)
+;;wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   previous_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Err
-ENDDO
+;;FOR i = 1 to cfe_app_cnt DO
+;;   previous_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Err
+;;ENDDO
 
 cmdcnt = $SC_$CPU_EVS_CMDPC + 1
 
@@ -2077,25 +2250,30 @@ else
 endif
 
 ; Retrieve application data file
-start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_435a.dat","$CPU")
+start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_435a.dat",hostCPU)
 wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   current_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Err
-ENDDO
+;;FOR i = 1 to cfe_app_cnt DO
+;;   current_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Err
+;;ENDDO
 
 evs3000Passed = TRUE
 write "" 
 write "     ERROR message status"
 write "     --------------------"
-FOR i = 1 to cfe_app_cnt DO
-  IF (previous_event_type_status[i] = current_event_type_status[i]) THEN
-    event_type_status_flag[i] = "*** FAILED ***"
-    evs3000Passed = FALSE
-  ELSE
-    event_type_status_flag[i] = "OK"
-  ENDIF
-  write "     ", cfe_applications[i], " - ", previous_event_type_status[i] , " -> " , current_event_type_status[i], "   ", event_type_status_flag[i]
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+  ;;IF (previous_event_type_status[i] = current_event_type_status[i]) THEN
+    IF (p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Err <> "ENA") THEN
+      event_type_status_flag[i] = "*** FAILED ***"
+      evs3000Passed = FALSE
+    ELSE
+      event_type_status_flag[i] = "OK"
+    ENDIF
+   ;; write "     ", cfe_applications[i], " - ", previous_event_type_status[i] , " -> " , current_event_type_status[i], "   ", event_type_status_flag[i]
+    write "     ",$sc_$cpu_evs_AppData[i].AppName," - ",event_type_status_flag[i]
+  endif
 ENDDO
 
 if (evs3000Passed = TRUE) then
@@ -2113,47 +2291,48 @@ write ";             Messages processed by CFE_EVS."
 write ";             Verify by telemetry ERROR message counts incrementing."
 write ";             cEVS3000"
 write ";***********************************************************************"
-; Retrieve application data file
-start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_436.dat","$CPU")
-wait 5
+write "; Skipping this step since it was already performed "
+;;; Retrieve application data file
+;;start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_436.dat",hostCPU)
+;;wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   previous_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
-ENDDO
+;;FOR i = 1 to cfe_app_cnt-2 DO
+;;   previous_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+;;ENDDO
 
-s $sc_$cpu_evs_send_error
+;;s $sc_$cpu_evs_send_error
 
-; Retrieve application data file
-start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_436a.dat","$CPU")
-wait 5
+;;; Retrieve application data file
+;;start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_436a.dat",hostCPU)
+;;wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   current_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
-ENDDO
+;;FOR i = 1 to cfe_app_cnt-2 DO
+;;   current_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+;;ENDDO
 
-evt_msg_sent_ctr_offset = [1,1,1,1,1,0,1,0,1]
+;;evt_msg_sent_ctr_offset = [1,1,1,1,1,0,1,0,1]
 
-evs3000Passed = TRUE
-write "" 
-write "     Msg Sent Counter"
-write "     ----------------"
-FOR i = 1 to cfe_app_cnt DO
-  IF (previous_app_msg_sent_ctr[i] + evt_msg_sent_ctr_offset[i] = current_app_msg_sent_ctr[i]) THEN
-    msg_ctr_status_flag[i] = "OK"
-  ELSE
-    msg_ctr_status_flag[i] = "*** FAILED ***"
-    evs3000Passed = FALSE
-  ENDIF
-  write "     ", cfe_applications[i], " - ", previous_app_msg_sent_ctr [i] , " -> " , current_app_msg_sent_ctr [i], "     ", msg_ctr_status_flag[i]
-ENDDO
+;;evs3000Passed = TRUE
+;;write "" 
+;;write "     Msg Sent Counter"
+;;write "     ----------------"
+;;FOR i = 1 to cfe_app_cnt-2 DO
+;;  IF (previous_app_msg_sent_ctr[i] + evt_msg_sent_ctr_offset[i] = current_app_msg_sent_ctr[i]) THEN
+;;    msg_ctr_status_flag[i] = "OK"
+;;  ELSE
+;;    msg_ctr_status_flag[i] = "*** FAILED ***"
+;;    evs3000Passed = FALSE
+;;  ENDIF
+;;  write "     ", cfe_applications[i], " - ", previous_app_msg_sent_ctr [i] , " -> " , current_app_msg_sent_ctr [i], "     ", msg_ctr_status_flag[i]
+;;ENDDO
 
-if (evs3000Passed = TRUE) then
-  ut_setrequirements EVS_3000, "P"
-  write "<*> Passed (3000) - Enable Event Type counts."
-else
-  ut_setrequirements EVS_3000, "F"
-  write "<!> Failed (3000) - Enable Event Type counts."
-endif
+;;if (evs3000Passed = TRUE) then
+;;  ut_setrequirements EVS_3000, "P"
+;;  write "<*> Passed (3000) - Enable Event Type counts."
+;;else
+;;  ut_setrequirements EVS_3000, "F"
+;;  write "<!> Failed (3000) - Enable Event Type counts."
+;;endif
 
 write ";***********************************************************************"
 write "; Step 4.3.7: Send Enable Event Type Command for CRITICAL messages"
@@ -2161,13 +2340,13 @@ write ";             Telemetry indicates CRITICAL messages enabled."
 write ";             cEVS3000"
 write ";             cEVS3004"
 write ";***********************************************************************"
-; Retrieve application data file
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_437.dat", "$CPU")
-wait 5
+;;; Retrieve application data file
+;;start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_437.dat", hostCPU)
+;;wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   previous_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Crit 
-ENDDO
+;;FOR i = 1 to cfe_app_cnt DO
+;;   previous_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Crit 
+;;ENDDO
 
 cmdcnt = $SC_$CPU_EVS_CMDPC + 1
 
@@ -2183,25 +2362,30 @@ else
 endif
 
 ; Retrieve application data file
-start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_437a.dat","$CPU")
+start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_437a.dat",hostCPU)
 wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   current_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Crit
-ENDDO
+;;FOR i = 1 to cfe_app_cnt DO
+;;   current_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Crit
+;;ENDDO
 
 evs3000Passed = TRUE
 write "" 
 write "     CRITICAL message status"
 write "     -----------------------"
-FOR i = 1 to cfe_app_cnt-1 DO
-  IF (previous_event_type_status[i] = current_event_type_status[i]) THEN
-    event_type_status_flag[i] = "*** FAILED ***"
-    evs3000Passed = FALSE
-  ELSE
-    event_type_status_flag[i] = "OK"
-  ENDIF
-  write "     ", cfe_applications[i], " - ", previous_event_type_status[i] , " -> " , current_event_type_status[i], "   ", event_type_status_flag[i]
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+  ;;IF (previous_event_type_status[i] = current_event_type_status[i]) THEN
+    IF (p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Crit <> "ENA") THEN
+      event_type_status_flag[i] = "*** FAILED ***"
+      evs3000Passed = FALSE
+    ELSE
+      event_type_status_flag[i] = "OK"
+    ENDIF
+    ;;write "     ", cfe_applications[i], " - ", previous_event_type_status[i] , " -> " , current_event_type_status[i], "   ", event_type_status_flag[i]
+    write "     ",$sc_$cpu_evs_AppData[i].AppName," - ",event_type_status_flag[i]
+  endif
 ENDDO
 
 if (evs3000Passed = TRUE) then
@@ -2219,47 +2403,48 @@ write ";             Messages processed by CFE_EVS."
 write ";             Verify by telemetry CRITICAL message counts incrementing."
 write ";             cEVS3000"
 write ";***********************************************************************"
-; Retrieve application data file
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_438.dat", "$CPU")
-wait 5
+write "; Skipping this step since it was already performed "
+;;; Retrieve application data file
+;;start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_438.dat", hostCPU)
+;;wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   previous_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
-ENDDO
+;;FOR i = 1 to cfe_app_cnt-2 DO
+;;   previous_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+;;ENDDO
 
-s $sc_$cpu_evs_send_crit
+;;s $sc_$cpu_evs_send_crit
 
-; Retrieve application data file
-start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_438a.dat","$CPU")
-wait 5
+;;; Retrieve application data file
+;;start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_438a.dat",hostCPU)
+;;wait 5
  
-FOR i = 1 to cfe_app_cnt DO
-   current_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
-ENDDO
+;;FOR i = 1 to cfe_app_cnt-2 DO
+;;   current_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+;;ENDDO
 
-evt_msg_sent_ctr_offset = [1,0,0,0,0,0,0,0,1]
+;;evt_msg_sent_ctr_offset = [1,0,0,0,0,0,0,0,1]
 
-evs3000Passed = TRUE
-write "" 
-write "     Msg Sent Counter"
-write "     ----------------"
-FOR i = 1 to cfe_app_cnt DO
-  IF (previous_app_msg_sent_ctr[i] + evt_msg_sent_ctr_offset[i] = current_app_msg_sent_ctr[i]) THEN
-    msg_ctr_status_flag[i] = "OK"
-  ELSE
-    msg_ctr_status_flag[i] = "*** FAILED ***"
-    evs3000Passed = FALSE
-  ENDIF
-  write "     ", cfe_applications[i], " - ", previous_app_msg_sent_ctr [i] , " -> " , current_app_msg_sent_ctr [i], "     ", msg_ctr_status_flag[i]
-ENDDO
+;;evs3000Passed = TRUE
+;;write "" 
+;;write "     Msg Sent Counter"
+;;write "     ----------------"
+;;FOR i = 1 to cfe_app_cnt-2 DO
+;;  IF (previous_app_msg_sent_ctr[i] + evt_msg_sent_ctr_offset[i] = current_app_msg_sent_ctr[i]) THEN
+;;    msg_ctr_status_flag[i] = "OK"
+;;  ELSE
+;;    msg_ctr_status_flag[i] = "*** FAILED ***"
+;;    evs3000Passed = FALSE
+;;  ENDIF
+;;  write "     ", cfe_applications[i], " - ", previous_app_msg_sent_ctr [i] , " -> " , current_app_msg_sent_ctr [i], "     ", msg_ctr_status_flag[i]
+;;ENDDO
 
-if (evs3000Passed = TRUE) then
-  ut_setrequirements EVS_3000, "P"
-  write "<*> Passed (3000) - Enable Event Type counts."
-else
-  ut_setrequirements EVS_3000, "F"
-  write "<!> Failed (3000) - Enable Event Type counts."
-endif
+;;if (evs3000Passed = TRUE) then
+;;  ut_setrequirements EVS_3000, "P"
+;;  write "<*> Passed (3000) - Enable Event Type counts."
+;;else
+;;  ut_setrequirements EVS_3000, "F"
+;;  write "<!> Failed (3000) - Enable Event Type counts."
+;;endif
 
 write ";***********************************************************************"
 write "; Step 5.0: Event Message Generation Test"
@@ -2277,19 +2462,22 @@ wait 5
 wait 5
 
 ; Retrieve application data file
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_51.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_51.dat", hostCPU)
 wait 5
  
 ;event message types 
-FOR i = 1 to cfe_app_cnt DO
-  write " For app ", $sc_$cpu_EVS_AppData[i].AppName
-  write " DEBUG = ", p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Debug
-  write " INFO = ", p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Info
-  write " ERROR = ", p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Err
-  write " CRIT = ", p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Crit
-  write " Evt msg types mask"
-  write " CEID"
-  write " ",$sc_$cpu_EVS_AppData[i].EvtTypeAF.Crit, $sc_$cpu_EVS_AppData[i].EvtTypeAF.Err, $sc_$cpu_EVS_AppData[i].EvtTypeAF.Info, $sc_$cpu_EVS_AppData[i].EvtTypeAF.Debug
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+    write " For app ", $sc_$cpu_EVS_AppData[i].AppName
+    write " DEBUG = ", p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Debug
+    write " INFO = ", p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Info
+    write " ERROR = ", p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Err
+    write " CRIT = ", p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Crit
+    write " Evt msg types mask"
+    write " CEID"
+    write " ",$sc_$cpu_EVS_AppData[i].EvtTypeAF.Crit, $sc_$cpu_EVS_AppData[i].EvtTypeAF.Err, $sc_$cpu_EVS_AppData[i].EvtTypeAF.Info, $sc_$cpu_EVS_AppData[i].EvtTypeAF.Debug
+  endif
 ENDDO
 
 write ";***********************************************************************"
@@ -2302,39 +2490,45 @@ write ";             cEVS3004"
 write ";             cEVS3008"
 write ";             cEVS3018"
 write ";***********************************************************************"
+;;; Retrieve application data file
+;;start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_521.dat", hostCPU)
+;;wait 5
+
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+    previous_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].ActiveFlag 
+    ;;/$SC_$CPU_EVS_DISAPPEVGEN APPLICATION=cfe_applications[i]
+    /$SC_$CPU_EVS_DISAPPEVGEN APPLICATION=$sc_$cpu_evs_AppData[i].AppName
+    wait 3
+  endif
+ENDDO
+
 ; Retrieve application data file
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_521.dat", "$CPU")
+start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_521a.dat",hostCPU)
 wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   previous_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].ActiveFlag 
-ENDDO
-
-FOR i = 1 to cfe_app_cnt DO
-  /$SC_$CPU_EVS_DISAPPEVGEN APPLICATION=cfe_applications[i]
-  wait 5
-ENDDO
-
-; Retrieve application data file
-start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_521a.dat","$CPU")
-wait 5
-
-FOR i = 1 to cfe_app_cnt DO
-   current_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].ActiveFlag
-ENDDO
+;;FOR i = 1 to cfe_app_cnt DO
+;;   current_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].ActiveFlag
+;;ENDDO
 
 local evs3008Passed = TRUE
 write "" 
 write "     APP EVENT message status"
 write "     ------------------------"
-FOR i = 1 to cfe_app_cnt DO
-  IF (previous_event_type_status[i] = current_event_type_status[i]) THEN
-    event_type_status_flag[i] = "*** FAILED ***"
-    evs3008Passed = FALSE
-  ELSE
-    event_type_status_flag[i] = "OK"
-  ENDIF
-  write "     ", cfe_applications[i], " - ", previous_event_type_status[i] , " -> " , current_event_type_status[i], "   ", event_type_status_flag[i]
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+;;  IF (previous_event_type_status[i] = current_event_type_status[i]) THEN
+    IF (p@$sc_$cpu_EVS_AppData[i].ActiveFlag <> "DIS") THEN
+      event_type_status_flag[i] = "*** FAILED ***"
+      evs3008Passed = FALSE
+    ELSE
+      event_type_status_flag[i] = "OK"
+    ENDIF
+    ;;write "     ", cfe_applications[i], " - ", previous_event_type_status[i] , " -> " , current_event_type_status[i], "   ", event_type_status_flag[i]
+    write "     ",$sc_$cpu_evs_AppData[i].AppName," - ",event_type_status_flag[i]
+  endif
 ENDDO
 
 if (evs3008Passed = TRUE) then
@@ -2351,11 +2545,14 @@ write ";             Verify that app's commands are not processed."
 write ";             cEVS3008"
 write ";***********************************************************************"
 ; Retrieve application data file
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_522.dat", "$CPU")
-wait 5
+;;start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_522.dat", hostCPU)
+;;wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   previous_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+    previous_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+  endif
 ENDDO
 
 s $sc_$cpu_evs_send_debug
@@ -2367,12 +2564,12 @@ s $sc_$cpu_evs_send_error
 s $sc_$cpu_evs_send_crit
 
 ; Retrieve application data file
-start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_522a.dat","$CPU")
+start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_522a.dat",hostCPU)
 wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   current_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
-ENDDO
+;;FOR i = 1 to cfe_app_cnt DO
+;;   current_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+;;ENDDO
 
 evt_msg_sent_ctr_offset = [0,0,0,0,0,0,0,0,0]
 
@@ -2380,14 +2577,19 @@ evs3008Passed = TRUE
 write "" 
 write "     Msg Sent Counter"
 write "     ----------------"
-FOR i = 1 to cfe_app_cnt-1 DO
-  IF (previous_app_msg_sent_ctr[i] + evt_msg_sent_ctr_offset[i] = current_app_msg_sent_ctr[i]) THEN
-    msg_ctr_status_flag[i] = "OK"
-  ELSE
-    msg_ctr_status_flag[i] = "*** FAILED ***"
-    evs3008Passed = FALSE
-  ENDIF
-  write "     ", cfe_applications[i], " - ", previous_app_msg_sent_ctr [i] , " -> " , current_app_msg_sent_ctr [i], "     ", msg_ctr_status_flag[i]
+;;FOR i = 1 to cfe_app_cnt-1 DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+  ;;IF (previous_app_msg_sent_ctr[i] + evt_msg_sent_ctr_offset[i] = current_app_msg_sent_ctr[i]) THEN
+    IF (previous_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter) THEN
+      msg_ctr_status_flag[i] = "OK"
+    ELSE
+      msg_ctr_status_flag[i] = "*** FAILED ***"
+      evs3008Passed = FALSE
+    ENDIF
+    ;;write "     ", cfe_applications[i], " - ", previous_app_msg_sent_ctr [i] , " -> " , current_app_msg_sent_ctr [i], "     ", msg_ctr_status_flag[i]
+    write "     ",$sc_$cpu_evs_AppData[i].AppName," - ",previous_app_msg_sent_ctr[i]," -> ",p@$sc_$cpu_EVS_AppData[i].EventCounter,"     ",msg_ctr_status_flag[i]
+  endif
 ENDDO
 
 if (evs3008Passed = TRUE) then
@@ -2408,37 +2610,45 @@ write ";             cEVS3004 "
 write ";             cEVS3008 "
 write ";             cEVS3018 "
 write ";***********************************************************************"
-; Retrieve application data file
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_531.dat", "$CPU")
-wait 5
+;;; Retrieve application data file
+;;start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_531.dat", hostCPU)
+;;wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   previous_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].ActiveFlag 
-
-  /$SC_$CPU_EVS_ENAAPPEVGEN APPLICATION=cfe_applications[i]
-  wait 5
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+    previous_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].ActiveFlag 
+;;    /$SC_$CPU_EVS_ENAAPPEVGEN APPLICATION=cfe_applications[i]
+    /$SC_$CPU_EVS_ENAAPPEVGEN APPLICATION=$sc_$cpu_evs_AppData[i].AppName
+    wait 3
+  endif
 ENDDO
 
 ; Retrieve application data file
-start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_531a.dat","$CPU")
+start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_531a.dat",hostCPU)
 wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   current_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].ActiveFlag
-ENDDO
+;;FOR i = 1 to cfe_app_cnt DO
+;;   current_event_type_status[i] = p@$sc_$cpu_EVS_AppData[i].ActiveFlag
+;;ENDDO
 
 evs3008Passed = TRUE
 write "" 
 write "     APP EVENT message status"
 write "     ------------------------"
-FOR i = 1 to cfe_app_cnt DO
-  IF (previous_event_type_status[i] = current_event_type_status[i]) THEN
-    event_type_status_flag[i] = "*** FAILED ***"
-    evs3008Passed = FALSE
-  ELSE
-    event_type_status_flag[i] = "OK"
-  ENDIF
-  write "     ", cfe_applications[i], " - ", previous_event_type_status[i] , " -> " , current_event_type_status[i], "   ", event_type_status_flag[i]
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+  ;;IF (previous_event_type_status[i] = current_event_type_status[i]) THEN
+    IF (p@$sc_$cpu_EVS_AppData[i].ActiveFlag <> "ENA") THEN
+      event_type_status_flag[i] = "*** FAILED ***"
+      evs3008Passed = FALSE
+    ELSE
+      event_type_status_flag[i] = "OK"
+    ENDIF
+    ;;write "     ", cfe_applications[i], " - ", previous_event_type_status[i] , " -> " , current_event_type_status[i], "   ", event_type_status_flag[i]
+    write "     ",$sc_$cpu_evs_AppData[i].AppName," - ",event_type_status_flag[i]
+  endif
 ENDDO
 
 if (evs3008Passed = TRUE) then
@@ -2454,12 +2664,15 @@ write "; Step 5.3.2: Send a DEBUG, INFO, ERROR, and CRIT command for cFE app"
 write ";             Verify that app's commands are processed."
 write ";             cEVS3008"
 write ";***********************************************************************"
-; Retrieve application data file
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_532.dat", "$CPU")
-wait 5
+;;; Retrieve application data file
+;;start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_532.dat", hostCPU)
+;;wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   previous_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+    previous_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+  endif
 ENDDO
 
 s $sc_$cpu_evs_send_debug
@@ -2471,12 +2684,12 @@ s $sc_$cpu_evs_send_error
 s $sc_$cpu_evs_send_crit
 
 ; Retrieve application data file
-start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_532a.dat","$CPU")
+start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_532a.dat",hostCPU)
 wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   current_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
-ENDDO
+;;FOR i = 1 to cfe_app_cnt DO
+;;   current_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+;;ENDDO
 
 evt_msg_sent_ctr_offset = [2,2,2,2,2,1,2,0,4]
 
@@ -2485,14 +2698,20 @@ write ""
 write "     Msg Sent Counter"
 write "     ----------------"
 ;; cfe_app_cnt-2 becasue of SCH and TST_EVS apps
-FOR i = 1 to cfe_app_cnt-2 DO
-  IF (previous_app_msg_sent_ctr[i] + evt_msg_sent_ctr_offset[i] = current_app_msg_sent_ctr[i]) THEN
-    msg_ctr_status_flag[i] = "OK"
-  ELSE
-    msg_ctr_status_flag[i] = "*** FAILED ***"
-    evs3008Passed = FALSE
-  ENDIF
-  write "     ", cfe_applications[i], " - ", previous_app_msg_sent_ctr [i] , " -> " , current_app_msg_sent_ctr [i], "     ", msg_ctr_status_flag[i]
+;;FOR i = 1 to cfe_app_cnt-2 DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+  ;;IF (previous_app_msg_sent_ctr[i] + evt_msg_sent_ctr_offset[i] = current_app_msg_sent_ctr[i]) THEN
+    ;; Check if the counter incremented
+    IF (previous_app_msg_sent_ctr[i] < p@$sc_$cpu_EVS_AppData[i].EventCounter) THEN
+      msg_ctr_status_flag[i] = "OK"
+    ELSE
+      msg_ctr_status_flag[i] = "*** FAILED ***"
+      evs3008Passed = FALSE
+    ENDIF
+    ;;write "     ", cfe_applications[i], " - ", previous_app_msg_sent_ctr [i] , " -> " , current_app_msg_sent_ctr [i], "     ", msg_ctr_status_flag[i]
+    write "     ",$sc_$cpu_evs_AppData[i].AppName, " - ",previous_app_msg_sent_ctr[i]," -> ",p@$sc_$cpu_EVS_AppData[i].EventCounter,"     ",msg_ctr_status_flag[i]
+  endif
 ENDDO
 
 if (evs3008Passed = TRUE) then
@@ -2504,15 +2723,18 @@ else
 endif
 
 ;event message types 
-FOR i = 1 to cfe_app_cnt DO
-  write " For app ", $sc_$cpu_EVS_AppData[i].AppName
-  write " DEBUG = ", p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Debug
-  write " INFO = ", p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Info
-  write " ERROR = ", p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Err
-  write " CRIT = ", p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Crit
-  write " Evt msg types mask"
-  write " CEID"
-  write " ",$sc_$cpu_EVS_AppData[i].EvtTypeAF.Crit, $sc_$cpu_EVS_AppData[i].EvtTypeAF.Err, $sc_$cpu_EVS_AppData[i].EvtTypeAF.Info, $sc_$cpu_EVS_AppData[i].EvtTypeAF.Debug
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+    write " For app ", $sc_$cpu_EVS_AppData[i].AppName
+    write " DEBUG = ", p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Debug
+    write " INFO = ", p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Info
+    write " ERROR = ", p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Err
+    write " CRIT = ", p@$sc_$cpu_EVS_AppData[i].EvtTypeAF.Crit
+    write " Evt msg types mask"
+    write " CEID"
+    write " ",$sc_$cpu_EVS_AppData[i].EvtTypeAF.Crit, $sc_$cpu_EVS_AppData[i].EvtTypeAF.Err, $sc_$cpu_EVS_AppData[i].EvtTypeAF.Info, $sc_$cpu_EVS_AppData[i].EvtTypeAF.Debug
+  endif
 ENDDO
 
 write ";***********************************************************************"
@@ -2635,11 +2857,14 @@ write "; Step 6.3.2: Send events for each cFE application to each disabled port"
 write ";             Verify that app's event not processed."
 write ";             cEVS3017"
 write ";***********************************************************************"
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_632.dat", "$CPU")
+start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_632.dat",hostCPU)
 wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   previous_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+    previous_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+  endif
 ENDDO
 
 s $sc_$cpu_evs_send_debug
@@ -2650,25 +2875,31 @@ s $sc_$cpu_evs_send_error
 
 s $sc_$cpu_evs_send_crit
 
-start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_632a.dat", "$CPU")
+start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_632a.dat", hostCPU)
 wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   current_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
-ENDDO
+;;FOR i = 1 to cfe_app_cnt DO
+;;   current_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+;;ENDDO
 
 evt_msg_sent_ctr_offset = [2,2,2,2,2,1,2,0,4]
 
 write "" 
 write "     Msg Sent Counter"
 write "     ----------------"
-FOR i = 1 to cfe_app_cnt DO
-  IF (previous_app_msg_sent_ctr[i] + evt_msg_sent_ctr_offset[i] = current_app_msg_sent_ctr[i]) THEN
-    msg_ctr_status_flag[i] = "OK"
-  ELSE
-    msg_ctr_status_flag[i] = "*** FAILED ***"
-  ENDIF
-  write "     ", cfe_applications[i], " - ", previous_app_msg_sent_ctr [i] , " -> " , current_app_msg_sent_ctr [i], "     ", msg_ctr_status_flag[i]
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+  ;;IF (previous_app_msg_sent_ctr[i] + evt_msg_sent_ctr_offset[i] = current_app_msg_sent_ctr[i]) THEN
+    ;; Check if the counter incremented
+    IF (previous_app_msg_sent_ctr[i] < p@$sc_$cpu_EVS_AppData[i].EventCounter) THEN
+      msg_ctr_status_flag[i] = "OK"
+    ELSE
+      msg_ctr_status_flag[i] = "*** FAILED ***"
+    ENDIF
+    ;;write "     ", cfe_applications[i], " - ", previous_app_msg_sent_ctr [i] , " -> " , current_app_msg_sent_ctr [i], "     ", msg_ctr_status_flag[i]
+    write "     ",$sc_$cpu_evs_AppData[i].AppName," - ",previous_app_msg_sent_ctr[i]," -> ",p@$sc_$cpu_EVS_AppData[i].EventCounter,"     ",msg_ctr_status_flag[i]
+  endif
 ENDDO
 
 write ";***********************************************************************"
@@ -2709,11 +2940,14 @@ write "; Step 6.4.2: Send an event to enabled ports"
 write ";             Verify that app's event is processed."
 write ";             cEVS3017"
 write ";***********************************************************************"
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_642.dat", "$CPU")
+start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_642.dat",hostCPU)
 wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   previous_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+    previous_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+  endif
 ENDDO
 
 s $sc_$cpu_evs_send_debug
@@ -2724,25 +2958,31 @@ s $sc_$cpu_evs_send_error
 
 s $sc_$cpu_evs_send_crit
 
-start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_642a.dat","$CPU")
+start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_642a.dat",hostCPU)
 wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   current_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
-ENDDO
+;;FOR i = 1 to cfe_app_cnt DO
+;;   current_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+;;ENDDO
 
 evt_msg_sent_ctr_offset = [2,2,2,2,2,1,2,0,4]
 
 write "" 
 write "     Msg Sent Counter"
 write "     ----------------"
-FOR i = 1 to cfe_app_cnt-1 DO
-  IF (previous_app_msg_sent_ctr[i] + evt_msg_sent_ctr_offset[i] = current_app_msg_sent_ctr[i]) THEN
-    msg_ctr_status_flag[i] = "OK"
-  ELSE
-    msg_ctr_status_flag[i] = "*** FAILED ***"
-  ENDIF
-  write "     ", cfe_applications[i], " - ", previous_app_msg_sent_ctr [i] , " -> " , current_app_msg_sent_ctr [i], "     ", msg_ctr_status_flag[i]
+;;FOR i = 1 to cfe_app_cnt-1 DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+  ;;IF (previous_app_msg_sent_ctr[i] + evt_msg_sent_ctr_offset[i] = current_app_msg_sent_ctr[i]) THEN
+    ;; Check if the counter incremented
+    IF (previous_app_msg_sent_ctr[i] < p@$sc_$cpu_EVS_AppData[i].EventCounter) THEN
+      msg_ctr_status_flag[i] = "OK"
+    ELSE
+      msg_ctr_status_flag[i] = "*** FAILED ***"
+    ENDIF
+    ;;write "     ", cfe_applications[i], " - ", previous_app_msg_sent_ctr [i] , " -> " , current_app_msg_sent_ctr [i], "     ", msg_ctr_status_flag[i]
+    write "     ",$sc_$cpu_evs_AppData[i].AppName," - ",previous_app_msg_sent_ctr[i]," -> ", p@$sc_$cpu_EVS_AppData[i].EventCounter,"     ",msg_ctr_status_flag[i]
+  endif
 ENDDO
 
 ; Set ports back to initial configuration - only PORT_ONE is enabled
@@ -2769,11 +3009,11 @@ errcnt = $SC_$CPU_EVS_CMDEC + 1
 ;; CPU1 is the default
 local rawcmd = "1801C00000030B281000"
 
-if ("$CPU" = "CPU2") then
-  rawcmd = "1821C00000030B081000"
-elseif ("$CPU" = "CPU3") then
-  rawcmd = "1841C00000030B681000"
-endif
+;;if ("$CPU" = "CPU2") then
+;;  rawcmd = "1821C00000030B081000"
+;;elseif ("$CPU" = "CPU3") then
+;;  rawcmd = "1841C00000030B681000"
+;;endif
 
 ut_sendrawcmd "$SC_$CPU_EVS", (rawcmd)
 
@@ -2803,11 +3043,11 @@ errcnt = $SC_$CPU_EVS_CMDEC + 1
 ;; CPU1 is the default
 rawcmd = "1801C00000030C2A1000"
 
-if ("$CPU" = "CPU2") then
-  rawcmd = "1821C00000030C091000"
-elseif ("$CPU" = "CPU3") then
-  rawcmd = "1841C00000030C691000"
-endif
+;;if ("$CPU" = "CPU2") then
+;;  rawcmd = "1821C00000030C091000"
+;;elseif ("$CPU" = "CPU3") then
+;;  rawcmd = "1841C00000030C691000"
+;;endif
 
 ut_sendrawcmd "$SC_$CPU_EVS", (rawcmd)
 
@@ -2873,35 +3113,43 @@ write ";           cEVS3009"
 write ";           cEVS3004"
 write ";           cEVS3018 (Application Event Message Sent Counter)"
 write ";***********************************************************************"
-start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_72.dat","$CPU")
+start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_72.dat",hostCPU)
 wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   previous_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
-
-  /$SC_$CPU_EVS_RSTAPPCTRS APPLICATION=cfe_applications[i]
-  wait 5
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+    previous_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+;;    /$SC_$CPU_EVS_RSTAPPCTRS APPLICATION=cfe_applications[i]
+    /$SC_$CPU_EVS_RSTAPPCTRS APPLICATION=$sc_$cpu_evs_AppData[i].AppName
+    wait 5
+  endif
 ENDDO
 
-start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_72a.dat","$CPU")
+start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_72a.dat",hostCPU)
 wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   current_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
-ENDDO
+;;FOR i = 1 to cfe_app_cnt DO
+;;   current_app_msg_sent_ctr[i] = p@$sc_$cpu_EVS_AppData[i].EventCounter 
+;;ENDDO
 
 local evs3009Passed = TRUE
 write "" 
 write "     App EMS Counter"
 write "     ----------------"
-FOR i = 1 to cfe_app_cnt DO
-  IF (current_app_msg_sent_ctr[i] <> 0) AND (cfe_applications[i] <> "CFE_EVS") THEN
-    msg_ctr_status_flag[i] = "*** FAILED ***"
-    evs3009Passed = FALSE
-  ELSE
-    msg_ctr_status_flag[i] = "OK"
-  ENDIF
-  write "     ", cfe_applications[i], " - ", previous_app_msg_sent_ctr [i] , " -> " , current_app_msg_sent_ctr [i], "     ", msg_ctr_status_flag[i]
+;;FOR i = 1 to cfe_app_cnt-2 DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+  ;;IF (current_app_msg_sent_ctr[i] <> 0) AND (cfe_applications[i] <> "CFE_EVS") THEN
+    IF (p@$sc_$cpu_EVS_AppData[i].EventCounter <> 0) AND ($sc_$cpu_evs_AppData[i].AppName <> "CFE_EVS") THEN
+      msg_ctr_status_flag[i] = "*** FAILED ***"
+      evs3009Passed = FALSE
+    ELSE
+      msg_ctr_status_flag[i] = "OK"
+    ENDIF
+    ;;write "     ", cfe_applications[i], " - ", previous_app_msg_sent_ctr [i] , " -> " , current_app_msg_sent_ctr [i], "     ", msg_ctr_status_flag[i]
+    write "     ",$sc_$cpu_evs_AppData[i].AppName," - ",previous_app_msg_sent_ctr[i]," -> ",p@$sc_$cpu_EVS_AppData[i].EventCounter,"     ",msg_ctr_status_flag[i]
+  endif
 ENDDO
 
 if (evs3009Passed = TRUE) then
@@ -3024,40 +3272,48 @@ write "; Step 9.2: Send Reset Binary Filter Counter command for each cFE app."
 write ";           cEVS3004"
 write ";           cEVS3010"
 write ";***********************************************************************"
-start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_92.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "cfe_evs_app_92.dat", hostCPU)
 wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   previous_bin_fltr_ctr[i] = p@$sc_$cpu_EVS_AppData[i].BinFltr[1].Ctr
-
-;;  /$SC_$CPU_EVS_RSTBINFLTRCTR APPLICATION=$sc_$cpu_EVS_AppData[i].AppName EVENT_ID=X'1'
-  /$SC_$CPU_EVS_RSTBINFLTRCTR APPLICATION=$sc_$cpu_EVS_AppData[i].AppName EVENT_ID=$sc_$cpu_EVS_AppData[i].BinFltr[1].EvtId
-  wait 5
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+    previous_bin_fltr_ctr[i] = p@$sc_$cpu_EVS_AppData[i].BinFltr[1].Ctr
+    /$SC_$CPU_EVS_RSTBINFLTRCTR APPLICATION=$sc_$cpu_EVS_AppData[i].AppName EVENT_ID=$sc_$cpu_EVS_AppData[i].BinFltr[1].EvtId
+    wait 3
+  endif
 ENDDO
 
-start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_92a.dat","$CPU")
+start get_file_to_cvt (ramDir,"cfe_evs_app.dat","cfe_evs_app_92a.dat",hostCPU)
 wait 5
 
-FOR i = 1 to cfe_app_cnt DO
-   current_bin_fltr_ctr[i] = p@$sc_$cpu_EVS_AppData[i].BinFltr[1].Ctr
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+    current_bin_fltr_ctr[i] = p@$sc_$cpu_EVS_AppData[i].BinFltr[1].Ctr
+  endif
 ENDDO
 
 local evs3010Passed = TRUE
 write ""
 write "    BinFltr Counter values"
 write "    ----------------------" 
-FOR i = 1 to cfe_app_cnt DO
-  IF ((current_bin_fltr_ctr[i] <> 0) AND bin_fltr_msgs[i]) THEN
-    IF (current_bin_fltr_ctr[i] < previous_bin_fltr_ctr[i]) THEN
-      msg_ctr_status_flag[i] = "OK"
+;;FOR i = 1 to cfe_app_cnt DO
+FOR i = 1 to CFE_ES_MAX_APPLICATIONS DO
+  if ($sc_$cpu_evs_AppData[i].AppName <> "") then
+    IF ((current_bin_fltr_ctr[i] <> 0) AND bin_fltr_msgs[i]) THEN
+      IF (current_bin_fltr_ctr[i] < previous_bin_fltr_ctr[i]) THEN
+        msg_ctr_status_flag[i] = "OK"
+      ELSE
+        msg_ctr_status_flag[i] = "*** FAILED ***"
+        evs3010Passed = FALSE
+      ENDIF
     ELSE
-      msg_ctr_status_flag[i] = "*** FAILED ***"
-      evs3010Passed = FALSE
+      msg_ctr_status_flag[i] = "OK"
     ENDIF
-  ELSE
-    msg_ctr_status_flag[i] = "OK"
-  ENDIF
-  write "     ", cfe_applications[i], " - ", previous_bin_fltr_ctr [i] , " -> " , current_bin_fltr_ctr [i], "     ", msg_ctr_status_flag[i]
+    ;;write "     ", cfe_applications[i], " - ", previous_bin_fltr_ctr [i] , " -> " , current_bin_fltr_ctr [i], "     ", msg_ctr_status_flag[i]
+    write "     ",$sc_$cpu_evs_AppData[i].AppName," - ",previous_bin_fltr_ctr[i]," -> ",current_bin_fltr_ctr[i],"     ",msg_ctr_status_flag[i]
+  endif
 ENDDO
 
 if (evs3010Passed = TRUE) then
@@ -3176,11 +3432,11 @@ errcnt = $SC_$CPU_EVS_CMDEC + 1
 ;; CPU1 is the default
 rawcmd = "1801C000000313000200"
 
-if ("$CPU" = "CPU2") then
-  rawcmd = "1821C000000313000200"
-elseif ("$CPU" = "CPU3") then
-  rawcmd = "1841C000000313000200"
-endif
+;;if ("$CPU" = "CPU2") then
+;;  rawcmd = "1821C000000313000200"
+;;elseif ("$CPU" = "CPU3") then
+;;  rawcmd = "1841C000000313000200"
+;;endif
 
 ut_sendrawcmd "$SC_$CPU_EVS", (rawcmd)
 

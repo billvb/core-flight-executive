@@ -45,9 +45,12 @@ local result_array[1..totalpipes]
 local new_msgcnt[1..totalpipes]
 local at
 
+local ramDir = "RAM:0"
+local hostCPU = "$CPU"
+
 outputfilename = "$sc_$cpu_sb_pipe_" & stepnum & "_" & stage & ".dat"
 
-start get_file_to_cvt("RAM:0", "cfe_sb_route.dat", outputfilename, "$CPU")
+start get_file_to_cvt(ramDir, "cfe_sb_route.dat", outputfilename, hostCPU)
 
 %liv (log_procedure) = FALSE
 

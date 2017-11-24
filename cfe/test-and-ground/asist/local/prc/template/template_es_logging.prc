@@ -123,6 +123,10 @@ PROC $sc_$cpu_es_logging
 ;	01/16/07	W. Moleski	Initial development.
 ;	02/06/12	W. Moleski	Added variable for ram disk
 ;	09/18/14	W. Moleski	Added code to disable SCH debug events
+;       05/04/16        W. Moleski      Updated for 6.5.0 testing using CPU1 for
+;                                       commanding and added a hostCPU variable
+;                                       for the utility procs that connect to
+;                                       the host IP.
 ;
 ;  Arguments
 ;	None 
@@ -221,6 +225,7 @@ local cfe_requirements[0 .. ut_req_array_size] = ["ES_1005", "ES_1005.1", "ES_10
 local work_dir = %env("WORK")
 local filename
 local ramDir = "RAM:0"
+local hostCPU = "$CPU"
 
 write ";*********************************************************************"
 write "; Step 1.0: System Log Test"
@@ -315,7 +320,7 @@ if (UT_SC_Status = UT_SC_Success) then
   endif
 
   ;; Get the file to the ground whether or not the event msg was rcv'd
-  s ftp_file (ramDir,"cfe_es_syslog.log","$sc_$cpu_es_syslog12.log","$CPU","G")
+  s ftp_file (ramDir,"cfe_es_syslog.log","$sc_$cpu_es_syslog12.log",hostCPU,"G")
   wait 5
 
   ;; Check if the file above exists and pass the requirement if it does
@@ -346,7 +351,7 @@ wait 5
 ; Setup for the ERLog DEBUG event
 ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ERLOG2_EID, "DEBUG", 1
 
-s get_file_to_cvt (ramDir,"cfe_erlog.log","$sc_$cpu_er13.log","$CPU")
+s get_file_to_cvt (ramDir,"cfe_erlog.log","$sc_$cpu_er13.log",hostCPU)
 wait 5
 
 ; Check if the proper event was generated
@@ -377,7 +382,7 @@ write ";*********************************************************************"
 ;  Dump all running apps
 ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ALL_APPS_EID, "DEBUG", 1
 
-s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log","$CPU")
+s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log",hostCPU)
 wait 5
 
 if ($SC_$CPU_find_event[1].num_found_messages = 1) then
@@ -400,13 +405,13 @@ enddo
 
 if (found_app = FALSE) then
   write "; Starting the TST_ES application. "
-  s load_start_app ("TST_ES", "$CPU")
+  s load_start_app ("TST_ES", hostCPU)
   wait 5
 
   ;; Dump all running apps again to verify that the TST_ES app is running
   ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ALL_APPS_EID, "DEBUG", 1
 
-  s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log","$CPU")
+  s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log",hostCPU)
   wait 5
 
   if ($SC_$CPU_find_event[1].num_found_messages = 1) then
@@ -477,7 +482,7 @@ if (UT_SC_Status = UT_SC_Success) then
   endif
 
   ;; Get the file to the ground whether or not the event msg was rcv'd
-  s ftp_file (ramDir,"waltsSys.log","$sc_$cpu_es_syslog15.log","$CPU","G")
+  s ftp_file (ramDir,"waltsSys.log","$sc_$cpu_es_syslog15.log",hostCPU,"G")
   wait 5
 
   ;; Check if the file above exists and pass the requirement if it does
@@ -584,7 +589,7 @@ if (UT_SC_Status = UT_SC_Success) then
   endif
 
   ;; Get the file to the ground whether or not the event msg was rcv'd
-  s ftp_file (ramDir,"cfe_es_syslog.log","$sc_$cpu_es_syslog19.log","$CPU","G")
+  s ftp_file (ramDir,"cfe_es_syslog.log","$sc_$cpu_es_syslog19.log",hostCPU,"G")
   wait 5
 
   ;; Check if the file above exists and pass the requirement if it does
@@ -642,7 +647,7 @@ else
 endif
 
 ;; Get the file to the ground whether or not the event msg was rcv'd
-s ftp_file (ramDir,"cfe_erlog.log","$sc_$cpu_er110.log","$CPU","G")
+s ftp_file (ramDir,"cfe_erlog.log","$sc_$cpu_er110.log",hostCPU,"G")
 wait 5
 
 ;; Check if the file above exists and pass the requirement if it does
@@ -663,7 +668,7 @@ write ";*********************************************************************"
 write "; Step 1.11.1: Start the TST_ES test application."
 write ";*********************************************************************"
 write "; Starting the TST_ES application. "
-s load_start_app ("TST_ES", "$CPU")
+s load_start_app ("TST_ES", hostCPU)
 wait 5
 
 ;; Send commands to subscribe to the TST_ES HK packet
@@ -743,7 +748,7 @@ if (UT_SC_Status = UT_SC_Success) then
   endif
 
   ;; Get the file to the ground whether or not the event msg was rcv'd
-  s ftp_file (ramDir,"cfe_es_syslog.log","$sc_$cpu_es_syslog1113.log","$CPU","G")
+  s ftp_file (ramDir,"cfe_es_syslog.log","$sc_$cpu_es_syslog1113.log",hostCPU,"G")
   wait 5
 
   ;; Check if the file above exists and pass the requirement if it does
@@ -820,7 +825,7 @@ if (UT_SC_Status = UT_SC_Success) then
   endif
 
   ;; Get the file to the ground whether or not the event msg was rcv'd
-  s ftp_file (ramDir,"cfe_es_syslog.log","$sc_$cpu_es_syslog1115.log","$CPU","G")
+  s ftp_file (ramDir,"cfe_es_syslog.log","$sc_$cpu_es_syslog1115.log",hostCPU,"G")
   wait 5
 
   ;; Check if the file above exists and pass the requirement if it does
@@ -895,7 +900,7 @@ if (UT_SC_Status = UT_SC_Success) then
   endif
 
   ;; Get the file to the ground whether or not the event msg was rcv'd
-  s ftp_file (ramDir,"cfe_es_syslog.log","$sc_$cpu_es_syslog1117.log","$CPU","G")
+  s ftp_file (ramDir,"cfe_es_syslog.log","$sc_$cpu_es_syslog1117.log",hostCPU,"G")
   wait 5
 
   ;; Check if the file above exists and pass the requirement if it does
@@ -956,7 +961,7 @@ if (UT_SC_Status = UT_SC_Success) then
   endif
 
   ;; Get the file to the ground whether or not the event msg was rcv'd
-  s ftp_file (ramDir,"cfe_es_syslog.log","$sc_$cpu_es_syslog113.log","$CPU","G")
+  s ftp_file (ramDir,"cfe_es_syslog.log","$sc_$cpu_es_syslog113.log",hostCPU,"G")
   wait 5
 
   ;; Check if the file above exists and pass the requirement if it does
@@ -1009,7 +1014,7 @@ if (UT_SC_Status = UT_SC_Success) then
   endif
 
   ;; Get the file to the ground whether or not the event msg was rcv'd
-  s ftp_file (ramDir,"cfe_es_syslog.log","$sc_$cpu_es_syslog115.log","$CPU","G")
+  s ftp_file (ramDir,"cfe_es_syslog.log","$sc_$cpu_es_syslog115.log",hostCPU,"G")
   wait 5
 
   ;; Check if the file above exists and pass the requirement if it does
@@ -1064,7 +1069,7 @@ write ";*********************************************************************"
 ; Setup for the ERLog DEBUG event
 ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ERLOG2_EID, "DEBUG", 1
 
-s get_file_to_cvt (ramDir,"cfe_erlog.log","$sc_$cpu_er21.log","$CPU")
+s get_file_to_cvt (ramDir,"cfe_erlog.log","$sc_$cpu_er21.log",hostCPU)
 wait 5
 
 ; Check if the proper event was generated
@@ -1133,7 +1138,7 @@ write ";*********************************************************************"
 ; Setup for the ERLog DEBUG event
 ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ERLOG2_EID, "DEBUG", 1
 
-s get_file_to_cvt (ramDir,"cfe_erlog.log","$sc_$cpu_er23.log","$CPU")
+s get_file_to_cvt (ramDir,"cfe_erlog.log","$sc_$cpu_er23.log",hostCPU)
 wait 5
 
 ; Check if the proper event was generated
@@ -1193,7 +1198,7 @@ write ";*********************************************************************"
 ; Setup for the ERLog DEBUG event
 ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ERLOG2_EID, "DEBUG", 1
 
-s get_file_to_cvt (ramDir,"cfe_erlog.log","$sc_$cpu_er25.log","$CPU")
+s get_file_to_cvt (ramDir,"cfe_erlog.log","$sc_$cpu_er25.log",hostCPU)
 wait 5
 
 ; Check if the proper event was generated
@@ -1216,7 +1221,7 @@ write "; Step 2.6: Start the TST_ES application with the Exception action"
 write "; 	   set to RESTARTAPP."
 write ";*********************************************************************"
 ;; Load and Start the TST_ES Application with the Reset action set to RESTARTAPP
-s load_app (ramDir,"TST_ES", "$CPU")
+s load_app (ramDir,"TST_ES", hostCPU)
 wait 5
                                                                                 
 /$SC_$CPU_ES_STARTAPP APPLICATION="TST_ES" APP_ENTRY_PT="TST_ES_TaskMain" APP_FILE_NAME="/ram/tst_es.o" STACKSIZE=x'2000' PRIORITY=x'c8' RESTARTAPP
@@ -1258,7 +1263,7 @@ write ";*********************************************************************"
 ;; Check if the TST_ES Application was started in the step above
 if (TST_ES_Started = FALSE) then
   write "; Starting the TST_ES application. "
-  s load_start_app ("TST_ES", "$CPU")
+  s load_start_app ("TST_ES", hostCPU)
   wait 5
 endif
 
@@ -1318,7 +1323,7 @@ write "; Actual ER Log Entries = ",$SC_$CPU_ES_ERLOGINDEX
 ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ERLOG2_EID, "DEBUG", 1
 
 ;; Verify that the ER Log is full
-s get_file_to_cvt (ramDir,"cfe_erlog.log","$sc_$cpu_er283.log","$CPU")
+s get_file_to_cvt (ramDir,"cfe_erlog.log","$sc_$cpu_er283.log",hostCPU)
 wait 5
 
 ; Check if the proper event was generated
@@ -1364,7 +1369,7 @@ write ";*********************************************************************"
 ; Setup for the ERLog DEBUG event
 ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ERLOG2_EID, "DEBUG", 1
 
-s get_file_to_cvt (ramDir,"cfe_erlog.log","$sc_$cpu_er285.log","$CPU")
+s get_file_to_cvt (ramDir,"cfe_erlog.log","$sc_$cpu_er285.log",hostCPU)
 wait 5
 
 ; Check if the proper event was generated
@@ -1411,7 +1416,7 @@ endif
 ; Setup for the ERLog DEBUG event
 ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ERLOG2_EID, "DEBUG", 1
 
-s get_file_to_cvt (ramDir,"cfe_erlog.log","$sc_$cpu_er210.log","$CPU")
+s get_file_to_cvt (ramDir,"cfe_erlog.log","$sc_$cpu_er210.log",hostCPU)
 wait 5
 
 ; Check if the proper event was generated
@@ -1524,7 +1529,7 @@ write ";*********************************************************************"
 write "; Step 3.3: Retrieve the Performance Analyzer Capture Log."
 write ";*********************************************************************"
 ;; Get the file to the ground whether or not the event msg was rcv'd
-s ftp_file (ramDir,"cfe_es_perf.dat","$sc_$cpu_es_perf33.dat","$CPU","G")
+s ftp_file (ramDir,"cfe_es_perf.dat","$sc_$cpu_es_perf33.dat",hostCPU,"G")
 wait 5
 
 ;; Check if the file above exists and pass the requirement if it does
@@ -1577,7 +1582,7 @@ endif
 
 ;; Dump all running apps again to verify that the TST_ES app is running
 ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ALL_APPS_EID, "DEBUG", 1
-s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log","$CPU")
+s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log",hostCPU)
 wait 5
                                                                                 
 if ($SC_$CPU_find_event[1].num_found_messages = 1) then
@@ -1711,7 +1716,7 @@ endif
 
 ;; Wait until the ES HK data point indicates the PERF log is full
 wait until ($SC_$CPU_ES_PerfDataCnt = CFE_ES_PERF_DATA_BUFFER_SIZE)
-s load_start_app ("TST_ES", "$CPU")
+s load_start_app ("TST_ES", hostCPU)
 wait 5
 
 ;; Send commands to subscribe to the TST_ES HK packet
@@ -1772,7 +1777,7 @@ write ";*********************************************************************"
 write "; Step 3.7: Retrieve the Performance Analyzer Capture Log."
 write ";*********************************************************************"
 ;; Get the file to the ground whether or not the event msg was rcv'd
-s ftp_file (ramDir,"cfe_es_perf.dat","$sc_$cpu_es_perf37.dat","$CPU","G")
+s ftp_file (ramDir,"cfe_es_perf.dat","$sc_$cpu_es_perf37.dat",hostCPU,"G")
 wait 5
 
 ;; Check if the file above exists and pass the requirement if it does

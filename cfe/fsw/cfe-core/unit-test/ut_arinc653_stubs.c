@@ -33,6 +33,7 @@
 ** Includes
 */
 #include "ut_stubs.h"
+#include "ut_arinc653_stubs.h"
 #include "common_types.h"
 
 #ifndef CFE_LINUX

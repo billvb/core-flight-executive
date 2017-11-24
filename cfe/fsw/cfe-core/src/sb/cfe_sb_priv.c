@@ -86,19 +86,13 @@
 
 #include "common_types.h"
 #include "osapi.h"
-#include "cfe.h"
+#include "private/cfe_private.h"
 #include "cfe_sb_priv.h"
 #include "cfe_sb.h"
 #include "ccsds.h"
 #include "cfe_error.h"
 #include "cfe_es.h"
 #include <string.h>
-
-
-/*
-** External Globals
-*/
-extern cfe_sb_t         CFE_SB;
 
 
 /******************************************************************************
@@ -111,7 +105,7 @@ extern cfe_sb_t         CFE_SB;
 **  Return:
 **    None
 */
-void CFE_SB_CleanUpApp(uint32 AppId){
+int32 CFE_SB_CleanUpApp(uint32 AppId){
 
   uint32 i;
 
@@ -127,7 +121,7 @@ void CFE_SB_CleanUpApp(uint32 AppId){
   /* Release any zero copy buffers */
   CFE_SB_ZeroCopyReleaseAppId(AppId);
 
-  return;
+  return CFE_SUCCESS;
 
 }/* end CFE_SB_CleanUpApp */
 
@@ -254,7 +248,7 @@ void CFE_SB_LockSharedData(const char *FuncName, int32 LineNumber){
         CFE_ES_GetAppID(&AppId);
 
         CFE_ES_WriteToSysLog("SB SharedData Mutex Take Err Stat=0x%x,App=%d,Func=%s,Line=%d\n",
-                 Status,AppId,FuncName,LineNumber);
+                (unsigned int)Status,(int)AppId,FuncName,(int)LineNumber);
 
     }/* end if */
 
@@ -289,7 +283,7 @@ void CFE_SB_UnlockSharedData(const char *FuncName, int32 LineNumber){
         CFE_ES_GetAppID(&AppId);
 
         CFE_ES_WriteToSysLog("SB SharedData Mutex Give Err Stat=0x%x,App=%d,Func=%s,Line=%d\n",
-                                Status,AppId,FuncName,LineNumber);
+                (unsigned int)Status,(int)AppId,FuncName,(int)LineNumber);
 
     }/* end if */
 
@@ -551,6 +545,7 @@ void CFE_SB_SetMsgSeqCnt(CFE_SB_MsgPtr_t MsgPtr,uint32 Count){
 int32 CFE_SB_ValidateMsgId(CFE_SB_MsgId_t MsgId){
 
     /* ensure the ccsds version number in MsgId is 0 */
+    /* cppcheck-suppress redundantCondition */
     if((MsgId > CFE_SB_HIGHEST_VALID_MSGID)||
        (MsgId == CFE_SB_INVALID_MSG_ID))
     {
@@ -679,6 +674,8 @@ int32 CFE_SB_GetPktType(CFE_SB_MsgId_t MsgId){
 */
 uint32 CFE_SB_RequestToSendEvent(uint32 TaskId, uint32 Bit){
 
+    OS_ConvertToArrayIndex(TaskId, &TaskId);
+
     /* if bit is set... */
     if(CFE_TST(CFE_SB.StopRecurseFlags[TaskId],Bit)==TRUE)
     {
@@ -693,6 +690,28 @@ uint32 CFE_SB_RequestToSendEvent(uint32 TaskId, uint32 Bit){
     }/* end if */
 
 }/* end CFE_SB_RequestToSendEvent */
+
+/******************************************************************************
+**  Function:  CFE_SB_FinishSendEvent()
+**
+**  Purpose:
+**    This function will clear the given bit for the given task. Called after
+**    a successful CFE_SB_RequestToSendEvent()
+**
+**  Arguments:
+**
+**  Return:
+**    If the bit is set this function will return CFE_SB_DENIED.
+**    If bit is not set, this function set the bit and return CFE_SB_GRANTED.
+*/
+void CFE_SB_FinishSendEvent(uint32 TaskId, uint32 Bit){
+
+    OS_ConvertToArrayIndex(TaskId, &TaskId);
+
+    /* clear the bit so the task may send this event again */
+    CFE_CLR(CFE_SB.StopRecurseFlags[TaskId],Bit);
+}/* end CFE_SB_RequestToSendEvent */
+
 
 
 /******************************************************************************
@@ -834,7 +853,7 @@ int32 CFE_SB_ZeroCopyReleaseAppId(uint32         AppId)
     while(zcd != NULL){
         prev = (CFE_SB_ZeroCopyD_t *) (zcd->Prev);
         if(zcd->AppID == AppId){
-            CFE_SB_ZeroCopyReleasePtr((CFE_SB_Msg_t *) zcd->Buffer, (uint32) zcd);
+            CFE_SB_ZeroCopyReleasePtr((CFE_SB_Msg_t *) zcd->Buffer, (CFE_SB_ZeroCopyHandle_t) zcd);
         }
         zcd = prev;
     }

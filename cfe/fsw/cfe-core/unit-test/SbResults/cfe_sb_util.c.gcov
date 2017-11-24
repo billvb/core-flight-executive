@@ -1,4 +1,7 @@
-        -:    0:Source:/mnt/hgfs/Projects/Repo_cFE/fsw/cfe-core/src/sb/cfe_sb_util.c
+        -:    0:Source:/home/sstrege/cFE650/cfe/fsw/cfe-core/src/sb/cfe_sb_util.c
+        -:    0:Graph:cfe_sb_util.gcno
+        -:    0:Data:cfe_sb_util.gcda
+        -:    0:Runs:1
         -:    0:Programs:6
         -:    1:/******************************************************************************
         -:    2:** File: cfe_sb_util.c
@@ -19,10 +22,8 @@
         -:   17:**
         -:   18:** Author:   R.McGraw/SSI
         -:   19:**
-        -:   20:** $Log: cfe_sb_util.c.gcov  $
-        -:   20:** Revision 1.4 2014/09/05 15:24:11GMT-05:00 rmcgraw 
-        -:   20:** DCR22107:22 Baseline Results for cFE6.4
-        -:   21:** Revision 1.8 2014/07/10 10:24:08EDT rmcgraw
+        -:   20:** $Log: cfe_sb_util.c  $
+        -:   21:** Revision 1.8 2014/07/10 09:24:08GMT-05:00 rmcgraw 
         -:   22:** DCR9772:1 Changes from C. Monaco & W.M Reid from APL for endianess neutrality
         -:   23:** Revision 1.7 2014/06/06 15:18:37EDT rmcgraw
         -:   24:** DCR21559 - Changed CFE_SB_MsgHdrSize to use macro instead of writing msgid directly
@@ -82,17 +83,17 @@
         -:   78:**  Return:
         -:   79:**    (none)
         -:   80:*/
-      226:   81:void CFE_SB_InitMsg(void           *MsgPtr,
+        -:   81:void CFE_SB_InitMsg(void           *MsgPtr,
         -:   82:                    CFE_SB_MsgId_t MsgId,
         -:   83:                    uint16         Length,
         -:   84:                    boolean        Clear )
-        -:   85:{
+      243:   85:{
         -:   86:#ifdef MESSAGE_FORMAT_IS_CCSDS
         -:   87:
-      226:   88:    CCSDS_InitPkt ((CCSDS_PriHdr_t *)MsgPtr,(uint16)MsgId,Length,Clear);
+      243:   88:    CCSDS_InitPkt ((CCSDS_PriHdr_t *)MsgPtr,(uint16)MsgId,Length,Clear);
         -:   89:
         -:   90:#endif
-      226:   91:} /* end CFE_SB_InitMsg */
+      243:   91:} /* end CFE_SB_InitMsg */
         -:   92:
         -:   93:
         -:   94:
@@ -108,8 +109,8 @@
         -:  104:**  Return:
         -:  105:**     Size of Message Header.
         -:  106:*/
-   524296:  107:uint16 CFE_SB_MsgHdrSize(CFE_SB_MsgId_t MsgId)
-        -:  108:{
+        -:  107:uint16 CFE_SB_MsgHdrSize(CFE_SB_MsgId_t MsgId)
+   524296:  108:{
         -:  109:#ifdef MESSAGE_FORMAT_IS_CCSDS
         -:  110:
         -:  111:    uint16 size;
@@ -149,8 +150,8 @@
         -:  145:**  Return:
         -:  146:**    Pointer to the first byte after the headers
         -:  147:*/
-        4:  148:void *CFE_SB_GetUserData(CFE_SB_MsgPtr_t MsgPtr)
-        -:  149:{
+        -:  148:void *CFE_SB_GetUserData(CFE_SB_MsgPtr_t MsgPtr)
+        4:  149:{
         -:  150:#ifdef MESSAGE_FORMAT_IS_CCSDS
         -:  151:    uint8           *BytePtr;
         -:  152:    CFE_SB_MsgId_t  MsgId;
@@ -177,11 +178,11 @@
         -:  173:**  Return:
         -:  174:**    The Message Id in the message.
         -:  175:*/
-    65591:  176:CFE_SB_MsgId_t CFE_SB_GetMsgId(CFE_SB_MsgPtr_t MsgPtr)
-        -:  177:{
+        -:  176:CFE_SB_MsgId_t CFE_SB_GetMsgId(CFE_SB_MsgPtr_t MsgPtr)
+    65614:  177:{
         -:  178:#ifdef MESSAGE_FORMAT_IS_CCSDS
         -:  179:
-    65591:  180:    return CCSDS_RD_SID(MsgPtr->Hdr);
+    65614:  180:    return CCSDS_RD_SID(MsgPtr->Hdr);
         -:  181:
         -:  182:#endif
         -:  183:}/* end CFE_SB_GetMsgId */
@@ -200,9 +201,9 @@
         -:  196:**  Return:
         -:  197:**    (none)
         -:  198:*/
-    65562:  199:void CFE_SB_SetMsgId(CFE_SB_MsgPtr_t MsgPtr,
+        -:  199:void CFE_SB_SetMsgId(CFE_SB_MsgPtr_t MsgPtr,
         -:  200:                     CFE_SB_MsgId_t MsgId)
-        -:  201:{
+    65562:  201:{
         -:  202:#ifdef MESSAGE_FORMAT_IS_CCSDS
         -:  203:
     65562:  204:    CCSDS_WR_SID(MsgPtr->Hdr,MsgId);
@@ -223,8 +224,8 @@
         -:  219:**  Return:
         -:  220:**    Size of the message minus the headers
         -:  221:*/
-   262144:  222:uint16 CFE_SB_GetUserDataLength(CFE_SB_MsgPtr_t MsgPtr)
-        -:  223:{
+        -:  222:uint16 CFE_SB_GetUserDataLength(CFE_SB_MsgPtr_t MsgPtr)
+   262144:  223:{
         -:  224:#ifdef MESSAGE_FORMAT_IS_CCSDS
         -:  225:    uint16 TotalMsgSize;
         -:  226:    uint16 HdrSize;
@@ -252,8 +253,8 @@
         -:  248:**  Return:
         -:  249:**    (none)
         -:  250:*/
-   262144:  251:void CFE_SB_SetUserDataLength(CFE_SB_MsgPtr_t MsgPtr,uint16 DataLength)
-        -:  252:{
+        -:  251:void CFE_SB_SetUserDataLength(CFE_SB_MsgPtr_t MsgPtr,uint16 DataLength)
+   262144:  252:{
         -:  253:#ifdef MESSAGE_FORMAT_IS_CCSDS
         -:  254:
         -:  255:    uint32 TotalMsgSize, HdrSize;
@@ -280,11 +281,11 @@
         -:  276:**  Return:
         -:  277:**    Total Length of the message
         -:  278:*/
-   524313:  279:uint16 CFE_SB_GetTotalMsgLength(CFE_SB_MsgPtr_t MsgPtr)
-        -:  280:{
+        -:  279:uint16 CFE_SB_GetTotalMsgLength(CFE_SB_MsgPtr_t MsgPtr)
+   524330:  280:{
         -:  281:#ifdef MESSAGE_FORMAT_IS_CCSDS
         -:  282:
-   524313:  283:    return CCSDS_RD_LEN(MsgPtr->Hdr);
+   524330:  283:    return CCSDS_RD_LEN(MsgPtr->Hdr);
         -:  284:
         -:  285:#endif
         -:  286:}/* end CFE_SB_GetTotalMsgLength */
@@ -303,8 +304,8 @@
         -:  299:**  Return:
         -:  300:**    (none)
         -:  301:*/
-   262144:  302:void CFE_SB_SetTotalMsgLength(CFE_SB_MsgPtr_t MsgPtr,uint16 TotalLength)
-        -:  303:{
+        -:  302:void CFE_SB_SetTotalMsgLength(CFE_SB_MsgPtr_t MsgPtr,uint16 TotalLength)
+   262144:  303:{
         -:  304:#ifdef MESSAGE_FORMAT_IS_CCSDS
         -:  305:
    262144:  306:    CCSDS_WR_LEN(MsgPtr->Hdr,TotalLength);
@@ -326,8 +327,8 @@
         -:  322:**    Time field from message or
         -:  323:**    Time value of zero for msgs that do not have a Time field in header
         -:  324:*/
-        6:  325:CFE_TIME_SysTime_t CFE_SB_GetMsgTime(CFE_SB_MsgPtr_t MsgPtr)
-        -:  326:{
+        -:  325:CFE_TIME_SysTime_t CFE_SB_GetMsgTime(CFE_SB_MsgPtr_t MsgPtr)
+        6:  326:{
         -:  327:    CFE_TIME_SysTime_t TimeFromMsg;
         6:  328:    uint32 LocalSecs32 = 0;
         6:  329:    uint32 LocalSubs32 = 0;
@@ -394,9 +395,9 @@
         -:  390:**    CFE_SUCCESS for no errors
         -:  391:**    CFE_SB_WRONG_MSG_TYPE if msg does not have a header field for time.
         -:  392:*/
-        7:  393:int32 CFE_SB_SetMsgTime(CFE_SB_MsgPtr_t MsgPtr, CFE_TIME_SysTime_t NewTime)
-        -:  394:{
-        7:  395:    int32 Result = CFE_SB_WRONG_MSG_TYPE;
+        -:  393:int32 CFE_SB_SetMsgTime(CFE_SB_MsgPtr_t MsgPtr, CFE_TIME_SysTime_t NewTime)
+        9:  394:{
+        9:  395:    int32 Result = CFE_SB_WRONG_MSG_TYPE;
         -:  396:
         -:  397:    #ifdef MESSAGE_FORMAT_IS_CCSDS
         -:  398:
@@ -410,18 +411,18 @@
         -:  406:    #endif
         -:  407:
         -:  408:    /* cannot set time if msg type is a command or msg has no secondary hdr */
-        7:  409:    if ((CCSDS_RD_TYPE(MsgPtr->Hdr) != CCSDS_CMD) && (CCSDS_RD_SHDR(MsgPtr->Hdr) != 0)) {
+        9:  409:    if ((CCSDS_RD_TYPE(MsgPtr->Hdr) != CCSDS_CMD) && (CCSDS_RD_SHDR(MsgPtr->Hdr) != 0)) {
         -:  410:
         -:  411:        /* copy time data to/from packets to eliminate alignment issues */
-        4:  412:        TlmHdrPtr = (CFE_SB_TlmHdr_t *) MsgPtr;
+        6:  412:        TlmHdrPtr = (CFE_SB_TlmHdr_t *) MsgPtr;
         -:  413:
         -:  414:        #if (CFE_SB_PACKET_TIME_FORMAT == CFE_SB_TIME_32_16_SUBS)
         -:  415:
         -:  416:        /* convert time from CFE_TIME_SysTime_t format to packet format */
-        4:  417:        LocalSubs16 = (uint16) (NewTime.Subseconds >> 16);
-        4:  418:        CFE_PSP_MemCpy(&TlmHdrPtr->Sec.Time[0], &NewTime.Seconds, 4);
-        4:  419:        CFE_PSP_MemCpy(&TlmHdrPtr->Sec.Time[4], &LocalSubs16, 2);
-        4:  420:        Result = CFE_SUCCESS;
+        6:  417:        LocalSubs16 = (uint16) (NewTime.Subseconds >> 16);
+        6:  418:        CFE_PSP_MemCpy(&TlmHdrPtr->Sec.Time[0], &NewTime.Seconds, 4);
+        6:  419:        CFE_PSP_MemCpy(&TlmHdrPtr->Sec.Time[4], &LocalSubs16, 2);
+        6:  420:        Result = CFE_SUCCESS;
         -:  421:
         -:  422:        #elif (CFE_SB_PACKET_TIME_FORMAT == CFE_SB_TIME_32_32_SUBS)
         -:  423:
@@ -443,7 +444,7 @@
         -:  439:
         -:  440:    #endif
         -:  441:
-        7:  442:    return Result;
+        9:  442:    return Result;
         -:  443:
         -:  444:}/* end CFE_SB_SetMsgTime */
         -:  445:
@@ -460,11 +461,11 @@
         -:  456:**  Return:
         -:  457:**    (none)
         -:  458:*/
-        3:  459:void CFE_SB_TimeStampMsg(CFE_SB_MsgPtr_t MsgPtr)
-        -:  460:{
-        3:  461:    CFE_SB_SetMsgTime(MsgPtr,CFE_TIME_GetTime());
+        -:  459:void CFE_SB_TimeStampMsg(CFE_SB_MsgPtr_t MsgPtr)
+        5:  460:{
+        5:  461:    CFE_SB_SetMsgTime(MsgPtr,CFE_TIME_GetTime());
         -:  462:
-        3:  463:}/* end CFE_SB_TimeStampMsg */
+        5:  463:}/* end CFE_SB_TimeStampMsg */
         -:  464:
         -:  465:
         -:  466:/******************************************************************************
@@ -479,21 +480,21 @@
         -:  475:**  Return:
         -:  476:**    CmdCode from the message (CCSDS Function Code)
         -:  477:*/
-     1049:  478:uint16 CFE_SB_GetCmdCode(CFE_SB_MsgPtr_t MsgPtr)
-        -:  479:{
+        -:  478:uint16 CFE_SB_GetCmdCode(CFE_SB_MsgPtr_t MsgPtr)
+     1050:  479:{
         -:  480:#ifdef MESSAGE_FORMAT_IS_CCSDS
         -:  481:
         -:  482:    CFE_SB_CmdHdr_t     *CmdHdrPtr;
         -:  483:
         -:  484:    /* if msg type is telemetry or there is no secondary hdr, return 0 */
-     1049:  485:    if((CCSDS_RD_TYPE(MsgPtr->Hdr) == CCSDS_TLM)||(CCSDS_RD_SHDR(MsgPtr->Hdr) == 0)){
+     1050:  485:    if((CCSDS_RD_TYPE(MsgPtr->Hdr) == CCSDS_TLM)||(CCSDS_RD_SHDR(MsgPtr->Hdr) == 0)){
       768:  486:        return 0;
         -:  487:    }/* end if */
         -:  488:
         -:  489:    /* Cast the input pointer to a Cmd Msg pointer */
-      281:  490:    CmdHdrPtr = (CFE_SB_CmdHdr_t *)MsgPtr;
+      282:  490:    CmdHdrPtr = (CFE_SB_CmdHdr_t *)MsgPtr;
         -:  491:
-      281:  492:    return CCSDS_RD_FC(CmdHdrPtr->Sec);
+      282:  492:    return CCSDS_RD_FC(CmdHdrPtr->Sec);
         -:  493:
         -:  494:#endif
         -:  495:}/* end CFE_SB_GetCmdCode */
@@ -512,9 +513,9 @@
         -:  508:**  Return:
         -:  509:**    (none)
         -:  510:*/
-     1048:  511:int32 CFE_SB_SetCmdCode(CFE_SB_MsgPtr_t MsgPtr,
+        -:  511:int32 CFE_SB_SetCmdCode(CFE_SB_MsgPtr_t MsgPtr,
         -:  512:                      uint16 CmdCode)
-        -:  513:{
+     1048:  513:{
         -:  514:#ifdef MESSAGE_FORMAT_IS_CCSDS
         -:  515:
         -:  516:    CFE_SB_CmdHdr_t     *CmdHdrPtr;
@@ -548,8 +549,8 @@
         -:  544:**  Return:
         -:  545:**
         -:  546:*/
-        4:  547:uint16 CFE_SB_GetChecksum(CFE_SB_MsgPtr_t MsgPtr)
-        -:  548:{
+        -:  547:uint16 CFE_SB_GetChecksum(CFE_SB_MsgPtr_t MsgPtr)
+        4:  548:{
         -:  549:#ifdef MESSAGE_FORMAT_IS_CCSDS
         -:  550:
         -:  551:    CFE_SB_CmdHdr_t     *CmdHdrPtr;
@@ -586,8 +587,8 @@
         -:  582:**  Return:
         -:  583:**    (none)
         -:  584:*/
-        4:  585:void CFE_SB_GenerateChecksum(CFE_SB_MsgPtr_t MsgPtr)
-        -:  586:{
+        -:  585:void CFE_SB_GenerateChecksum(CFE_SB_MsgPtr_t MsgPtr)
+        4:  586:{
         -:  587:#ifdef MESSAGE_FORMAT_IS_CCSDS
         -:  588:
         -:  589:    CCSDS_CmdPkt_t    *CmdPktPtr;
@@ -617,8 +618,8 @@
         -:  613:**  Return:
         -:  614:**    TRUE if checksum of packet is valid; FALSE if not.
         -:  615:*/
-        8:  616:boolean CFE_SB_ValidateChecksum(CFE_SB_MsgPtr_t MsgPtr)
-        -:  617:{
+        -:  616:boolean CFE_SB_ValidateChecksum(CFE_SB_MsgPtr_t MsgPtr)
+        8:  617:{
         -:  618:#ifdef MESSAGE_FORMAT_IS_CCSDS
         -:  619:
         -:  620:    CCSDS_CmdPkt_t    *CmdPktPtr;
@@ -635,3 +636,107 @@
         -:  631:#endif
         -:  632:}/* end CFE_SB_ValidateChecksum */
         -:  633:
+        -:  634:
+        -:  635:/******************************************************************************
+        -:  636:**  Function:  CFE_SB_MessageStringGet()
+        -:  637:**
+        -:  638:**  See function prototype for full description
+        -:  639:**
+        -:  640:**  UNIT TESTING NOTE:
+        -:  641:**    During unit testing, the "stub" version of this function must
+        -:  642:**    also copy the string or all functions that depend on this will break.
+        -:  643:**
+        -:  644:**    Therefore this function is essentially duplicated in the UT code
+        -:  645:**
+        -:  646:*/
+        -:  647:int32 CFE_SB_MessageStringGet(char *DestStringPtr, const char *SourceStringPtr, const char *DefaultString, uint32 DestMaxSize, uint32 SourceMaxSize)
+       12:  648:{
+        -:  649:    int32 Result;
+        -:  650:
+        -:  651:    /*
+        -:  652:     * Error in caller if DestMaxSize == 0.
+        -:  653:     * Cannot terminate the string, since there is no place for the NUL
+        -:  654:     * In this case, do nothing
+        -:  655:     */
+       12:  656:    if (DestMaxSize == 0)
+        -:  657:    {
+        1:  658:        Result = CFE_SB_BAD_ARGUMENT;
+        -:  659:    }
+        -:  660:    else
+        -:  661:    {
+       11:  662:        Result = 0;
+        -:  663:
+        -:  664:        /*
+        -:  665:         * Check if should use the default, which is if
+        -:  666:         * the source string has zero length (first char is NUL).
+        -:  667:         */
+       11:  668:        if (DefaultString != NULL && (SourceMaxSize == 0 || *SourceStringPtr == 0))
+        -:  669:        {
+        4:  670:            SourceStringPtr = DefaultString;
+        4:  671:            SourceMaxSize = DestMaxSize;
+        -:  672:        }
+        -:  673:
+        -:  674:        /* Reserve 1 character for the required NUL */
+       11:  675:        --DestMaxSize;
+        -:  676:
+      153:  677:        while (SourceMaxSize > 0 && *SourceStringPtr != 0 && DestMaxSize > 0)
+        -:  678:        {
+      131:  679:            *DestStringPtr = *SourceStringPtr;
+      131:  680:            ++DestStringPtr;
+      131:  681:            ++SourceStringPtr;
+      131:  682:            --SourceMaxSize;
+      131:  683:            --DestMaxSize;
+        -:  684:
+      131:  685:            ++Result;
+        -:  686:        }
+        -:  687:
+        -:  688:        /* Put the NUL in the last character */
+       11:  689:        *DestStringPtr = 0;
+        -:  690:    }
+        -:  691:
+       12:  692:    return Result;
+        -:  693:}
+        -:  694:
+        -:  695:
+        -:  696:/******************************************************************************
+        -:  697:**  Function:  CFE_SB_MessageStringSet()
+        -:  698:**
+        -:  699:**  See function prototype for full description
+        -:  700:**
+        -:  701:**  UNIT TESTING NOTE:
+        -:  702:**    During unit testing, the "stub" version of this function must
+        -:  703:**    also copy the string or all functions that depend on this will break.
+        -:  704:**
+        -:  705:**    Therefore this function is essentially duplicated in the UT code
+        -:  706:**
+        -:  707:*/
+        -:  708:int32 CFE_SB_MessageStringSet(char *DestStringPtr, const char *SourceStringPtr, uint32 DestMaxSize, uint32 SourceMaxSize)
+        3:  709:{
+        -:  710:    int32 Result;
+        -:  711:
+        3:  712:    Result = 0;
+        -:  713:
+       19:  714:    while (SourceMaxSize > 0 && *SourceStringPtr != 0 && DestMaxSize > 0)
+        -:  715:    {
+       13:  716:        *DestStringPtr = *SourceStringPtr;
+       13:  717:        ++DestStringPtr;
+       13:  718:        ++SourceStringPtr;
+       13:  719:        ++Result;
+       13:  720:        --DestMaxSize;
+       13:  721:        --SourceMaxSize;
+        -:  722:    }
+        -:  723:
+        -:  724:    /*
+        -:  725:     * Pad the remaining space with NUL chars,
+        -:  726:     * but this should NOT be included in the final size
+        -:  727:     */
+       39:  728:    while (DestMaxSize > 0)
+        -:  729:    {
+        -:  730:        /* Put the NUL in the last character */
+       33:  731:        *DestStringPtr = 0;
+       33:  732:        ++DestStringPtr;
+       33:  733:        --DestMaxSize;
+        -:  734:    }
+        -:  735:
+        3:  736:    return Result;
+        -:  737:}

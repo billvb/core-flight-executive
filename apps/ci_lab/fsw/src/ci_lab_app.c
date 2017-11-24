@@ -159,7 +159,7 @@ void CI_TaskInit(void)
     }
     else
     {
-       bzero((char *) &CI_SocketAddress, sizeof(CI_SocketAddress));
+       memset(&CI_SocketAddress, 0, sizeof(CI_SocketAddress));
        CI_SocketAddress.sin_family      = AF_INET;
        CI_SocketAddress.sin_addr.s_addr = htonl(INADDR_ANY);
        CI_SocketAddress.sin_port        = htons(cfgCI_PORT);
@@ -187,7 +187,7 @@ void CI_TaskInit(void)
     /*
     ** Install the delete handler
     */
-    OS_TaskInstallDeleteHandler((void *)(&CI_delete_callback));
+    OS_TaskInstallDeleteHandler(&CI_delete_callback);
 
     CFE_SB_InitMsg(&CI_HkTelemetryPkt,
                    CI_LAB_HK_TLM_MID,
@@ -575,7 +575,7 @@ uint32 *fileSizePtr;
   if (MessageID == PDUMessageID)
   {
     IncomingPduPtr = ((uint8 *)CI_IngestPointer);
-    if (CFE_TST(MessageID,12) == 1)
+    if (CFE_TST(MessageID,12) != 0)
     {
       IncomingPduPtr += CFE_SB_CMD_HDR_SIZE;
     }
@@ -640,19 +640,19 @@ uint32 *fileSizePtr;
 
           if (corruptChecksum == TRUE)
 	  {
-            OS_printf("CI: good checksum = %x\n",*checkSumPtr);
+            OS_printf("CI: good checksum = %x\n",(unsigned int)*checkSumPtr);
 	    /* Corrupt the checksum */
 	    *checkSumPtr = 0x12345678;
-            OS_printf("CI: corrupted checksum = %x\n",*checkSumPtr);
+            OS_printf("CI: corrupted checksum = %x\n",(unsigned int)*checkSumPtr);
 	    corruptChecksum = FALSE;
 	  }
 
           if (adjustFileSize == TRUE)
 	  {
-            OS_printf("CI: good file size = %d\n",*fileSizePtr);
+            OS_printf("CI: good file size = %d\n",(int)*fileSizePtr);
 	    /* Adjust the file size */
 	    *fileSizePtr += PDUFileSizeAdjustment;
-            OS_printf("CI: adjusted file size = %d\n",*fileSizePtr);
+            OS_printf("CI: adjusted file size = %d\n",(int)*fileSizePtr);
 	    adjustFileSize = FALSE;
 	  }
 
@@ -751,13 +751,13 @@ uint32 *fileSizePtr;
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * **/
 void CI_ReadUpLink(void)
 {
-    int addr_len;
+    socklen_t addr_len;
     int i;
     int status;
 
     addr_len = sizeof(CI_SocketAddress);
 
-    bzero((char *) &CI_SocketAddress, sizeof(CI_SocketAddress));
+    memset(&CI_SocketAddress, 0, sizeof(CI_SocketAddress));
 
     for (i = 0; i <= 10; i++)
     {
@@ -785,7 +785,6 @@ void CI_ReadUpLink(void)
             else
             {
                 CI_HkTelemetryPkt.IngestErrors++;
-                CFE_EVS_SendEvent(CI_INGEST_ERR_EID,CFE_EVS_ERROR, "CI: L%d, cmd %0x %0x dropped, too long\n", __LINE__, *(long *)CI_IngestBuffer, *(long *)(CI_IngestBuffer+4) );
             }
         }
     }

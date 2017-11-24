@@ -2,7 +2,7 @@ FUNCTION $sc_$cpu_is_app_loaded (appname)
 
 local app_loaded = FALSE
 
-write "inside_is test_loaded function looking for appname = ", appname
+write "inside _is_app_loaded function looking for appname = ", appname
 
 ;; NOTE: Will not work if the CFE_ES_MAX_APPLICATIONS configuration parameter
 ;;       is not 32 and the app being searched for is not in the 1st 32 apps

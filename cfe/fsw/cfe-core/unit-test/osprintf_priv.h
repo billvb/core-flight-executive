@@ -205,7 +205,5 @@ int OS_ParseInteger(char **out, int i, unsigned base, int sign,
                     int space_pad_width, int zero_pad_width,
                     int pad, int lead, int letbase);
 
-/*****************************************************************************/
-int putchar(const int c);
 
 #endif /* OSPRINTF_PRIV_H_ */

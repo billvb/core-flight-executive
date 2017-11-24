@@ -117,7 +117,7 @@
 
 void    EVS_AddLog ( CFE_EVS_Packet_t *EVS_PktPtr );
 void    EVS_ClearLog ( void );
-boolean CFE_EVS_WriteLogFileCmd ( CFE_EVS_LogFileCmd_t *CmdPtr );
-boolean CFE_EVS_SetLoggingModeCmd (CFE_EVS_ModeCmd_t *CmdPtr );                          
+boolean CFE_EVS_WriteLogFileCmd (CFE_SB_MsgPayloadPtr_t Payload);
+boolean CFE_EVS_SetLoggingModeCmd (CFE_SB_MsgPayloadPtr_t Payload);                          
 
 #endif  /* _cfe_evs_log_ */

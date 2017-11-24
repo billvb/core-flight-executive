@@ -41,11 +41,8 @@
 <a name="l00019"></a>00019 <span class="comment">**     Flight Software Branch C Coding Standard Version 1.0a</span>
 <a name="l00020"></a>00020 <span class="comment">**     cFE Flight Software Application Developers Guide</span>
 <a name="l00021"></a>00021 <span class="comment">**</span>
-<a name="l00022"></a>00022 <span class="comment">**  $Log: cfe__es__global_8h-source.html  $</span>
-<a name="l00022"></a>00022 <span class="comment">**  Revision 1.1 2014/09/30 16:28:33GMT-05:00 sstrege </span>
-<a name="l00022"></a>00022 <span class="comment">**  Initial revision</span>
-<a name="l00022"></a>00022 <span class="comment">**  Member added to project c:/MKSDATA/MKS-REPOSITORY/MKS-CFE-PROJECT/docs/cFE UsersGuide/Doxygen/project.pj</span>
-<a name="l00023"></a>00023 <span class="comment">**  Revision 1.8 2012/01/13 11:50:02EST acudmore </span>
+<a name="l00022"></a>00022 <span class="comment">**  $Log: cfe_es_global.h  $</span>
+<a name="l00023"></a>00023 <span class="comment">**  Revision 1.8 2012/01/13 11:50:02GMT-05:00 acudmore </span>
 <a name="l00024"></a>00024 <span class="comment">**  Changed license text to reflect open source</span>
 <a name="l00025"></a>00025 <span class="comment">**  Revision 1.7 2012/01/10 19:27:48EST aschoeni </span>
 <a name="l00026"></a>00026 <span class="comment">**  Reduced context size in erlog by factor of 4 (to bytes from dwords)</span>
@@ -198,111 +195,110 @@
 <a name="l00173"></a>00173    <span class="comment">/*</span>
 <a name="l00174"></a>00174 <span class="comment">   ** Startup Sync variables.</span>
 <a name="l00175"></a>00175 <span class="comment">   */</span>
-<a name="l00176"></a><a class="code" href="struct_c_f_e___e_s___global__t.html#5f934f003960e39479cf26cbedb596f4">00176</a>    <a class="code" href="common__types_8h.html#9560e25c315bae45d1ed4e2ce49ce55a">uint32</a>  StartupSyncSemaphore;
-<a name="l00177"></a><a class="code" href="struct_c_f_e___e_s___global__t.html#c3e8efa4231cd223f6f6bbacea817c32">00177</a>    <a class="code" href="common__types_8h.html#5eb512da689eec1a7472ab97e2ab6be3">int32</a>   AppStartupCounter;
-<a name="l00178"></a><a class="code" href="struct_c_f_e___e_s___global__t.html#80f8824635453f51403a988040aa2165">00178</a>    <span class="keywordtype">boolean</span> StartupFileComplete;
-<a name="l00179"></a><a class="code" href="struct_c_f_e___e_s___global__t.html#de2fc279d05b5b5497736a2639764d15">00179</a>    <span class="keywordtype">boolean</span> StartupSemaphoreReleased;
-<a name="l00180"></a>00180 
-<a name="l00181"></a>00181    <span class="comment">/*</span>
-<a name="l00182"></a>00182 <span class="comment">   ** ES Task Table</span>
-<a name="l00183"></a>00183 <span class="comment">   */</span> 
-<a name="l00184"></a><a class="code" href="struct_c_f_e___e_s___global__t.html#fd512f7813ee437bb6b99ffce6850b8d">00184</a>    <a class="code" href="common__types_8h.html#9560e25c315bae45d1ed4e2ce49ce55a">uint32</a>              RegisteredTasks;
-<a name="l00185"></a><a class="code" href="struct_c_f_e___e_s___global__t.html#40f10dd2e2c800fbe41ce062f60eb634">00185</a>    <a class="code" href="struct_c_f_e___e_s___task_record__t.html">CFE_ES_TaskRecord_t</a> TaskTable[<a class="code" href="osconfig_8h.html#16f4a5504fe99e05cc20203b7f6b87dc">OS_MAX_TASKS</a>];
-<a name="l00186"></a>00186 
-<a name="l00187"></a>00187    <span class="comment">/*</span>
-<a name="l00188"></a>00188 <span class="comment">   ** ES App Table</span>
-<a name="l00189"></a>00189 <span class="comment">   */</span>
-<a name="l00190"></a><a class="code" href="struct_c_f_e___e_s___global__t.html#7c996d9b8b133ac6fa824ad9764c7e46">00190</a>    <a class="code" href="common__types_8h.html#9560e25c315bae45d1ed4e2ce49ce55a">uint32</a>             RegisteredCoreApps;
-<a name="l00191"></a><a class="code" href="struct_c_f_e___e_s___global__t.html#80fac0ff57e82b7f1ab23d44a207843d">00191</a>    <a class="code" href="common__types_8h.html#9560e25c315bae45d1ed4e2ce49ce55a">uint32</a>             RegisteredExternalApps;
-<a name="l00192"></a><a class="code" href="struct_c_f_e___e_s___global__t.html#adb6b9301c9c153b2f155f13fb956c20">00192</a>    <a class="code" href="struct_c_f_e___e_s___app_record__t.html">CFE_ES_AppRecord_t</a> AppTable[<a class="code" href="cfe__platform__cfg_8h.html#89fc04d14eacb4e76be51cd6497ed140">CFE_ES_MAX_APPLICATIONS</a>];
-<a name="l00193"></a>00193    
-<a name="l00194"></a>00194    <span class="comment">/*</span>
-<a name="l00195"></a>00195 <span class="comment">   ** ES Shared Library Table</span>
-<a name="l00196"></a>00196 <span class="comment">   */</span>
-<a name="l00197"></a><a class="code" href="struct_c_f_e___e_s___global__t.html#884c16b22a929957ee678f21e01cf289">00197</a>    <a class="code" href="common__types_8h.html#9560e25c315bae45d1ed4e2ce49ce55a">uint32</a>             RegisteredLibs;
-<a name="l00198"></a><a class="code" href="struct_c_f_e___e_s___global__t.html#e2f587040f7a0c7a5d86bcee976c0c8a">00198</a>    <a class="code" href="struct_c_f_e___e_s___lib_record__t.html">CFE_ES_LibRecord_t</a> LibTable[<a class="code" href="cfe__platform__cfg_8h.html#33dd2bafa4df27a29b6c3665c77aff91">CFE_ES_MAX_LIBRARIES</a>];
-<a name="l00199"></a>00199 
-<a name="l00200"></a>00200    <span class="comment">/*</span>
-<a name="l00201"></a>00201 <span class="comment">   ** ES Generic Counters Table</span>
-<a name="l00202"></a>00202 <span class="comment">   */</span>
-<a name="l00203"></a><a class="code" href="struct_c_f_e___e_s___global__t.html#d594e8f27eb40c22cd3da530faf4940f">00203</a>    <a class="code" href="struct_c_f_e___e_s___gen_counter_record__t.html">CFE_ES_GenCounterRecord_t</a> CounterTable[<a class="code" href="cfe__platform__cfg_8h.html#ecbbf09056e5ed822c36d18a2776e6b7">CFE_ES_MAX_GEN_COUNTERS</a>];
-<a name="l00204"></a>00204 
-<a name="l00205"></a>00205    <span class="comment">/*</span>
-<a name="l00206"></a>00206 <span class="comment">   ** Critical Data Store Management Variables</span>
-<a name="l00207"></a>00207 <span class="comment">   */</span>
-<a name="l00208"></a><a class="code" href="struct_c_f_e___e_s___global__t.html#270b792902814471ac802b9606ad540f">00208</a>    CFE_ES_CDSVariables_t CDSVars;
-<a name="l00209"></a>00209 
-<a name="l00210"></a>00210 } <a class="code" href="struct_c_f_e___e_s___global__t.html">CFE_ES_Global_t</a>;
-<a name="l00211"></a>00211 
-<a name="l00212"></a>00212 <span class="comment">/*</span>
-<a name="l00213"></a>00213 <span class="comment">** Executive Services Global Reset Data type</span>
-<a name="l00214"></a>00214 <span class="comment">** This is the special memory area for ES that is preserved</span>
-<a name="l00215"></a>00215 <span class="comment">** on a processor reset.</span>
-<a name="l00216"></a>00216 <span class="comment">*/</span>
-<a name="l00217"></a><a class="code" href="struct_c_f_e___e_s___reset_data__t.html">00217</a> <span class="keyword">typedef</span> <span class="keyword">struct</span>
-<a name="l00218"></a>00218 <span class="keyword"></span>{
-<a name="l00219"></a>00219    <span class="comment">/*</span>
-<a name="l00220"></a>00220 <span class="comment">   ** Exception and Reset log declaration</span>
-<a name="l00221"></a>00221 <span class="comment">   */</span>
-<a name="l00222"></a><a class="code" href="struct_c_f_e___e_s___reset_data__t.html#e47667756ef9d7c972d00d4cad5ff369">00222</a>    <a class="code" href="struct_c_f_e___e_s___e_r_log__t.html">CFE_ES_ERLog_t</a>    ERLog[<a class="code" href="cfe__platform__cfg_8h.html#41b52227ed7f4bad3c3304321498230f">CFE_ES_ER_LOG_ENTRIES</a>];
-<a name="l00223"></a><a class="code" href="struct_c_f_e___e_s___reset_data__t.html#2c7fb3696e595befb750712a3d82df98">00223</a>    <a class="code" href="common__types_8h.html#9560e25c315bae45d1ed4e2ce49ce55a">uint32</a>            ERLogIndex;
-<a name="l00224"></a><a class="code" href="struct_c_f_e___e_s___reset_data__t.html#5461dce6f31a906d9240d0c509b7d40f">00224</a>    <a class="code" href="common__types_8h.html#9560e25c315bae45d1ed4e2ce49ce55a">uint32</a>            ERLogEntries;
-<a name="l00225"></a><a class="code" href="struct_c_f_e___e_s___reset_data__t.html#c12e82c3d7a108fda7eb4d783c8f8168">00225</a>    <a class="code" href="common__types_8h.html#9560e25c315bae45d1ed4e2ce49ce55a">uint32</a>            LastAppId;
-<a name="l00226"></a>00226 
-<a name="l00227"></a>00227    <span class="comment">/*</span>
-<a name="l00228"></a>00228 <span class="comment">   ** System Log declaration</span>
-<a name="l00229"></a>00229 <span class="comment">   */</span>
-<a name="l00230"></a><a class="code" href="struct_c_f_e___e_s___reset_data__t.html#1d2753cdae65f5c998626cb99bce558a">00230</a>    <span class="keywordtype">char</span>            SystemLog[<a class="code" href="cfe__platform__cfg_8h.html#1c6c00de2a5370811b607abf62d91429">CFE_ES_SYSTEM_LOG_SIZE</a>];
-<a name="l00231"></a><a class="code" href="struct_c_f_e___e_s___reset_data__t.html#f6f7c7b98e6f264a245e0313bb78b749">00231</a>    <a class="code" href="common__types_8h.html#9560e25c315bae45d1ed4e2ce49ce55a">uint32</a>          SystemLogIndex;
-<a name="l00232"></a><a class="code" href="struct_c_f_e___e_s___reset_data__t.html#cae74b51b487e9377f7952c6cdcad799">00232</a>    <a class="code" href="common__types_8h.html#9560e25c315bae45d1ed4e2ce49ce55a">uint32</a>          SystemLogMode;
-<a name="l00233"></a><a class="code" href="struct_c_f_e___e_s___reset_data__t.html#fdb7d3f10253d3754bead9a252e3b688">00233</a>    <a class="code" href="common__types_8h.html#9560e25c315bae45d1ed4e2ce49ce55a">uint32</a>          SystemLogEntryNum;
-<a name="l00234"></a>00234  
-<a name="l00235"></a>00235    <span class="comment">/*</span>
-<a name="l00236"></a>00236 <span class="comment">   ** Performance Data</span>
-<a name="l00237"></a>00237 <span class="comment">   */</span>
-<a name="l00238"></a><a class="code" href="struct_c_f_e___e_s___reset_data__t.html#a29af34d701485d75b7855e07a87b47b">00238</a>    <a class="code" href="struct_c_f_e___e_s___perf_data__t.html">CFE_ES_PerfData_t</a>       Perf;
-<a name="l00239"></a>00239  
-<a name="l00240"></a>00240    <span class="comment">/*</span>
-<a name="l00241"></a>00241 <span class="comment">   ** Reset Variables</span>
-<a name="l00242"></a>00242 <span class="comment">   */</span>
-<a name="l00243"></a><a class="code" href="struct_c_f_e___e_s___reset_data__t.html#ae7d24302d4edbf3baa7dbd18caedd23">00243</a>    <a class="code" href="struct_c_f_e___e_s___reset_variables__t.html">CFE_ES_ResetVariables_t</a>  ResetVars;
-<a name="l00244"></a>00244 
-<a name="l00245"></a>00245    <span class="comment">/*</span>
-<a name="l00246"></a>00246 <span class="comment">   ** Time variables that are </span>
-<a name="l00247"></a>00247 <span class="comment">   ** preserved on a processor reset</span>
-<a name="l00248"></a>00248 <span class="comment">   */</span> 
-<a name="l00249"></a><a class="code" href="struct_c_f_e___e_s___reset_data__t.html#31d0f6ccb5b91cac325ce0552ee421b8">00249</a>    <a class="code" href="struct_c_f_e___t_i_m_e___reset_vars__t.html">CFE_TIME_ResetVars_t</a> TimeResetVars;
-<a name="l00250"></a>00250 
-<a name="l00251"></a>00251 <span class="preprocessor">   #ifdef CFE_EVS_LOG_ON</span>
-<a name="l00252"></a>00252 <span class="preprocessor"></span>      <span class="comment">/*</span>
-<a name="l00253"></a>00253 <span class="comment">      ** EVS Log and associated variables. This needs to be preserved on a processor reset.</span>
-<a name="l00254"></a>00254 <span class="comment">      */</span>
-<a name="l00255"></a>00255       <a class="code" href="struct_c_f_e___e_v_s___log__t.html">CFE_EVS_Log_t</a>              EVS_Log;
-<a name="l00256"></a>00256 <span class="preprocessor">   #endif</span>
-<a name="l00257"></a>00257 <span class="preprocessor"></span>
-<a name="l00258"></a>00258 } <a class="code" href="struct_c_f_e___e_s___reset_data__t.html">CFE_ES_ResetData_t</a>;
-<a name="l00259"></a>00259 
-<a name="l00260"></a>00260 <span class="comment">/*</span>
-<a name="l00261"></a>00261 <span class="comment">** The Executive Services Global Data declaration</span>
-<a name="l00262"></a>00262 <span class="comment">*/</span>
-<a name="l00263"></a>00263 <span class="keyword">extern</span> <a class="code" href="struct_c_f_e___e_s___global__t.html">CFE_ES_Global_t</a> <a class="code" href="cfe__es__global_8h.html#9d4db28d1ae03cfdc1ebc9efa7407d35">CFE_ES_Global</a>; 
-<a name="l00264"></a>00264 
-<a name="l00265"></a>00265 <span class="comment">/*</span>
-<a name="l00266"></a>00266 <span class="comment">** The Executive Services Nonvolatile Data declaration</span>
-<a name="l00267"></a>00267 <span class="comment">*/</span>
-<a name="l00268"></a>00268 <span class="keyword">extern</span> <a class="code" href="struct_c_f_e___e_s___reset_data__t.html">CFE_ES_ResetData_t</a> *<a class="code" href="cfe__es__global_8h.html#dfefe92c00acf910519409113038902f">CFE_ES_ResetDataPtr</a>;
+<a name="l00176"></a><a class="code" href="struct_c_f_e___e_s___global__t.html#4ebfcc9934415bcf9547bfac0690df8d">00176</a>    <a class="code" href="common__types_8h.html#9560e25c315bae45d1ed4e2ce49ce55a">uint32</a>  AppStartedCount;
+<a name="l00177"></a><a class="code" href="struct_c_f_e___e_s___global__t.html#3fe422279b6d45ca95af3b14ecb87375">00177</a>    <a class="code" href="common__types_8h.html#9560e25c315bae45d1ed4e2ce49ce55a">uint32</a>  AppReadyCount;
+<a name="l00178"></a><a class="code" href="struct_c_f_e___e_s___global__t.html#848480abadd74037c17dbb45dcc2d249">00178</a>    <a class="code" href="common__types_8h.html#9560e25c315bae45d1ed4e2ce49ce55a">uint32</a>  SystemState;
+<a name="l00179"></a>00179 
+<a name="l00180"></a>00180    <span class="comment">/*</span>
+<a name="l00181"></a>00181 <span class="comment">   ** ES Task Table</span>
+<a name="l00182"></a>00182 <span class="comment">   */</span> 
+<a name="l00183"></a><a class="code" href="struct_c_f_e___e_s___global__t.html#fd512f7813ee437bb6b99ffce6850b8d">00183</a>    <a class="code" href="common__types_8h.html#9560e25c315bae45d1ed4e2ce49ce55a">uint32</a>              RegisteredTasks;
+<a name="l00184"></a><a class="code" href="struct_c_f_e___e_s___global__t.html#40f10dd2e2c800fbe41ce062f60eb634">00184</a>    <a class="code" href="struct_c_f_e___e_s___task_record__t.html">CFE_ES_TaskRecord_t</a> TaskTable[<a class="code" href="osconfig_8h.html#16f4a5504fe99e05cc20203b7f6b87dc">OS_MAX_TASKS</a>];
+<a name="l00185"></a>00185 
+<a name="l00186"></a>00186    <span class="comment">/*</span>
+<a name="l00187"></a>00187 <span class="comment">   ** ES App Table</span>
+<a name="l00188"></a>00188 <span class="comment">   */</span>
+<a name="l00189"></a><a class="code" href="struct_c_f_e___e_s___global__t.html#7c996d9b8b133ac6fa824ad9764c7e46">00189</a>    <a class="code" href="common__types_8h.html#9560e25c315bae45d1ed4e2ce49ce55a">uint32</a>             RegisteredCoreApps;
+<a name="l00190"></a><a class="code" href="struct_c_f_e___e_s___global__t.html#80fac0ff57e82b7f1ab23d44a207843d">00190</a>    <a class="code" href="common__types_8h.html#9560e25c315bae45d1ed4e2ce49ce55a">uint32</a>             RegisteredExternalApps;
+<a name="l00191"></a><a class="code" href="struct_c_f_e___e_s___global__t.html#adb6b9301c9c153b2f155f13fb956c20">00191</a>    <a class="code" href="struct_c_f_e___e_s___app_record__t.html">CFE_ES_AppRecord_t</a> AppTable[<a class="code" href="cfe__platform__cfg_8h.html#89fc04d14eacb4e76be51cd6497ed140">CFE_ES_MAX_APPLICATIONS</a>];
+<a name="l00192"></a>00192    
+<a name="l00193"></a>00193    <span class="comment">/*</span>
+<a name="l00194"></a>00194 <span class="comment">   ** ES Shared Library Table</span>
+<a name="l00195"></a>00195 <span class="comment">   */</span>
+<a name="l00196"></a><a class="code" href="struct_c_f_e___e_s___global__t.html#884c16b22a929957ee678f21e01cf289">00196</a>    <a class="code" href="common__types_8h.html#9560e25c315bae45d1ed4e2ce49ce55a">uint32</a>             RegisteredLibs;
+<a name="l00197"></a><a class="code" href="struct_c_f_e___e_s___global__t.html#e2f587040f7a0c7a5d86bcee976c0c8a">00197</a>    <a class="code" href="struct_c_f_e___e_s___lib_record__t.html">CFE_ES_LibRecord_t</a> LibTable[<a class="code" href="cfe__platform__cfg_8h.html#33dd2bafa4df27a29b6c3665c77aff91">CFE_ES_MAX_LIBRARIES</a>];
+<a name="l00198"></a>00198 
+<a name="l00199"></a>00199    <span class="comment">/*</span>
+<a name="l00200"></a>00200 <span class="comment">   ** ES Generic Counters Table</span>
+<a name="l00201"></a>00201 <span class="comment">   */</span>
+<a name="l00202"></a><a class="code" href="struct_c_f_e___e_s___global__t.html#d594e8f27eb40c22cd3da530faf4940f">00202</a>    <a class="code" href="struct_c_f_e___e_s___gen_counter_record__t.html">CFE_ES_GenCounterRecord_t</a> CounterTable[<a class="code" href="cfe__platform__cfg_8h.html#ecbbf09056e5ed822c36d18a2776e6b7">CFE_ES_MAX_GEN_COUNTERS</a>];
+<a name="l00203"></a>00203 
+<a name="l00204"></a>00204    <span class="comment">/*</span>
+<a name="l00205"></a>00205 <span class="comment">   ** Critical Data Store Management Variables</span>
+<a name="l00206"></a>00206 <span class="comment">   */</span>
+<a name="l00207"></a><a class="code" href="struct_c_f_e___e_s___global__t.html#270b792902814471ac802b9606ad540f">00207</a>    CFE_ES_CDSVariables_t CDSVars;
+<a name="l00208"></a>00208 
+<a name="l00209"></a>00209 } <a class="code" href="struct_c_f_e___e_s___global__t.html">CFE_ES_Global_t</a>;
+<a name="l00210"></a>00210 
+<a name="l00211"></a>00211 <span class="comment">/*</span>
+<a name="l00212"></a>00212 <span class="comment">** Executive Services Global Reset Data type</span>
+<a name="l00213"></a>00213 <span class="comment">** This is the special memory area for ES that is preserved</span>
+<a name="l00214"></a>00214 <span class="comment">** on a processor reset.</span>
+<a name="l00215"></a>00215 <span class="comment">*/</span>
+<a name="l00216"></a><a class="code" href="struct_c_f_e___e_s___reset_data__t.html">00216</a> <span class="keyword">typedef</span> <span class="keyword">struct</span>
+<a name="l00217"></a>00217 <span class="keyword"></span>{
+<a name="l00218"></a>00218    <span class="comment">/*</span>
+<a name="l00219"></a>00219 <span class="comment">   ** Exception and Reset log declaration</span>
+<a name="l00220"></a>00220 <span class="comment">   */</span>
+<a name="l00221"></a><a class="code" href="struct_c_f_e___e_s___reset_data__t.html#e47667756ef9d7c972d00d4cad5ff369">00221</a>    <a class="code" href="struct_c_f_e___e_s___e_r_log__t.html">CFE_ES_ERLog_t</a>    ERLog[<a class="code" href="cfe__platform__cfg_8h.html#41b52227ed7f4bad3c3304321498230f">CFE_ES_ER_LOG_ENTRIES</a>];
+<a name="l00222"></a><a class="code" href="struct_c_f_e___e_s___reset_data__t.html#2c7fb3696e595befb750712a3d82df98">00222</a>    <a class="code" href="common__types_8h.html#9560e25c315bae45d1ed4e2ce49ce55a">uint32</a>            ERLogIndex;
+<a name="l00223"></a><a class="code" href="struct_c_f_e___e_s___reset_data__t.html#5461dce6f31a906d9240d0c509b7d40f">00223</a>    <a class="code" href="common__types_8h.html#9560e25c315bae45d1ed4e2ce49ce55a">uint32</a>            ERLogEntries;
+<a name="l00224"></a><a class="code" href="struct_c_f_e___e_s___reset_data__t.html#c12e82c3d7a108fda7eb4d783c8f8168">00224</a>    <a class="code" href="common__types_8h.html#9560e25c315bae45d1ed4e2ce49ce55a">uint32</a>            LastAppId;
+<a name="l00225"></a>00225 
+<a name="l00226"></a>00226    <span class="comment">/*</span>
+<a name="l00227"></a>00227 <span class="comment">   ** System Log declaration</span>
+<a name="l00228"></a>00228 <span class="comment">   */</span>
+<a name="l00229"></a><a class="code" href="struct_c_f_e___e_s___reset_data__t.html#1d2753cdae65f5c998626cb99bce558a">00229</a>    <span class="keywordtype">char</span>            SystemLog[<a class="code" href="cfe__platform__cfg_8h.html#1c6c00de2a5370811b607abf62d91429">CFE_ES_SYSTEM_LOG_SIZE</a>];
+<a name="l00230"></a><a class="code" href="struct_c_f_e___e_s___reset_data__t.html#f6f7c7b98e6f264a245e0313bb78b749">00230</a>    <a class="code" href="common__types_8h.html#9560e25c315bae45d1ed4e2ce49ce55a">uint32</a>          SystemLogIndex;
+<a name="l00231"></a><a class="code" href="struct_c_f_e___e_s___reset_data__t.html#cae74b51b487e9377f7952c6cdcad799">00231</a>    <a class="code" href="common__types_8h.html#9560e25c315bae45d1ed4e2ce49ce55a">uint32</a>          SystemLogMode;
+<a name="l00232"></a><a class="code" href="struct_c_f_e___e_s___reset_data__t.html#fdb7d3f10253d3754bead9a252e3b688">00232</a>    <a class="code" href="common__types_8h.html#9560e25c315bae45d1ed4e2ce49ce55a">uint32</a>          SystemLogEntryNum;
+<a name="l00233"></a>00233  
+<a name="l00234"></a>00234    <span class="comment">/*</span>
+<a name="l00235"></a>00235 <span class="comment">   ** Performance Data</span>
+<a name="l00236"></a>00236 <span class="comment">   */</span>
+<a name="l00237"></a><a class="code" href="struct_c_f_e___e_s___reset_data__t.html#a29af34d701485d75b7855e07a87b47b">00237</a>    <a class="code" href="struct_c_f_e___e_s___perf_data__t.html">CFE_ES_PerfData_t</a>       Perf;
+<a name="l00238"></a>00238  
+<a name="l00239"></a>00239    <span class="comment">/*</span>
+<a name="l00240"></a>00240 <span class="comment">   ** Reset Variables</span>
+<a name="l00241"></a>00241 <span class="comment">   */</span>
+<a name="l00242"></a><a class="code" href="struct_c_f_e___e_s___reset_data__t.html#ae7d24302d4edbf3baa7dbd18caedd23">00242</a>    <a class="code" href="struct_c_f_e___e_s___reset_variables__t.html">CFE_ES_ResetVariables_t</a>  ResetVars;
+<a name="l00243"></a>00243 
+<a name="l00244"></a>00244    <span class="comment">/*</span>
+<a name="l00245"></a>00245 <span class="comment">   ** Time variables that are </span>
+<a name="l00246"></a>00246 <span class="comment">   ** preserved on a processor reset</span>
+<a name="l00247"></a>00247 <span class="comment">   */</span> 
+<a name="l00248"></a><a class="code" href="struct_c_f_e___e_s___reset_data__t.html#31d0f6ccb5b91cac325ce0552ee421b8">00248</a>    <a class="code" href="struct_c_f_e___t_i_m_e___reset_vars__t.html">CFE_TIME_ResetVars_t</a> TimeResetVars;
+<a name="l00249"></a>00249 
+<a name="l00250"></a>00250 <span class="preprocessor">   #ifdef CFE_EVS_LOG_ON</span>
+<a name="l00251"></a>00251 <span class="preprocessor"></span>      <span class="comment">/*</span>
+<a name="l00252"></a>00252 <span class="comment">      ** EVS Log and associated variables. This needs to be preserved on a processor reset.</span>
+<a name="l00253"></a>00253 <span class="comment">      */</span>
+<a name="l00254"></a>00254       <a class="code" href="struct_c_f_e___e_v_s___log__t.html">CFE_EVS_Log_t</a>              EVS_Log;
+<a name="l00255"></a>00255 <span class="preprocessor">   #endif</span>
+<a name="l00256"></a>00256 <span class="preprocessor"></span>
+<a name="l00257"></a>00257 } <a class="code" href="struct_c_f_e___e_s___reset_data__t.html">CFE_ES_ResetData_t</a>;
+<a name="l00258"></a>00258 
+<a name="l00259"></a>00259 <span class="comment">/*</span>
+<a name="l00260"></a>00260 <span class="comment">** The Executive Services Global Data declaration</span>
+<a name="l00261"></a>00261 <span class="comment">*/</span>
+<a name="l00262"></a>00262 <span class="keyword">extern</span> <a class="code" href="struct_c_f_e___e_s___global__t.html">CFE_ES_Global_t</a> <a class="code" href="cfe__es__global_8h.html#9d4db28d1ae03cfdc1ebc9efa7407d35">CFE_ES_Global</a>; 
+<a name="l00263"></a>00263 
+<a name="l00264"></a>00264 <span class="comment">/*</span>
+<a name="l00265"></a>00265 <span class="comment">** The Executive Services Nonvolatile Data declaration</span>
+<a name="l00266"></a>00266 <span class="comment">*/</span>
+<a name="l00267"></a>00267 <span class="keyword">extern</span> <a class="code" href="struct_c_f_e___e_s___reset_data__t.html">CFE_ES_ResetData_t</a> *<a class="code" href="cfe__es__global_8h.html#dfefe92c00acf910519409113038902f">CFE_ES_ResetDataPtr</a>;
+<a name="l00268"></a>00268 
 <a name="l00269"></a>00269 
-<a name="l00270"></a>00270 
-<a name="l00271"></a>00271 <span class="comment">/*</span>
-<a name="l00272"></a>00272 <span class="comment">** Functions used to lock/unlock shared data</span>
-<a name="l00273"></a>00273 <span class="comment">*/</span>
-<a name="l00274"></a>00274 <span class="keyword">extern</span> <a class="code" href="common__types_8h.html#5eb512da689eec1a7472ab97e2ab6be3">int32</a> <a class="code" href="cfe__es__global_8h.html#a830ec3e1a00f307e702443ecd5ef251">CFE_ES_GetAppIDInternal</a>(<a class="code" href="common__types_8h.html#9560e25c315bae45d1ed4e2ce49ce55a">uint32</a> *AppIdPtr);
-<a name="l00275"></a>00275 <span class="keyword">extern</span> <span class="keywordtype">void</span>  <a class="code" href="cfe__es__global_8h.html#9b672c8b6f7921e93bf81ba7f9d1db3d">CFE_ES_LockSharedData</a>(<span class="keyword">const</span> <span class="keywordtype">char</span> *FunctionName, <a class="code" href="common__types_8h.html#5eb512da689eec1a7472ab97e2ab6be3">int32</a> LineNumber);
-<a name="l00276"></a>00276 <span class="keyword">extern</span> <span class="keywordtype">void</span>  <a class="code" href="cfe__es__global_8h.html#d4b84fc516619637ab49f74cdbe81382">CFE_ES_UnlockSharedData</a>(<span class="keyword">const</span> <span class="keywordtype">char</span> *FunctionName, <a class="code" href="common__types_8h.html#5eb512da689eec1a7472ab97e2ab6be3">int32</a> LineNumber);
+<a name="l00270"></a>00270 <span class="comment">/*</span>
+<a name="l00271"></a>00271 <span class="comment">** Functions used to lock/unlock shared data</span>
+<a name="l00272"></a>00272 <span class="comment">*/</span>
+<a name="l00273"></a>00273 <span class="keyword">extern</span> <a class="code" href="common__types_8h.html#5eb512da689eec1a7472ab97e2ab6be3">int32</a> <a class="code" href="cfe__es__global_8h.html#a830ec3e1a00f307e702443ecd5ef251">CFE_ES_GetAppIDInternal</a>(<a class="code" href="common__types_8h.html#9560e25c315bae45d1ed4e2ce49ce55a">uint32</a> *AppIdPtr);
+<a name="l00274"></a>00274 <span class="keyword">extern</span> <span class="keywordtype">void</span>  <a class="code" href="cfe__es__global_8h.html#9b672c8b6f7921e93bf81ba7f9d1db3d">CFE_ES_LockSharedData</a>(<span class="keyword">const</span> <span class="keywordtype">char</span> *FunctionName, <a class="code" href="common__types_8h.html#5eb512da689eec1a7472ab97e2ab6be3">int32</a> LineNumber);
+<a name="l00275"></a>00275 <span class="keyword">extern</span> <span class="keywordtype">void</span>  <a class="code" href="cfe__es__global_8h.html#d4b84fc516619637ab49f74cdbe81382">CFE_ES_UnlockSharedData</a>(<span class="keyword">const</span> <span class="keywordtype">char</span> *FunctionName, <a class="code" href="common__types_8h.html#5eb512da689eec1a7472ab97e2ab6be3">int32</a> LineNumber);
+<a name="l00276"></a>00276 
 <a name="l00277"></a>00277 
-<a name="l00278"></a>00278 
-<a name="l00279"></a>00279 <span class="preprocessor">#endif</span>
-</pre></div><hr size="1"><address style="align: right;"><small>Generated on Tue Sep 30 17:11:57 2014 for Core Flight Executive on  by&nbsp;
+<a name="l00278"></a>00278 <span class="preprocessor">#endif</span>
+</pre></div><hr size="1"><address style="align: right;"><small>Generated on Mon Jun 29 12:31:31 2015 for Core Flight Executive on  by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img src="doxygen.png" alt="doxygen" align="middle" border="0"></a> 1.4.7 </small></address>
 </body>

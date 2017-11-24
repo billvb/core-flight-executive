@@ -55,7 +55,6 @@ void SCH_Lab_AppMain(void)
     uint32           SCH_OneHzPktsRcvd = 0;
     uint32           RunStatus = CFE_ES_APP_RUN;
     CFE_SB_PipeId_t  SCH_CmdPipe;
-    uint32           taskId;
 
     CFE_ES_PerfLogEntry(SCH_MAIN_TASK_PERF_ID);
 
@@ -102,7 +101,6 @@ void SCH_Lab_AppMain(void)
     {
         CFE_ES_PerfLogExit(SCH_MAIN_TASK_PERF_ID);
 
-        taskId = OS_TaskGetId();
         /* Pend on receipt of 1Hz packet */
         rtnStat = CFE_SB_RcvMsg(&SCH_CmdPipePktPtr,SCH_CmdPipe,CFE_SB_PEND_FOREVER);
 

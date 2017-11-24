@@ -41,6 +41,18 @@
 <tr><td class="memItemLeft" nowrap align="right" valign="top">struct &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c_f_e___e_s___lib_record__t.html">CFE_ES_LibRecord_t</a></td></tr>
 
 <tr><td colspan="2"><br><h2>Defines</h2></td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top">#define&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="cfe__es__apps_8h.html#331ccf7cc4eef6c8b430e29593f80a4a">CFE_ES_SYSTEM_STATE_UNDEFINED</a>&nbsp;&nbsp;&nbsp;0</td></tr>
+
+<tr><td class="memItemLeft" nowrap align="right" valign="top">#define&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="cfe__es__apps_8h.html#67a583e737a9cb90a77b861298ca5953">CFE_ES_SYSTEM_STATE_EARLY_INIT</a>&nbsp;&nbsp;&nbsp;1</td></tr>
+
+<tr><td class="memItemLeft" nowrap align="right" valign="top">#define&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="cfe__es__apps_8h.html#1ade69bae4769cd58b4b220144bd2768">CFE_ES_SYSTEM_STATE_CORE_STARTUP</a>&nbsp;&nbsp;&nbsp;2</td></tr>
+
+<tr><td class="memItemLeft" nowrap align="right" valign="top">#define&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="cfe__es__apps_8h.html#e49306dc3f236dad9381c1e1242dfaf9">CFE_ES_SYSTEM_STATE_CORE_READY</a>&nbsp;&nbsp;&nbsp;3</td></tr>
+
+<tr><td class="memItemLeft" nowrap align="right" valign="top">#define&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="cfe__es__apps_8h.html#707df9d442c2ebdfbdb456a3158a08eb">CFE_ES_SYSTEM_STATE_OPERATIONAL</a>&nbsp;&nbsp;&nbsp;4</td></tr>
+
+<tr><td class="memItemLeft" nowrap align="right" valign="top">#define&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="cfe__es__apps_8h.html#7f7938370c7f8c27ab952dc5e1286f88">CFE_ES_SYSTEM_STATE_SHUTTING_DOWN</a>&nbsp;&nbsp;&nbsp;5</td></tr>
+
 <tr><td class="memItemLeft" nowrap align="right" valign="top">#define&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="cfe__es__apps_8h.html#f17ca462a7c366329414761605304e33">CFE_ES_APP_TYPE_CORE</a>&nbsp;&nbsp;&nbsp;1</td></tr>
 
 <tr><td class="memItemLeft" nowrap align="right" valign="top">#define&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="cfe__es__apps_8h.html#9af8658bca903f6a9d9b22bea4d6713d">CFE_ES_APP_TYPE_EXTERNAL</a>&nbsp;&nbsp;&nbsp;2</td></tr>
@@ -61,6 +73,8 @@
 <tr><td class="memItemLeft" nowrap align="right" valign="top">void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="cfe__es__apps_8h.html#5c40d9800dc13b60a48ad35dd8acda74">CFE_ES_StartApplications</a> (<a class="el" href="common__types_8h.html#9560e25c315bae45d1ed4e2ce49ce55a">uint32</a> ResetType, <a class="el" href="common__types_8h.html#dde6aaee8457bee49c2a92621fe22b79">uint8</a> *StartFilePath)</td></tr>
 
 <tr><td class="memItemLeft" nowrap align="right" valign="top"><a class="el" href="common__types_8h.html#5eb512da689eec1a7472ab97e2ab6be3">int32</a>&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="cfe__es__apps_8h.html#6adacf0f93641918547035cb3996f08f">CFE_ES_ParseFileEntry</a> (char *FileEntry)</td></tr>
+
+<tr><td class="memItemLeft" nowrap align="right" valign="top"><a class="el" href="common__types_8h.html#5eb512da689eec1a7472ab97e2ab6be3">int32</a>&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="cfe__es__apps_8h.html#710dce8e127b735e4b18539015a67327">CFE_ES_ApplicationSyncDelay</a> (<a class="el" href="common__types_8h.html#9560e25c315bae45d1ed4e2ce49ce55a">uint32</a> MinimumSystemState, <a class="el" href="common__types_8h.html#9560e25c315bae45d1ed4e2ce49ce55a">uint32</a> TimeOutMilliseconds)</td></tr>
 
 <tr><td class="memItemLeft" nowrap align="right" valign="top"><a class="el" href="common__types_8h.html#5eb512da689eec1a7472ab97e2ab6be3">int32</a>&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="cfe__es__apps_8h.html#080fc5f7787d3243867d13df2959d12c">CFE_ES_AppCreate</a> (<a class="el" href="common__types_8h.html#9560e25c315bae45d1ed4e2ce49ce55a">uint32</a> *ApplicationIdPtr, char *FileName, char *EntryPoint, char *AppName, <a class="el" href="common__types_8h.html#9560e25c315bae45d1ed4e2ce49ce55a">uint32</a> Priority, <a class="el" href="common__types_8h.html#9560e25c315bae45d1ed4e2ce49ce55a">uint32</a> StackSize, <a class="el" href="common__types_8h.html#9560e25c315bae45d1ed4e2ce49ce55a">uint32</a> ExceptionAction)</td></tr>
 
@@ -98,7 +112,7 @@
 <p>
 
 <p>
-Definition at line <a class="el" href="cfe__es__apps_8h-source.html#l00106">106</a> of file <a class="el" href="cfe__es__apps_8h-source.html">cfe_es_apps.h</a>.
+Definition at line <a class="el" href="cfe__es__apps_8h-source.html#l00116">116</a> of file <a class="el" href="cfe__es__apps_8h-source.html">cfe_es_apps.h</a>.
 </div>
 </div><p>
 <a class="anchor" name="62765ea9d39cd484029b9ba6a5ceb2d6"></a><!-- doxytag: member="cfe_es_apps.h::CFE_ES_APP_EXCEPTION_RESTART_APP" ref="62765ea9d39cd484029b9ba6a5ceb2d6" args="" -->
@@ -115,7 +129,7 @@ Definition at line <a class="el" href="cfe__es__apps_8h-source.html#l00106">106<
 <p>
 
 <p>
-Definition at line <a class="el" href="cfe__es__apps_8h-source.html#l00105">105</a> of file <a class="el" href="cfe__es__apps_8h-source.html">cfe_es_apps.h</a>.
+Definition at line <a class="el" href="cfe__es__apps_8h-source.html#l00115">115</a> of file <a class="el" href="cfe__es__apps_8h-source.html">cfe_es_apps.h</a>.
 </div>
 </div><p>
 <a class="anchor" name="5637c35349a2f2cf2045bd053b8034ec"></a><!-- doxytag: member="cfe_es_apps.h::CFE_ES_APP_STATE_INITIALIZING" ref="5637c35349a2f2cf2045bd053b8034ec" args="" -->
@@ -132,7 +146,7 @@ Definition at line <a class="el" href="cfe__es__apps_8h-source.html#l00105">105<
 <p>
 
 <p>
-Definition at line <a class="el" href="cfe__es__apps_8h-source.html#l00100">100</a> of file <a class="el" href="cfe__es__apps_8h-source.html">cfe_es_apps.h</a>.
+Definition at line <a class="el" href="cfe__es__apps_8h-source.html#l00110">110</a> of file <a class="el" href="cfe__es__apps_8h-source.html">cfe_es_apps.h</a>.
 </div>
 </div><p>
 <a class="anchor" name="6d74f51c4b5818708131d3b1a4d52d84"></a><!-- doxytag: member="cfe_es_apps.h::CFE_ES_APP_STATE_RUNNING" ref="6d74f51c4b5818708131d3b1a4d52d84" args="" -->
@@ -149,7 +163,7 @@ Definition at line <a class="el" href="cfe__es__apps_8h-source.html#l00100">100<
 <p>
 
 <p>
-Definition at line <a class="el" href="cfe__es__apps_8h-source.html#l00097">97</a> of file <a class="el" href="cfe__es__apps_8h-source.html">cfe_es_apps.h</a>.
+Definition at line <a class="el" href="cfe__es__apps_8h-source.html#l00107">107</a> of file <a class="el" href="cfe__es__apps_8h-source.html">cfe_es_apps.h</a>.
 </div>
 </div><p>
 <a class="anchor" name="804004699fad7835c5e9e6ac2f18bfc7"></a><!-- doxytag: member="cfe_es_apps.h::CFE_ES_APP_STATE_STOPPED" ref="804004699fad7835c5e9e6ac2f18bfc7" args="" -->
@@ -166,7 +180,7 @@ Definition at line <a class="el" href="cfe__es__apps_8h-source.html#l00097">97</
 <p>
 
 <p>
-Definition at line <a class="el" href="cfe__es__apps_8h-source.html#l00098">98</a> of file <a class="el" href="cfe__es__apps_8h-source.html">cfe_es_apps.h</a>.
+Definition at line <a class="el" href="cfe__es__apps_8h-source.html#l00108">108</a> of file <a class="el" href="cfe__es__apps_8h-source.html">cfe_es_apps.h</a>.
 </div>
 </div><p>
 <a class="anchor" name="7c9ddd3534d2614b834bf1e249582414"></a><!-- doxytag: member="cfe_es_apps.h::CFE_ES_APP_STATE_WAITING" ref="7c9ddd3534d2614b834bf1e249582414" args="" -->
@@ -183,7 +197,7 @@ Definition at line <a class="el" href="cfe__es__apps_8h-source.html#l00098">98</
 <p>
 
 <p>
-Definition at line <a class="el" href="cfe__es__apps_8h-source.html#l00099">99</a> of file <a class="el" href="cfe__es__apps_8h-source.html">cfe_es_apps.h</a>.
+Definition at line <a class="el" href="cfe__es__apps_8h-source.html#l00109">109</a> of file <a class="el" href="cfe__es__apps_8h-source.html">cfe_es_apps.h</a>.
 </div>
 </div><p>
 <a class="anchor" name="f17ca462a7c366329414761605304e33"></a><!-- doxytag: member="cfe_es_apps.h::CFE_ES_APP_TYPE_CORE" ref="f17ca462a7c366329414761605304e33" args="" -->
@@ -200,7 +214,7 @@ Definition at line <a class="el" href="cfe__es__apps_8h-source.html#l00099">99</
 <p>
 
 <p>
-Definition at line <a class="el" href="cfe__es__apps_8h-source.html#l00091">91</a> of file <a class="el" href="cfe__es__apps_8h-source.html">cfe_es_apps.h</a>.
+Definition at line <a class="el" href="cfe__es__apps_8h-source.html#l00101">101</a> of file <a class="el" href="cfe__es__apps_8h-source.html">cfe_es_apps.h</a>.
 </div>
 </div><p>
 <a class="anchor" name="9af8658bca903f6a9d9b22bea4d6713d"></a><!-- doxytag: member="cfe_es_apps.h::CFE_ES_APP_TYPE_EXTERNAL" ref="9af8658bca903f6a9d9b22bea4d6713d" args="" -->
@@ -217,7 +231,109 @@ Definition at line <a class="el" href="cfe__es__apps_8h-source.html#l00091">91</
 <p>
 
 <p>
+Definition at line <a class="el" href="cfe__es__apps_8h-source.html#l00102">102</a> of file <a class="el" href="cfe__es__apps_8h-source.html">cfe_es_apps.h</a>.
+</div>
+</div><p>
+<a class="anchor" name="e49306dc3f236dad9381c1e1242dfaf9"></a><!-- doxytag: member="cfe_es_apps.h::CFE_ES_SYSTEM_STATE_CORE_READY" ref="e49306dc3f236dad9381c1e1242dfaf9" args="" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define CFE_ES_SYSTEM_STATE_CORE_READY&nbsp;&nbsp;&nbsp;3          </td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+core is ready, starting other external apps/libraries (if any) 
+<p>
+Definition at line <a class="el" href="cfe__es__apps_8h-source.html#l00094">94</a> of file <a class="el" href="cfe__es__apps_8h-source.html">cfe_es_apps.h</a>.
+</div>
+</div><p>
+<a class="anchor" name="1ade69bae4769cd58b4b220144bd2768"></a><!-- doxytag: member="cfe_es_apps.h::CFE_ES_SYSTEM_STATE_CORE_STARTUP" ref="1ade69bae4769cd58b4b220144bd2768" args="" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define CFE_ES_SYSTEM_STATE_CORE_STARTUP&nbsp;&nbsp;&nbsp;2          </td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+core apps (CFE_ES_ObjectTable) are starting (multi-threaded) 
+<p>
+Definition at line <a class="el" href="cfe__es__apps_8h-source.html#l00093">93</a> of file <a class="el" href="cfe__es__apps_8h-source.html">cfe_es_apps.h</a>.
+</div>
+</div><p>
+<a class="anchor" name="67a583e737a9cb90a77b861298ca5953"></a><!-- doxytag: member="cfe_es_apps.h::CFE_ES_SYSTEM_STATE_EARLY_INIT" ref="67a583e737a9cb90a77b861298ca5953" args="" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define CFE_ES_SYSTEM_STATE_EARLY_INIT&nbsp;&nbsp;&nbsp;1          </td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+single threaded mode while setting up CFE itself 
+<p>
 Definition at line <a class="el" href="cfe__es__apps_8h-source.html#l00092">92</a> of file <a class="el" href="cfe__es__apps_8h-source.html">cfe_es_apps.h</a>.
+</div>
+</div><p>
+<a class="anchor" name="707df9d442c2ebdfbdb456a3158a08eb"></a><!-- doxytag: member="cfe_es_apps.h::CFE_ES_SYSTEM_STATE_OPERATIONAL" ref="707df9d442c2ebdfbdb456a3158a08eb" args="" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define CFE_ES_SYSTEM_STATE_OPERATIONAL&nbsp;&nbsp;&nbsp;4          </td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+normal operation mode 
+<p>
+Definition at line <a class="el" href="cfe__es__apps_8h-source.html#l00095">95</a> of file <a class="el" href="cfe__es__apps_8h-source.html">cfe_es_apps.h</a>.
+</div>
+</div><p>
+<a class="anchor" name="7f7938370c7f8c27ab952dc5e1286f88"></a><!-- doxytag: member="cfe_es_apps.h::CFE_ES_SYSTEM_STATE_SHUTTING_DOWN" ref="7f7938370c7f8c27ab952dc5e1286f88" args="" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define CFE_ES_SYSTEM_STATE_SHUTTING_DOWN&nbsp;&nbsp;&nbsp;5          </td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+reserved for future use 
+<p>
+Definition at line <a class="el" href="cfe__es__apps_8h-source.html#l00096">96</a> of file <a class="el" href="cfe__es__apps_8h-source.html">cfe_es_apps.h</a>.
+</div>
+</div><p>
+<a class="anchor" name="331ccf7cc4eef6c8b430e29593f80a4a"></a><!-- doxytag: member="cfe_es_apps.h::CFE_ES_SYSTEM_STATE_UNDEFINED" ref="331ccf7cc4eef6c8b430e29593f80a4a" args="" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define CFE_ES_SYSTEM_STATE_UNDEFINED&nbsp;&nbsp;&nbsp;0          </td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+reserved 
+<p>
+Definition at line <a class="el" href="cfe__es__apps_8h-source.html#l00091">91</a> of file <a class="el" href="cfe__es__apps_8h-source.html">cfe_es_apps.h</a>.
 </div>
 </div><p>
 <hr><h2>Function Documentation</h2>
@@ -315,6 +431,35 @@ Definition at line <a class="el" href="cfe__es__apps_8h-source.html#l00092">92</
           <td></td>
           <td class="paramtype"><a class="el" href="common__types_8h.html#9560e25c315bae45d1ed4e2ce49ce55a">uint32</a>&nbsp;</td>
           <td class="paramname"> <em>ArraySize</em></td><td>&nbsp;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td><td width="100%"></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+
+</div>
+</div><p>
+<a class="anchor" name="710dce8e127b735e4b18539015a67327"></a><!-- doxytag: member="cfe_es_apps.h::CFE_ES_ApplicationSyncDelay" ref="710dce8e127b735e4b18539015a67327" args="(uint32 MinimumSystemState, uint32 TimeOutMilliseconds)" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="common__types_8h.html#5eb512da689eec1a7472ab97e2ab6be3">int32</a> CFE_ES_ApplicationSyncDelay           </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="common__types_8h.html#9560e25c315bae45d1ed4e2ce49ce55a">uint32</a>&nbsp;</td>
+          <td class="paramname"> <em>MinimumSystemState</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="common__types_8h.html#9560e25c315bae45d1ed4e2ce49ce55a">uint32</a>&nbsp;</td>
+          <td class="paramname"> <em>TimeOutMilliseconds</em></td><td>&nbsp;</td>
         </tr>
         <tr>
           <td></td>
@@ -548,7 +693,7 @@ Definition at line <a class="el" href="cfe__es__apps_8h-source.html#l00092">92</
 
 </div>
 </div><p>
-<hr size="1"><address style="align: right;"><small>Generated on Tue Sep 30 17:11:57 2014 for Core Flight Executive on  by&nbsp;
+<hr size="1"><address style="align: right;"><small>Generated on Mon Jun 29 12:31:31 2015 for Core Flight Executive on  by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img src="doxygen.png" alt="doxygen" align="middle" border="0"></a> 1.4.7 </small></address>
 </body>

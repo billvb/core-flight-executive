@@ -54,7 +54,7 @@
 /*
 ** Required header files
 */
-#include "cfe.h"
+#include "private/cfe_private.h"
 #include "cfe_version.h"
 #include "cfe_tbl_internal.h"
 #include "cfe_tbl_events.h"
@@ -69,130 +69,6 @@
 */
 CFE_TBL_TaskData_t    CFE_TBL_TaskData;
 
-
-/*
-** Table task const data
-*/
-#define CFE_TBL_BAD_CMD_CODE  (-1) /**< Command Code found in Message does not match any in #CFE_TBL_CmdHandlerTbl */
-#define CFE_TBL_BAD_MSG_ID    (-2) /**< Message ID found in Message does not match any in #CFE_TBL_CmdHandlerTbl */
-
-typedef enum
-{
-    CFE_TBL_TERM_MSGTYPE=0,   /**< \brief Command Handler Table Terminator Type */
-    CFE_TBL_MSG_MSGTYPE,      /**< \brief Message Type (requires Message ID match) */
-    CFE_TBL_CMD_MSGTYPE       /**< \brief Command Type (requires Message ID and Command Code match) */
-} CFE_TBL_MsgType_t;
-
-/**
-** Data structure of a single record in #CFE_TBL_CmdHandlerTbl
-*/
-typedef struct {
-    uint32                   MsgId;           /**< \brief Acceptable Message ID */
-    uint32                   CmdCode;         /**< \brief Acceptable Command Code (if necessary) */
-    uint32                   ExpectedLength;  /**< \brief Expected Message Length (in bytes) including message header */
-    CFE_TBL_MsgProcFuncPtr_t MsgProcFuncPtr;  /**< \brief Pointer to function to handle message  */
-    CFE_TBL_MsgType_t        MsgTypes;        /**< \brief Message Type (i.e. - with/without Cmd Code)   */
-} CFE_TBL_CmdHandlerTblRec_t;
-
-/*
-** Local function prototypes
-**
-** Note: Except for the entry point (CFE_TBL_TaskMain), these
-**       functions are not called from any other source module.
-*/
-/*****************************************************************************/
-/**
-** \brief Entry Point for cFE Table Services Core Application
-**
-** \par Description
-**        This is the entry point to the cFE Table Services Core Application.
-**        This Application provides the ground interface to the cFE Table
-**        Services.
-** 
-** \par Assumptions, External Events, and Notes:
-**          None
-**
-** \retval None
-******************************************************************************/
-void  CFE_TBL_TaskMain(void);
-
-/*****************************************************************************/
-/**
-** \brief cFE Table Services Core Application Initialization
-**
-** \par Description
-**        This function initializes all data associated with the cFE Table
-**        Services Core Application.  It is only called when the Application
-**        is first started.
-** 
-** \par Assumptions, External Events, and Notes:
-**          None
-**
-** \return #CFE_SUCCESS  \copydoc CFE_SUCCESS
-** \return Any of the return values from #CFE_EVS_Register
-** \return Any of the return values from #CFE_SB_CreatePipe
-** \return Any of the return values from #CFE_SB_Subscribe
-** \return Any of the return values from #CFE_EVS_SendEvent
-******************************************************************************/
-
-int32 CFE_TBL_TaskInit(void);
-
-/*****************************************************************************/
-/**
-** \brief Processes command pipe messages
-**
-** \par Description
-**          Processes messages obtained from the command pipe.
-** 
-** \par Assumptions, External Events, and Notes:
-**          None
-**
-** \param[in] MessagePtr a pointer to the message received from the command pipe
-**                                      
-** \retval None
-******************************************************************************/
-
-void  CFE_TBL_TaskPipe(CFE_SB_Msg_t *MessagePtr);
-
-/*****************************************************************************/
-/**
-** \brief Table Service Application Data Initialization
-**
-** \par Description
-**          Initializes all data necessary for the Table Service Application.
-** 
-** \par Assumptions, External Events, and Notes:
-**          None
-**
-** \retval None
-******************************************************************************/
-
-void  CFE_TBL_InitData(void);
-
-/* Utility Functions */
-/*****************************************************************************/
-/**
-** \brief Compares message with #CFE_TBL_CmdHandlerTbl to identify the message
-**
-** \par Description
-**          Searches the Command Handler Table for an entry matching the
-**          message ID and, if necessary, the Command Code.  If an entry
-**          is not located, an error code is returned.
-** 
-** \par Assumptions, External Events, and Notes:
-**          None
-**
-** \param[in] MessageID message ID of command message received on command pipe
-**
-** \param[in] CommandCode command code from command message received on command pipe
-**                                      
-** \retval #CFE_SUCCESS          \copydoc CFE_SUCCESS
-** \retval #CFE_TBL_BAD_CMD_CODE \copydoc CFE_TBL_BAD_CMD_CODE
-** \retval #CFE_TBL_BAD_MSG_ID   \copydoc CFE_TBL_BAD_MSG_ID
-**
-******************************************************************************/
-
-int16 CFE_TBL_SearchCmdHndlrTbl(CFE_SB_MsgId_t MessageID, uint16 CommandCode);
 
 /* Constant Data */
 
@@ -225,11 +101,19 @@ void CFE_TBL_TaskMain(void)
     
     if(Status != CFE_SUCCESS)
     {
-      CFE_ES_WriteToSysLog("TBL:Application Init Failed,RC=0x%08X\n", Status);      
+      CFE_ES_WriteToSysLog("TBL:Application Init Failed,RC=0x%08X\n", (unsigned int)Status);
       CFE_ES_PerfLogExit(CFE_TBL_MAIN_PERF_ID);      
       /* Note: CFE_ES_ExitApp will not return */
-      CFE_ES_ExitApp(CFE_ES_CORE_APP_INIT_ERROR);
+      CFE_ES_ExitApp(CFE_ES_RUNSTATUS_CORE_APP_INIT_ERROR);
     }/* end if */
+
+    /*
+     * Wait for other apps to start.
+     * It is important that the core apps are present before this starts receiving
+     * messages from the command pipe, as some of those handlers might depend on
+     * the other core apps.
+     */
+    CFE_ES_WaitForStartupSync(CFE_CORE_MAX_STARTUP_MSEC);
 
     /* Main loop */
     while (Status == CFE_SUCCESS)
@@ -251,13 +135,13 @@ void CFE_TBL_TaskMain(void)
             /* Process cmd pipe msg */
             CFE_TBL_TaskPipe(CFE_TBL_TaskData.MsgPtr);
         }else{
-            CFE_ES_WriteToSysLog("TBL:Error reading cmd pipe,RC=0x%08X\n",Status);
+            CFE_ES_WriteToSysLog("TBL:Error reading cmd pipe,RC=0x%08X\n",(unsigned int)Status);
         }/* end if */
 
     }/* end while */
 
     /* while loop exits only if CFE_SB_RcvMsg returns error */
-    CFE_ES_ExitApp(CFE_ES_CORE_APP_RUNTIME_ERROR);
+    CFE_ES_ExitApp(CFE_ES_RUNSTATUS_CORE_APP_RUNTIME_ERROR);
 
 } /* end CFE_TBL_TaskMain() */
 
@@ -275,7 +159,7 @@ int32 CFE_TBL_TaskInit(void)
 
     if(Status != CFE_SUCCESS)
     {
-      CFE_ES_WriteToSysLog("TBL:Call to CFE_ES_RegisterApp Failed:RC=0x%08X\n",Status);
+      CFE_ES_WriteToSysLog("TBL:Call to CFE_ES_RegisterApp Failed:RC=0x%08X\n",(unsigned int)Status);
       return Status;
     }/* end if */
     
@@ -291,7 +175,7 @@ int32 CFE_TBL_TaskInit(void)
 
     if(Status != CFE_SUCCESS)
     {
-      CFE_ES_WriteToSysLog("TBL:Call to CFE_EVS_Register Failed:RC=0x%08X\n",Status);
+      CFE_ES_WriteToSysLog("TBL:Call to CFE_EVS_Register Failed:RC=0x%08X\n",(unsigned int)Status);
       return Status;
     }/* end if */
     
@@ -303,7 +187,7 @@ int32 CFE_TBL_TaskInit(void)
                                 CFE_TBL_TaskData.PipeName);
     if(Status != CFE_SUCCESS)
     {
-      CFE_ES_WriteToSysLog("TBL:Error creating cmd pipe:RC=0x%08X\n",Status);
+      CFE_ES_WriteToSysLog("TBL:Error creating cmd pipe:RC=0x%08X\n",(unsigned int)Status);
       return Status;
     }/* end if */                                                                
 
@@ -314,7 +198,7 @@ int32 CFE_TBL_TaskInit(void)
 
     if(Status != CFE_SUCCESS)
     {
-      CFE_ES_WriteToSysLog("TBL:Error subscribing to HK Request:RC=0x%08X\n",Status);
+      CFE_ES_WriteToSysLog("TBL:Error subscribing to HK Request:RC=0x%08X\n",(unsigned int)Status);
       return Status;
     }/* end if */
 
@@ -325,7 +209,7 @@ int32 CFE_TBL_TaskInit(void)
 
     if(Status != CFE_SUCCESS)
     {
-      CFE_ES_WriteToSysLog("TBL:Error subscribing to gnd cmds:RC=0x%08X\n",Status);
+      CFE_ES_WriteToSysLog("TBL:Error subscribing to gnd cmds:RC=0x%08X\n",(unsigned int)Status);
       return Status;
     }/* end if */
     
@@ -337,7 +221,7 @@ int32 CFE_TBL_TaskInit(void)
 
     if(Status != CFE_SUCCESS)
     {
-      CFE_ES_WriteToSysLog("TBL:Error sending init event:RC=0x%08X\n",Status);
+      CFE_ES_WriteToSysLog("TBL:Error sending init event:RC=0x%08X\n",(unsigned int)Status);
       return Status;
     }/* end if */
 
@@ -398,14 +282,14 @@ void CFE_TBL_TaskPipe(CFE_SB_Msg_t *MessagePtr)
         if (ActualLength == CFE_TBL_CmdHandlerTbl[CmdIndx].ExpectedLength)
         {
             /* All checks have passed, call the appropriate message handler */
-            CmdStatus = (CFE_TBL_CmdHandlerTbl[CmdIndx].MsgProcFuncPtr)(MessagePtr);
+            CmdStatus = (CFE_TBL_CmdHandlerTbl[CmdIndx].MsgProcFuncPtr)(&MessagePtr->Byte[CFE_SB_CMD_HDR_SIZE]);
         }
         else /* Bad Message Length */
         {
             CFE_EVS_SendEvent( CFE_TBL_LEN_ERR_EID, CFE_EVS_ERROR,
                                "Invalid msg length -- ID = 0x%04X, CC = %d, Len = %d (!= %d)",
-                               MessageID, CommandCode, ActualLength,
-                               CFE_TBL_CmdHandlerTbl[CmdIndx].ExpectedLength );
+                               (unsigned int)MessageID, (int)CommandCode, (int)ActualLength,
+                               (int)CFE_TBL_CmdHandlerTbl[CmdIndx].ExpectedLength );
         }
 
         /* Only update command counters when message has a command code */
@@ -429,7 +313,7 @@ void CFE_TBL_TaskPipe(CFE_SB_Msg_t *MessagePtr)
         {
             CFE_EVS_SendEvent(CFE_TBL_CC1_ERR_EID, CFE_EVS_ERROR,
                               "Invalid command code -- ID = 0x%04X, CC = %d",
-                              MessageID, CommandCode);
+                              (unsigned int)MessageID, (int)CommandCode);
 
             /* Update the command error counter */
             CFE_TBL_TaskData.ErrCounter++;
@@ -438,7 +322,7 @@ void CFE_TBL_TaskPipe(CFE_SB_Msg_t *MessagePtr)
         {
             CFE_EVS_SendEvent(CFE_TBL_MID_ERR_EID, CFE_EVS_ERROR,
                              "Invalid message ID -- ID = 0x%04X",
-                              MessageID);
+                              (unsigned int)MessageID);
             /*
             ** Note: we only increment the command error counter when
             **    processing messages with command codes

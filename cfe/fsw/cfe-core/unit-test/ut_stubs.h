@@ -22,7 +22,7 @@
 ** $Date: 2014/07/10 09:30:59GMT-05:00 $
 ** $Revision: 1.10 $
 ** $Log: ut_stubs.h  $
-** Revision 1.10 2014/07/10 09:30:59GMT-05:00 rmcgraw 
+** Revision 1.10 2014/07/10 09:30:59GMT-05:00 rmcgraw
 ** DCR9772:2 Fix unit tests that broke when main files were checked in
 ** Revision 1.9 2014/05/28 10:21:52EDT wmoleski
 ** Overwriting cFE Unit Test files with the updated JSC files.
@@ -105,14 +105,33 @@
 #include <stdio.h>
 #endif
 
+#include "cfe.h"
 #include "cfe_sb.h"
 #include "cfe_es.h"
 #include "common_types.h"
 #include "cfe_evs_task.h"
 #include "cfe_es_global.h"
 #include "cfe_es_cds.h"
+#include "cfe_esmempool.h"
 #include "cfe_time_utils.h"
-#include "osprintf.h"
+
+#include "utassert.h"
+#include "uttest.h"
+#include "uttools.h"
+#include "utbsp.h"
+#include "utstubs.h"
+
+/*
+ * Use the stub implementations provided by the OSAL --
+ * This also means that the UT_SetRtn_t type must match the OSAL defined one
+ *  (which in turn functionally matches the original UT_SetRtn_t type)
+ */
+
+/*
+ * Use the SetRtn structure from UT assert stubs
+ */
+typedef UT_Compat_SetRtn_t UT_SetRtn_t;
+
 
 /*
 ** Macro definitions
@@ -130,7 +149,7 @@
 #define OS_OPEN_FAIL         0x0200
 #define OS_TASKDELAY_FAIL    0x0400
 #define OS_TASKREGISTER_FAIL 0x0800
-#define OS_READ_FAIL		 0x1000
+#define OS_READ_FAIL         0x1000
 #define OS_LSEEK_FAIL        0x2000
 #define OS_TASKDELETE_FAIL   0x4000
 #define OS_RMFS_FAIL         0x8000
@@ -165,99 +184,22 @@
 /* MIN_BLOCK_SIZE must be < 16 bytes */
 #define CFE_ES_CDS_MIN_BLOCK_SIZE 8
 
-/*
-** Type definitions
+/* Macro to add a test to the UT assert list */
+#define UT_ADD_TEST(Func)       UtTest_Add(Func, NULL, NULL, #Func)
+
+/* Macro that returns TRUE if the character provided is a number (including
+** hexadecimal)
 */
-typedef struct
-{
-    char    name[OS_MAX_API_NAME];
-    int     id;
-    boolean free;
-    int     stack_size;
-    int     priority;
-} UT_Task_t;
+#define isHex(chr) (((chr) >= '0' && (chr) <= '9') || \
+                    ((chr) >= 'a' && (chr) <= 'f') || \
+                    ((chr) >= 'A' && (chr) <= 'F'))
 
-typedef struct
-{
-    char    name[OS_MAX_API_NAME];
-    int     id;
-    boolean free;
-    char    data[100];
-    int     size;
-} UT_Queue_t;
-
-typedef struct
-{
-    int32 count;
-    int32 value;
-} UT_SetRtn_t;
 
 typedef struct
 {
     uint32             NextHandle;
     CFE_ES_CDSHandle_t Handles[UT_MAX_NUM_CDS];
 } UT_CDS_Map_t;
-
-typedef struct
-{
-    uint16 CheckBits;
-    uint16 AllocatedFlag;
-    uint32 SizeUsed;
-    uint32 ActualSize;
-    uint32 CRC;
-    uint32 Next;
-} CFE_ES_CDSBlockDesc_t;
-
-typedef struct
-{
-    uint32 Top;
-    uint32 Cntr;
-    uint32 MaxSize;
-} CFE_ES_CDSBlockSizeDesc_t;
-
-/* Memory Pool Type */
-typedef struct
-{
-    uint32 Start;
-    uint32 Size;
-    uint32 End;
-    uint32 Current;
-    int32  SizeIndex;
-    uint16 CheckErrCntr;
-    uint16 RequestCntr;
-    uint32 MutexId;
-    CFE_ES_CDSBlockSizeDesc_t SizeDesc[CFE_ES_CDS_NUM_BLOCK_SIZES];
-} CFE_ES_CDSPool_t;
-
-typedef struct
-{
-    uint16 CheckBits;
-    uint16 Allocated;
-    uint32 Size;
-    uint32 *Next;
-} OS_PACK BD_t;
-
-typedef struct
-{
-    BD_t   *Top;
-    uint32 NumCreated;
-    uint32 NumFree;
-    uint32 MaxSize;
-} BlockSizeDesc_t;
-
-typedef struct
-{
-   uint32          *Start;
-   uint32          Size;
-   uint32          End;
-   uint32          *Current;
-   BlockSizeDesc_t *SizeDescPtr;
-   uint16          CheckErrCntr;
-   uint16          RequestCntr;
-   uint32          MutexId;
-   uint32          UseMutex;
-   BlockSizeDesc_t SizeDesc[CFE_ES_MAX_MEMPOOL_BLOCK_SIZES];
-} OS_PACK Pool_t;
 
 /*
 ** Functions
@@ -272,8 +214,7 @@ typedef struct
 **        tests.
 **
 ** \par Assumptions, External Events, and Notes:
-**        SNPRINTF macro is defined in osprintf.h.  A log file is written only
-**        if CFE_LINUX is defined.
+**        A log file is written only if CFE_LINUX is defined.
 **
 ** \param[in] subsys  Pointer to subsystem ID character string
 **
@@ -351,10 +292,6 @@ void UT_Text(char *text);
 **        pass/fail counters.
 **
 ** \par Assumptions, External Events, and Notes:
-**        Tests that pass are only output if UT_SHOW_PASS is defined.
-**        SNPRINTF macro is defined in osprintf.h  If CFE_LINUX and UT_VERBOSE
-**        are both defined then for a failed test the output is also sent to
-**        the console
 **
 ** \param[in] test      Equals 0 if the test failed; non-zero if the
 **                      test passed
@@ -364,15 +301,14 @@ void UT_Text(char *text);
 **
 ** \param[in] info      Character string pointer to the description of the test
 **
-** \param[in] test_num  Character string pointer to the test sequence ID
-**
 ** \returns
 **        This function does not return a value.
 **
 ** \sa #UT_Text
 **
 ******************************************************************************/
-void UT_Report(boolean test, char *fun_name, char *info, char *test_num);
+void UT_Report(const char *file, uint32 line, boolean test, char *fun_name,
+		       char *info);
 
 /*****************************************************************************/
 /**
@@ -382,8 +318,7 @@ void UT_Report(boolean test, char *fun_name, char *info, char *test_num);
 **        Output total number of tests passed and failed.
 **
 ** \par Assumptions, External Events, and Notes:
-**        SNPRINTF macro is defined in osprintf.h  If CFE_LINUX is defined
-**        then the output is also sent to the console
+**        If CFE_LINUX is defined then the output is also sent to the console
 **
 ** \returns
 **        This function does not return a value.
@@ -436,25 +371,6 @@ void UT_SendMsg(CFE_SB_MsgPtr_t msg_ptr, CFE_SB_MsgId_t id, uint16 code);
 **
 ******************************************************************************/
 void UT_SetAppID(int32 AppID_in);
-
-/*****************************************************************************/
-/**
-** \brief Set the OS fail flag
-**
-** \par Description
-**        Set the response returned by the OS create, write, etc. stub
-**        functions.
-**
-** \par Assumptions, External Events, and Notes:
-**        None
-**
-** \param[in] fail  Failure condition flag
-**
-** \returns
-**        This function does not return a value.
-**
-******************************************************************************/
-void UT_SetOSFail(uint32 fail);
 
 /*****************************************************************************/
 /**
@@ -523,6 +439,25 @@ void UT_SetRtnCode(UT_SetRtn_t *varPtr, int32 rtnVal, int32 cnt);
 **
 ******************************************************************************/
 void UT_SetBinSemFail(uint32 fail);
+
+/*****************************************************************************/
+/**
+** \brief Set the OS fail flag
+**
+** \par Description
+**        Set the response returned by the OS create, write, etc. stub
+**        functions.
+**
+** \par Assumptions, External Events, and Notes:
+**        None
+**
+** \param[in] fail  Failure condition flag
+**
+** \returns
+**        This function does not return a value.
+**
+******************************************************************************/
+void UT_SetOSFail(uint32 fail);
 
 /*****************************************************************************/
 /**
@@ -730,6 +665,25 @@ void UT_SetCDSBSPCheckValidity(boolean Truth);
 
 /*****************************************************************************/
 /**
+** \brief Set the BSP CDS rebuild flag
+**
+** \par Description
+**        Set the BSP CDS rebuild flag used in CFE_PSP_ReadFromCDS.
+**        If TRUE, sets the CFE_PSP_ReadFromCDS data to read to a set pattern.
+**
+** \par Assumptions, External Events, and Notes:
+**        None
+**
+** \param[in] Truth  Set to TRUE to set the data to read to a preset pattern
+**
+** \returns
+**        This function does not return a value.
+**
+******************************************************************************/
+void UT_SetCDSRebuild(boolean Truth);
+
+/*****************************************************************************/
+/**
 ** \brief Set BSP time
 **
 ** \par Description
@@ -747,7 +701,7 @@ void UT_SetCDSBSPCheckValidity(boolean Truth);
 **        This function does not return a value.
 **
 ******************************************************************************/
-void UT_SetBSP_Time(int seconds, int microsecs);
+void UT_SetBSP_Time(uint32 seconds, uint32 microsecs);
 
 /*****************************************************************************/
 /**
@@ -870,7 +824,7 @@ void UT_EndianCheck(void);
 **         series of bytes in hexadecimal.
 **
 ** \par Assumptions, External Events, and Notes:
-**        SNPRINTF macro is defined in osprintf.h
+**        None
 **
 ** \param[in] ptr   Pointer to packet to display
 **
@@ -898,7 +852,7 @@ void UT_DisplayPkt(CFE_SB_MsgPtr_t ptr, uint32 size);
 **        Returns a pointer to the SB packet length.
 **
 ******************************************************************************/
-int16 UT_GetActualPktLenField(CFE_SB_MsgPtr_t MsgPtr);
+/*uint16 TODO*/int16 UT_GetActualPktLenField(CFE_SB_MsgPtr_t MsgPtr);
 
 /*****************************************************************************/
 /**
@@ -916,7 +870,7 @@ int16 UT_GetActualPktLenField(CFE_SB_MsgPtr_t MsgPtr);
 **        Returns the actual SB packet command code.
 **
 ******************************************************************************/
-uint8 UT_GetActualCmdCodeField(CFE_SB_MsgPtr_t MsgPtr);
+/*uint16 TODO*/uint8 UT_GetActualCmdCodeField(CFE_SB_MsgPtr_t MsgPtr);
 
 /*****************************************************************************/
 /**
@@ -927,7 +881,7 @@ uint8 UT_GetActualCmdCodeField(CFE_SB_MsgPtr_t MsgPtr);
 **        is defined then output the socket status to the test log file.
 **
 ** \par Assumptions, External Events, and Notes:
-**        SNPRINTF macro is defined in osprintf.h
+**        None
 **
 ** \returns
 **        This function does not return a value.
@@ -935,41 +889,23 @@ uint8 UT_GetActualCmdCodeField(CFE_SB_MsgPtr_t MsgPtr);
 ******************************************************************************/
 void UT_CheckForOpenSockets(void);
 
-#ifdef CFE_ARINC653
 /*****************************************************************************/
 /**
-** \brief Set the library initialization return code
+** \brief Compare two strings for equality
 **
 ** \par Description
-**        Set the library initialization return code.
+**        Determines if the two input strings are identical.
 **
 ** \par Assumptions, External Events, and Notes:
-**        None
-**
-** \param[in] LibInitRtn  Library init return code
-**
-** \returns
-**        This function does not return a value.
-**
-******************************************************************************/
-void UT_SetLibInitRtn(int32 LibInitRtn);
-
-/*****************************************************************************/
-/**
-** \brief Return the library initialization return code
-**
-** \par Description
-**        Return the library initialization return code.
-**
-** \par Assumptions, External Events, and Notes:
-**        None
+**        The tilde (~) is used as a wildcard in the second string and is
+**        considered to match the associated numeric character(s) in the first
+**        string (includes hexadecimal values).
 **
 ** \returns
-**        Returns the library initialization return code.
+**        Returns FALSE (0) if the strings do not match; otherwise returns
+**        TRUE (1).
 **
 ******************************************************************************/
-uint32 UT_LibInit(void);
-
-#endif
+uint8 UT_strcmp(char *str1, char *str2);
 
 #endif /* __UT_STUBS_H_ */

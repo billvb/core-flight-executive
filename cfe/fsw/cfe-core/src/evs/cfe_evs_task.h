@@ -81,11 +81,11 @@
 #define _cfe_evs_task_
 
 /********************************** Include Files  ************************************/
-#include "common_types.h"      /* Basic data types */
+#include "private/cfe_private.h"
+#include "private/cfe_evs_log_typedef.h"
 #include "cfe_sb.h"            /* Software Bus library function definitions */
 #include "cfe_msgids.h"        /* Software Bus Message ID definitions */
 #include "cfe_es.h"            /* Memory Pool definitions */
-#include "cfe_platform_cfg.h"  /* cFE platform configuration definitions */
 #include "osapi.h"             /* OS definitions */
 #include "cfe_evs_msg.h"        /* EVS message definitions */
 #include "cfe_evs_verify.h"
@@ -166,12 +166,36 @@ typedef struct
 
 } CFE_EVS_GlobalData_t;
 
+/*
+ *  Global variable specific to EVS module
+ */
+extern CFE_EVS_GlobalData_t   CFE_EVS_GlobalData;
+
 
 /*****************************  Function Prototypes   **********************************/
 
 /*
-* Provides initialization for the EVS API
+* Functions used within this module and by the unit test
 */
-int32 CFE_EVS_EarlyInit ( void );
+extern int32 CFE_EVS_TaskInit (void);
+extern void  CFE_EVS_ProcessCommandPacket ( CFE_SB_MsgPtr_t EVS_MsgPtr );
+
+boolean CFE_EVS_SetFilterMaskCmd (const CFE_SB_MsgPayloadPtr_t Payload);
+boolean CFE_EVS_EnablePortsCmd (const CFE_SB_MsgPayloadPtr_t Payload);
+boolean CFE_EVS_DisablePortsCmd (const CFE_SB_MsgPayloadPtr_t Payload);
+boolean CFE_EVS_EnableEventTypesCmd (const CFE_SB_MsgPayloadPtr_t Payload);
+boolean CFE_EVS_DisableEventTypesCmd (const CFE_SB_MsgPayloadPtr_t Payload);
+boolean CFE_EVS_SetEventFormatModeCmd (const CFE_SB_MsgPayloadPtr_t Payload);
+boolean CFE_EVS_EnableAppEventTypesCmd (const CFE_SB_MsgPayloadPtr_t Payload);
+boolean CFE_EVS_DisableAppEventTypesCmd (const CFE_SB_MsgPayloadPtr_t Payload);
+boolean CFE_EVS_EnableAppEventsCmd (const CFE_SB_MsgPayloadPtr_t Payload);
+boolean CFE_EVS_DisableAppEventsCmd (const CFE_SB_MsgPayloadPtr_t Payload);
+boolean CFE_EVS_ResetAppEventCounterCmd (const CFE_SB_MsgPayloadPtr_t Payload);
+boolean CFE_EVS_ResetFilterCmd (const CFE_SB_MsgPayloadPtr_t Payload);
+boolean CFE_EVS_AddEventFilterCmd (const CFE_SB_MsgPayloadPtr_t Payload);
+boolean CFE_EVS_DeleteEventFilterCmd (const CFE_SB_MsgPayloadPtr_t Payload);
+boolean CFE_EVS_WriteAppDataCmd ( const CFE_SB_MsgPayloadPtr_t Payload );
+boolean CFE_EVS_ResetAllFiltersCmd (const CFE_SB_MsgPayloadPtr_t Payload);
+
 
 #endif  /* _cfe_evs_task_ */
