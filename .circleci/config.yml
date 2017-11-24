@@ -26,8 +26,7 @@ jobs:
             cd /home/circleci/project 
             source setvars.sh
             cd ${CFS_MISSION}/build/cpu1/exe
-            su
-            timeout 15s ./core-linux.bin PO 1 
+            sudo timeout 15s ./core-linux.bin PO 1 
 
             
 
