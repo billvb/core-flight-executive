@@ -1,0 +1,33 @@
+version: 2
+jobs:
+  build:
+    machine: true
+    steps:
+      - checkout
+      - run: git submodule sync
+      - run: git submodule update --init
+      - run:
+          name: "Update and install build tools"
+          command: |
+            sudo apt-get update
+            sudo apt-get install coreutils build-essential cmake clang libc6-dev-i386
+      - run:
+          name: "Build"
+          command: |
+            cd /home/circleci/project 
+            source setvars.sh
+            cd ${CFS_MISSION}/build/cpu1
+            make clean
+            make config
+            make
+      - run:
+         name: "Launch core-linux.bin for a few seconds"
+         command: |
+            cd /home/circleci/project 
+            source setvars.sh
+            cd ${CFS_MISSION}/build/cpu1/exe
+            # Run core-linux.bin for 15s, then kill it. This is not perfect
+            sudo timeout 15s ./core-linux.bin PO 1 || /bin/true
+
+            
+

@@ -1,0 +1,3 @@
+[submodule "osal"]
+	path = osal
+	url = git@github.com:billvb/osal.git
