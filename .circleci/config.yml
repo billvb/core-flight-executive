@@ -4,6 +4,8 @@ jobs:
     machine: true
     steps:
       - checkout
+      - run: git submodule sync
+      - run: git submodule update --init
       - run:
           name: "Update and install build tools"
           command: |
